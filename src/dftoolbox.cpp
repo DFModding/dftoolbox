@@ -44,11 +44,13 @@
 #include "progress_logger.hpp"
 #include "export_dialog.hpp"
 
+#include "gui_progress_logger.hpp"
 #include "location.hpp"
 #include "directory_view.hpp"
 #include "shark_view.hpp"
 #include "sound_view.hpp"
 #include "image_view.hpp"
+#include "progress_dialog.hpp"
 #include "dialog_view.hpp"
 
 std::string dreamfall_path;
@@ -126,6 +128,10 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   toolbar = new FXToolBar(topdock,LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|FRAME_RAISED);
 
   // Toobar buttons: File manipulation
+  new FXButton(toolbar, "\tSet Dreamfall Path\tSet Dreamfall Path", Icon::dreamfall, 
+               this, ID_DREAMFALL_PATH,
+               BUTTON_TOOLBAR|FRAME_RAISED);
+
   (new FXButton(toolbar, "\tImport file\tImport file", Icon::import_file, 
                NULL, 0, //this, ID_OPEN,
                 BUTTON_TOOLBAR|FRAME_RAISED))->disable();
@@ -200,6 +206,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   new FXButton(toolbar2, "\tGo\tGo", Icon::go, 
                this, ID_LOCATIONBAR, BUTTON_TOOLBAR|FRAME_RAISED);
 
+  progress_dialog = new ProgressDialog(getApp(), "Installing data, this may take a while");
 
   // Look for dreamfall_path
   std::ifstream in((get_exe_path() + "dreamfall_path.txt").c_str());
@@ -345,8 +352,10 @@ FXint directory_tree_sorter(const FXTreeItem* a, const FXTreeItem* b)
 void 
 DFToolBoxWindow::load_files()
 {
+  progress_dialog->show(PLACEMENT_OWNER);
+
   // Generate proper filetables for the pak
-  ProgressLogger logger;
+  GUIProgressLogger logger;
   pak_manager.add_filelist(get_exe_path() + "df-directory.txt");
   pak_manager.scan_paks(logger);
 

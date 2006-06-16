@@ -29,30 +29,23 @@
 #include "system.hpp"
 #include "tljpak.hpp"
 
-#include "pak_insert_dialog.hpp"
+#include "progress_dialog.hpp"
+#include "progress_logger.hpp"
 #include "pak_insert_thread.hpp"
+
+#define STR(x) static_cast<std::ostringstream&>(std::ostringstream() << x).str()
 
 extern std::string dreamfall_path;
 extern FXGUISignal* sig;
 
-
 PakInsertThread::PakInsertThread(FXApp* app_, ProgressDialog* progress_dialog_,
-                                 const std::vector<InsertRequest>& inserts_)
+                                 const std::vector<InsertRequest>& inserts_,
+                                 ProgressLogger* logger_)
   : app(app_),
     progress_dialog(progress_dialog_),
     inserts(inserts_),
-    total_progress(0),
-    current_progress(0),
-    total_size(1),
-    current_size(1),
-    done(false)
+    mlogger(logger_)
 {
-}
-
-bool
-PakInsertThread::is_done() const
-{
-  return done;
 }
 
 FXint
@@ -61,68 +54,57 @@ PakInsertThread::run()
   try {
     update();
 
-    group_insert_requests(inserts, paks);
-    check_errors(inserts);
-    
-    do_backup(paks);
-    install_paks(paks);
+    mlogger->set_task_size(4);
+    mlogger->set_task_status(0);
 
-    log << "\n### Installation of mods finshed, you can close this dialog now! ###" << std::endl;
+    group_insert_requests(inserts, paks, mlogger->start_subtask());
+    mlogger->increment_status();
+
+    check_errors(inserts, mlogger->start_subtask());
+    mlogger->increment_status();
+
+    do_backup(paks, mlogger->start_subtask());
+    mlogger->increment_status();
+
+    install_paks(paks, mlogger->start_subtask());
+    mlogger->increment_status();
+
+    mlogger->println("");
+    mlogger->println("### Installation of mods finshed, you can close this dialog now! ###");
   } catch(std::exception& err) {
-    log << "\n" << "Error: " << err.what() << std::endl;
+    mlogger->println("");
+    mlogger->println(STR("Error: " << err.what()));
     std::cout << "Thread error: " << err.what() << std::endl;
   } catch (...) {
     std::cout << "Catched something?" << std::endl;
   }
 
-  done = true;
+  mlogger->set_done();
   update();
 
   return 0;
 }
 
-std::string
-PakInsertThread::getLog() const {
-  return log.str();
-}
-
-int 
-PakInsertThread::getTotalProgress() const {
-  return total_progress;
-}
-
-int
-PakInsertThread::getTotalSize() const {
-  return total_size;
-}
-
-int
-PakInsertThread::getCurrentProgress() const {
-  return current_progress;
-}
-
-int
-PakInsertThread::getCurrentSize() const {
-  return current_size;
-}
-
 void
 PakInsertThread::update() 
 {
+  sig->setData(mlogger);
   sig->signal();
 }
 
 void
-PakInsertThread::group_insert_requests(std::vector<InsertRequest>& inserts, PakList& paks) 
+PakInsertThread::group_insert_requests(std::vector<InsertRequest>& inserts, PakList& paks,
+                                       ProgressLogger* logger)
 {
   // Group InsertRequests according to .pak
-  log << "Pak Directory: " << dreamfall_path << "bin/res/" << std::endl;
-  log << "Searching .pak files for filenames..." << std::endl;
+  logger->println("Pak Directory: " + dreamfall_path + "bin/res/");
+  logger->println("Searching .pak files for filenames...");
 
   Directory pak_directory = open_directory(dreamfall_path + "bin/res/", ".pak");
 
-  current_size     = pak_directory.size();
-  current_progress = 1;
+  // FIXME: Use sub logger
+  logger->set_task_size(pak_directory.size());
+  logger->set_task_status(1);
   update();
 
   for(Directory::iterator i = pak_directory.begin(); i != pak_directory.end(); ++i)
@@ -141,84 +123,89 @@ PakInsertThread::group_insert_requests(std::vector<InsertRequest>& inserts, PakL
           {
             if (pak.lookup(j->location) != -1)
               {
-                log << "  found " << j->location << " in " << i->name << std::endl;
+                std::ostringstream str;
+                str << "  found " << j->location << " in " << i->name;
+                logger->println(str.str());
+                
                 j->paks.push_back(i->fullname);
                 paks[i->fullname].push_back(*j);
               }
           }
       } catch(std::exception& err) {
-        log << "Ignoring: " << orig_pak << "\n  Reason: " << err.what() << std::endl;
+        std::ostringstream str;
+        str << "Ignoring: " << orig_pak << "\n  Reason: " << err.what();
+        logger->println(str.str());
       }
 
-      current_progress += 1;
+      logger->increment_status();
       update();
     }
-  log << std::endl;
+  logger->println("");
 }
 
 void
-PakInsertThread::do_backup(const PakList& paks)
+PakInsertThread::do_backup(const PakList& paks, ProgressLogger* logger)
 {
   bool backup_done = false;
-  log << "Backing up pak files..." << std::endl;
+  logger->println("Backing up pak files...");
 
-  current_size = paks.size();
-  current_progress = 1;
+  // FIXME: Use sublogger
+  logger->set_task_size(paks.size());
+  logger->set_task_status(1);
 
   // Do Backup of .paks
   for(PakList::const_iterator i = paks.begin(); i != paks.end(); ++i)
     {
       if (!file_exists(i->first + ".orig"))
         {
-          log << "  copying " << i->first << " to " << i->first << ".orig" << std::endl;
+          logger->println(STR("  copying " << i->first << " to " << i->first << ".orig"));
           file_copy(i->first, i->first + ".orig");
           backup_done = true;
         }
 
-      current_progress += 1;
+      logger->increment_status(1);
       update();
     }
 
   if (!backup_done)
-    log << "  backup already done" << std::endl;
-
-  log << std::endl;
+    logger->println("  backup already done");
+  
+  logger->println("");
 }
 
 void
-PakInsertThread::check_errors(const std::vector<InsertRequest>& inserts)
+PakInsertThread::check_errors(const std::vector<InsertRequest>& inserts,
+                              ProgressLogger* logger)
 {
   bool found_errors = false;
-  log << "Checking for errors..." << std::endl;
+  logger->println("Checking for errors...");
   for(std::vector<InsertRequest>::const_iterator i = inserts.begin(); i != inserts.end(); ++i)
     {
       if (i->paks.empty())
         {
-          log << "  Warning: Couldn't find a pak containing " << i->location << "\n           ignoring "
-              << i->filename << std::endl;
+          logger->println(STR("  Warning: Couldn't find a pak containing " << i->location
+                              << "\n           ignoring " << i->filename));
           found_errors = true;
         }
     }
   if (!found_errors)
     {
-      log << "  no errors found" << std::endl;
+      logger->println("  no errors found");
     }
-  log << std::endl;
+  logger->println("");
 }
 
 void
-PakInsertThread::install_paks(PakList& paks)
+PakInsertThread::install_paks(PakList& paks, ProgressLogger* logger)
 {
   // Modify the .paks
-  total_size = paks.size()*2;
+  logger->set_task_size(paks.size()*2);
 
   for(PakList::iterator i = paks.begin(); i != paks.end(); ++i)
     {
       TLJPak pak(i->first + ".orig");
 
-      log << "Patching Pak: " << i->first << std::endl;
-      current_size = 1;
-      current_progress = 0;
+      logger->println(STR("Patching Pak: " << i->first));
       update();
 
       for (std::vector<InsertRequest>::iterator j = i->second.begin(); j != i->second.end(); ++j)
@@ -229,26 +216,22 @@ PakInsertThread::install_paks(PakList& paks)
             {
               pak.insert(loc, buffer);
               
-              log << " + " << j->filename << std::endl; // + " - " + buffer.size()/1024.0f + "KB\n");
+              logger->println(STR(" + " << j->filename)); // + " - " + buffer.size()/1024.0f + "KB\n");
             }
           else
             {
-              log << "Error: Couldn't find " << j->location << " in " << i->first << ".orig" << std::endl;
+              logger->println(STR("Error: Couldn't find " << j->location << " in " << i->first << ".orig"));
             }
         }
 
-      current_progress = 1;
+      logger->increment_status();
       update();
-      
-      current_progress = 0;
-      total_progress += 1;
 
-      log << "Writing Pak: " << i->first << "\n" << std::endl;
+      logger->println(STR("Writing Pak: " << i->first << "\n"));
       update();
 
       pak.write(i->first);
-
-      total_progress += 1;
+      logger->increment_status();
       update();
     }
 }

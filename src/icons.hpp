@@ -476,6 +476,11 @@ extern FXIcon* unknown;
 extern FXIcon* dftoolbox;
 extern FXIcon* dftoolbox_mini;
 
+extern FXIcon* dfmodtool;
+extern FXIcon* dfmodtool_mini;
+
+extern FXIcon* dreamfall;
+
 void init(FXApp*);
 void deinit();
 

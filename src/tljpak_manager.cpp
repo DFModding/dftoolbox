@@ -153,7 +153,7 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
   create_dir(get_exe_path() + "/filetables");
   
   // Generate filetables for all paks
-  logger.set_total_size(paks.size());
+  logger.set_task_size(paks.size());
   int count = 0;
   for(Paks::iterator i = paks.begin(); i != paks.end(); ++i)
     {
@@ -165,12 +165,12 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
       
       if (in)
         {
-          logger.print("Reading cache " + i->second->filename + "\n");
+          logger.println("Reading cache " + i->second->filename);
           (*i).second->read_filetable(in);
         }
       else
         {
-          logger.print("Scanning " + i->second->filename + "\n");
+          logger.println("Scanning " + i->second->filename);
           (*i).second->scan(filelist, logger);
 
           std::ofstream out(filetablecache.c_str());
@@ -185,7 +185,7 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
             }
         }
       
-      logger.set_total_progress(count++);
+      logger.set_task_status(count++);
     }
 }
 

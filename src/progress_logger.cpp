@@ -1,4 +1,4 @@
-/*  $Id: pak_insert_dialog.hpp,v 1.1 2006/06/16 02:17:53 ingo Exp ingo $
+/*  $Id: progress_logger.hpp,v 1.1 2006/06/16 02:17:53 ingo Exp ingo $
 **  ___  ___ _____         _ ___
 ** |   \| __|_   _|__  ___| | _ ) _____ __
 ** | |) | _|  | |/ _ \/ _ \ | _ \/ _ \ \ /
@@ -22,44 +22,6 @@
 **  02111-1307, USA.
 */
 
-#ifndef HEADER_PAK_INSERTER_DIALOG_HPP
-#define HEADER_PAK_INSERTER_DIALOG_HPP
-
-#include "fx.h"
-#include <string>
-
-class PakInsertThread;
-class DFModActivatorWindow;
-
-class ProgressDialog : public FXDialogBox
-{
-private:
-  FXDECLARE(ProgressDialog);
-
-  DFModActivatorWindow* window;
-  FXText*          log;
-  FXProgressBar*   current_progress;
-  FXProgressBar*   total_progress;
-  FXButton*        ok_button;
-  PakInsertThread* thread;
-
-public:
-  ProgressDialog();
-  ProgressDialog(FXApp* app, DFModActivatorWindow* window, const FXString& title);
-  ~ProgressDialog();
-
-  void set_thread(PakInsertThread* thread);
-  void appendMessage(const std::string& msg);
-  long onCmdToggleLongDesc(FXObject*,FXSelector,void*);
-
-  long onThreadUpdate(FXObject*, FXSelector, void*);
-
-  enum {
-    ID_HIDE = FXDialogBox::ID_LAST,
-    ID_THREAD_UPDATE,
-  };
-};
-
-#endif
+#include "progress_logger.hpp"
 
 /* EOF */

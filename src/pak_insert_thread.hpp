@@ -32,6 +32,7 @@
 #include <vector>
 #include <sstream>
 
+class ProgressLogger;
 class ProgressDialog;
 
 struct InsertRequest
@@ -63,31 +64,26 @@ private:
   PakList paks;
   std::vector<InsertRequest> inserts;
 
-  int total_progress;
-  int current_progress;
-  int total_size;
-  int current_size;
-
-  std::ostringstream log;
-  bool done;
+  ProgressLogger* mlogger;
 public:
   PakInsertThread(FXApp* app_, ProgressDialog* progress_dialog_,
-                  const std::vector<InsertRequest>& inserts_);
+                  const std::vector<InsertRequest>& inserts_, 
+                  ProgressLogger* logger_);
 
   virtual ~PakInsertThread() {}
 
   FXint run();
   std::string getLog() const;
-  int  getTotalProgress() const;
-  int  getTotalSize() const;
-  int  getCurrentProgress() const;
-  int  getCurrentSize() const;
+
   void update();
-  void group_insert_requests(std::vector<InsertRequest>& inserts, PakList& paks);
-  void do_backup(const PakList& paks);
-  void check_errors(const std::vector<InsertRequest>& inserts);
-  void install_paks(PakList& paks);
-  bool is_done() const;
+  void group_insert_requests(std::vector<InsertRequest>& inserts, PakList& paks,
+                             ProgressLogger* logger);
+  void do_backup(const PakList& paks,
+                 ProgressLogger* logger);
+  void check_errors(const std::vector<InsertRequest>& inserts,
+                    ProgressLogger* logger);
+  void install_paks(PakList& paks,
+                    ProgressLogger* logger);
 };
 
 #endif

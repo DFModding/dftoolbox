@@ -32,7 +32,9 @@
 #include "system.hpp"
 
 #include "pak_insert_thread.hpp"
-#include "pak_insert_dialog.hpp"
+#include "progress_dialog.hpp"
+#include "progress_logger.hpp"
+#include "gui_progress_logger.hpp"
 #include "dfmodactivator.hpp"
 
 FXIcon* ok_icon;
@@ -146,8 +148,13 @@ DFModActivatorWindow::DFModActivatorWindow() {
 DFModActivatorWindow::DFModActivatorWindow(FXApp* a)
   : FXMainWindow(a,"DFModActivator", NULL, NULL, DECOR_ALL, 0, 0, 640, 480)
 {
+  Icon::init(getApp());
+
+  setMiniIcon(Icon::dftoolbox_mini);
+  setIcon(Icon::dftoolbox);
+
   // write own progress dialog here
-  progress_dialog = new ProgressDialog(getApp(), this, "Installing data, this may take a while");
+  progress_dialog = new ProgressDialog(getApp(), "Installing data, this may take a while");
   //progress_dialog->setBarStyle(PROGRESSBAR_HORIZONTAL);
 
   FXVerticalFrame* base = new FXVerticalFrame(this, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_Y,
@@ -310,7 +317,8 @@ DFModActivatorWindow::onCmdInstall(FXObject* obj, FXSelector sel, void* data)
       install_button->disable();
       uninstall_button->disable();
 
-      progress_dialog->set_thread(new PakInsertThread(getApp(), progress_dialog, inserts));
+      GUIProgressLogger* logger = new GUIProgressLogger(); // FIXME: Delete me
+      progress_dialog->set_thread(new PakInsertThread(getApp(), progress_dialog, inserts, logger));
       progress_dialog->show(PLACEMENT_OWNER);
       //progress_dialog->execute();
     }

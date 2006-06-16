@@ -37,6 +37,7 @@ class SoundView;
 class ImageView;
 class DialogView;
 class DirectoryView;
+class ProgressDialog;
 
 struct Bookmark
 {
@@ -90,6 +91,7 @@ protected:
   FXButton*      parent_button; 
 
   FXMenuTitle* bookmark_title;
+  ProgressDialog* progress_dialog;
 
   std::map<unsigned int, Speech> id_to_speech;
   std::map<std::string,  Speech> mp3_to_speech;

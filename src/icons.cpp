@@ -78,6 +78,11 @@ FXIcon* large_shark;
 FXIcon* dftoolbox;
 FXIcon* dftoolbox_mini;
 
+FXIcon* dfmodtool;
+FXIcon* dfmodtool_mini;
+
+FXIcon* dreamfall;
+
 FXIcon* load_icon(FXApp* app, const std::string& filename)
 {
   std::vector<char> data;
@@ -144,12 +149,20 @@ void init(FXApp* app)
 
   dftoolbox      = load_icon(app, "icons/dftoolbox.gif");
   dftoolbox_mini = load_icon(app, "icons/dftoolbox_mini.gif");
+
+  dfmodtool      = load_icon(app, "icons/dfmodtool.gif");
+  dfmodtool_mini = load_icon(app, "icons/dfmodtool_mini.gif");
+
+  dreamfall = load_icon(app, "icons/dreamfall.gif");
 }
 
 void deinit() 
 {
   delete dftoolbox;
   delete dftoolbox_mini;
+
+  delete dfmodtool;
+  delete dfmodtool_mini;
 
   delete unknown;
 
@@ -196,6 +209,8 @@ void deinit()
   delete large_folder;
   delete large_file;
   delete large_shark;
+
+  delete dreamfall;
 }
 
 } // namespace Icon

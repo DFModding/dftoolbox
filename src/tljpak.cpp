@@ -849,7 +849,7 @@ TLJPak::scan(const std::vector<std::string>& lst, ProgressLogger& logger)
         files[j].pathname = *i;
     }
 
-  logger.set_current_size(files.size());
+  logger.set_task_size(files.size());
   for(int i = 0; i < int(files.size()); ++i)
     {
       if (files[i].is_file() && files[i].pathname.empty())
@@ -862,7 +862,7 @@ TLJPak::scan(const std::vector<std::string>& lst, ProgressLogger& logger)
 
       files[i].filetype = get_type(i);
 
-      logger.set_current_progress(i);
+      logger.set_task_status(i);
     }
 }
 

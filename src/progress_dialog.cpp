@@ -25,7 +25,9 @@
 #include <iostream>
 #include "dfmodactivator.hpp"
 #include "pak_insert_thread.hpp"
-#include "pak_insert_dialog.hpp"
+#include "progress_logger.hpp"
+#include "gui_progress_logger.hpp"
+#include "progress_dialog.hpp"
 
 FXDEFMAP(ProgressDialog) ProgressDialogMap[] = {
   FXMAPFUNC(SEL_COMMAND,  ProgressDialog::ID_HIDE,          ProgressDialog::onCmdHide),
@@ -40,14 +42,13 @@ ProgressDialog::ProgressDialog()
 {
 }
 
-ProgressDialog::ProgressDialog(FXApp* app, DFModActivatorWindow* window_, const FXString& title)
+ProgressDialog::ProgressDialog(FXApp* app, const FXString& title)
   : FXDialogBox(app, title, DECOR_RESIZE|DECOR_TITLE|DECOR_BORDER,//|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,
                 0, 0, 800, 0),
     // FXuint opts=DECOR_TITLE|DECOR_BORDER, FXint x=0,
     // FXint y=0, FXint w=0, FXint h=0, FXint pl=10, FXint
     // pr=10, FXint pt=10, FXint pb=10, FXint hs=4, FXint
     // vs=4)
-    window(window_),
     thread(0)
 {
   sig = new FXGUISignal(getApp(), this, ProgressDialog::ID_THREAD_UPDATE);
@@ -93,23 +94,33 @@ ProgressDialog::onCmdToggleLongDesc(FXObject*,FXSelector,void*)
 }
 
 long
-ProgressDialog::onThreadUpdate(FXObject*, FXSelector, void*)
+ProgressDialog::onThreadUpdate(FXObject*, FXSelector, void* data)
 {
-  current_progress->setTotal(thread->getCurrentSize());;
-  current_progress->setProgress(thread->getCurrentProgress());
-  total_progress->setTotal(thread->getTotalSize());
-  total_progress->setProgress(thread->getTotalProgress());
-  log->setText(thread->getLog().c_str());
-  log->makePositionVisible(log->getLength());
+  GUIProgressLogger* logger = static_cast<GUIProgressLogger*>(data);
 
-  if (thread->is_done())
+  ProgressLogger* sublogger = logger->get_subtask();
+  if (sublogger)
+    {
+      current_progress->setProgress(logger->get_task_status());
+      current_progress->setTotal(sublogger->get_task_size());
+    }
+  
+  total_progress->setTotal(logger->get_task_size());
+  total_progress->setProgress(logger->get_task_status());
+
+  log->appendText(logger->pop_log().c_str());
+  log->makePositionVisible(log->getLength());
+  
+  if (logger->is_done())
     {
       ok_button->enable();
       while(thread->running());
       delete thread;
       thread = NULL;
-      window->install_button->enable();
-      window->uninstall_button->enable();
+
+      // FIXME:
+      // window->install_button->enable();
+      // window->uninstall_button->enable();
     }
 
   return 1;

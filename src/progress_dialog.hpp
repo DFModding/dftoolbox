@@ -1,4 +1,4 @@
-/*  $Id: progress_logger.hpp,v 1.1 2006/06/16 02:17:53 ingo Exp ingo $
+/*  $Id: pak_insert_dialog.hpp,v 1.1 2006/06/16 02:17:53 ingo Exp ingo $
 **  ___  ___ _____         _ ___
 ** |   \| __|_   _|__  ___| | _ ) _____ __
 ** | |) | _|  | |/ _ \/ _ \ | _ \/ _ \ \ /
@@ -22,35 +22,40 @@
 **  02111-1307, USA.
 */
 
-#ifndef HEADER_PROGRESS_LOGGER_HPP
-#define HEADER_PROGRESS_LOGGER_HPP
+#ifndef HEADER_PROGRESS_DIALOG_HPP
+#define HEADER_PROGRESS_DIALOG_HPP
 
+#include "fx.h"
 #include <string>
 
-/** */
-class ProgressLogger
+class PakInsertThread;
+
+class ProgressDialog : public FXDialogBox
 {
+private:
+  FXDECLARE(ProgressDialog);
+
+  FXText*          log;
+  FXProgressBar*   current_progress;
+  FXProgressBar*   total_progress;
+  FXButton*        ok_button;
+  PakInsertThread* thread;
+
 public:
-  virtual ~ProgressLogger() {}
+  ProgressDialog();
+  ProgressDialog(FXApp* app, const FXString& title);
+  ~ProgressDialog();
 
-  /** Print a logfile entry */
-  virtual void println(const std::string& str) =0;
+  void set_thread(PakInsertThread* thread);
+  void appendMessage(const std::string& msg);
+  long onCmdToggleLongDesc(FXObject*,FXSelector,void*);
 
-  virtual void set_task_size(int s)   =0;
-  virtual void set_task_status(int s) =0;
+  long onThreadUpdate(FXObject*, FXSelector, void*);
 
-  virtual void increment_status(int n = 1) {
-    set_task_status(get_task_size() + n);
-  }
-
-  virtual int get_task_size()   const =0;
-  virtual int get_task_status() const =0;
-  
-  virtual ProgressLogger* start_subtask() =0;
-  virtual ProgressLogger* get_subtask() =0;
-
-  virtual void set_done() =0;
-  virtual bool is_done()  const =0;
+  enum {
+    ID_HIDE = FXDialogBox::ID_LAST,
+    ID_THREAD_UPDATE,
+  };
 };
 
 #endif
