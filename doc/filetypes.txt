@@ -1,0 +1,54 @@
+Bundels
+=======
+
+.bun - containing texture filenames and probally vertex data (3d models?)
+
+Shark3D Snake Binary
+====================
+.cdr - shark3d_snake_binary, used in 'data/scripts/' and 'data/interactiontables/'
+.sgr - shark3d_snake_binary, used for shaders, contained in directory 'art/shaders/prog/...'
+.sdr - shark3d_snake_binary, used for shaders, contained in directory 'art/locations/.../shader'
+.skr - shark3d_snake_binary, shark3d_std_bone_skel_runtime
+.sir - shark3d_snake_binary, probally 3d script? see format, shark3d_std_inst_3x0
+.svr - shark3d_snake_binary, shark3d_runtime_model_pvs, seldomly used
+.ikr - shark3d_snake_binary, tlj2_ikr_0
+.rgr - shark3d_snake_binary, funcom_bone_rig_runtime
+.spr - shark3d_snake_binary
+
+Lip Sync Data:
+==============
+.lip - used in sound/voice-over/, each .mp3 has a .lip file 
+
+TLJ Bone
+========
+.bpr - tljbone
+
+Shader Scripts:
+===============
+.scr
+
+Multimedia Data:
+================
+.mp3 - Standard MP3 files
+.wav - Standard Wav files
+.png - DirectX texture files (ie. not real .pngs), can also be STFU4 file (?)
+.tga - DirectX texture files (ie. not real .tgas)
+.dds - DirectX texture files
+
+Unknown:
+========
+
+.dat - binary data for the lights, used in art/lights/
+.ikr_data - random binary data, most likly connected to .ikr
+.skr_data
+.smr - references to those files are found, but the files themself not, probally an uncompiled form of other files
+
+Missdetections?:
+================
+qty
+orq
+psx
+jsr
+dta
+
+# EOF #

@@ -1,0 +1,24 @@
+# Automatically generated Shark 3D Snake 1x0 Text Stream. Format: ascii.
+
+producer
+    "Shark 3D Exporter for Max v6000, Spinor GmbH (www.spinor.com), shark3d_v4"
+    & "x9x0_t87u_c87_soft_win32_vc7x1_release_fwin32vc7x1release"
+source "Z:\\test.max"
+
+format "shark3d_std_inst_3x0"
+
+data
+{
+    root
+    {
+        name "scene_root"
+        child_array
+        {
+            name "Quader01"
+
+            transl -0.00342342 0. 0.
+            model "Quader01"
+        }
+    }
+}
+$

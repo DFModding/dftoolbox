@@ -1,0 +1,15 @@
+# Look of scripting in Perch which is used by Shark3D:
+
+# Activate sound announce
+func public void activate_announce(...
+     # Calculate the time when the la...
+     var float delay = 0.0;
+     var int count = 0;
+     var int i = ;
+     for i  = 0 to v_doorCount - 1 do
+         var float duration = v_doors...
+         ...
+     end
+
+     # 
+end
