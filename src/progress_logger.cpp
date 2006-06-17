@@ -24,4 +24,25 @@
 
 #include "progress_logger.hpp"
 
+int
+ProgressLogger::get_collected_task_status() const
+{
+  if (get_subtask())
+    {
+      return std::min(1000*get_task_size(),
+                      1000*get_task_status() 
+                      + 1000*get_subtask()->get_task_status()/get_subtask()->get_task_size());
+    }
+  else
+    {
+      return 1000*get_task_status();
+    }
+}
+
+int
+ProgressLogger::get_collected_task_size() const
+{
+  return 1000*get_task_size();
+}
+
 /* EOF */

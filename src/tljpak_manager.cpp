@@ -38,18 +38,28 @@ TLJPakManager::~TLJPakManager()
 }
 
 void
-TLJPakManager::add_directory(const std::string& pakdirectory)
+TLJPakManager::add_directory(const std::string& pakdirectory, ProgressLogger& logger)
 {
   Directory directory = open_directory(pakdirectory, ".pak");
+
+  logger.set_task_size(directory.size());
+
   for(std::vector<DirectoryEntry>::iterator i = directory.begin();
       i != directory.end(); ++i)
     {
       if (i->name != "resource.pak") 
 	 {
-           std::cout << "Reading: " << i->fullname << std::endl;
+           logger.println("Reading: " + i->fullname);
+           logger.sync();
+
            paks[i->name] = new TLJPak(i->fullname);
 	 }       
-    } 
+
+      logger.increment_status();
+      logger.sync();
+    }
+
+  logger.set_done();
 }
 
 TLJPak*
@@ -154,7 +164,9 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
   
   // Generate filetables for all paks
   logger.set_task_size(paks.size());
-  int count = 0;
+  logger.set_task_status(0);
+  logger.sync();
+  
   for(Paks::iterator i = paks.begin(); i != paks.end(); ++i)
     {
       std::string pathpart, filepart;
@@ -165,13 +177,16 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
       
       if (in)
         {
-          logger.println("Reading cache " + i->second->filename);
+          logger.println("reading cache " + i->second->filename);
+          logger.sync();
           (*i).second->read_filetable(in);
         }
       else
         {
           logger.println("Scanning " + i->second->filename);
-          (*i).second->scan(filelist, logger);
+          logger.sync();
+
+          (*i).second->scan(filelist, logger.start_subtask());
 
           std::ofstream out(filetablecache.c_str());
           if (!out)
@@ -185,8 +200,12 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
             }
         }
       
-      logger.set_task_status(count++);
+      logger.increment_status();
+      logger.sync();
     }
+
+  logger.set_done();
+  logger.sync();
 }
 
 TLJPakManager::Files

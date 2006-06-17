@@ -53,19 +53,27 @@ ProgressDialog::ProgressDialog(FXApp* app, const FXString& title)
 {
   sig = new FXGUISignal(getApp(), this, ProgressDialog::ID_THREAD_UPDATE);
 
-  log              = new FXText(this, NULL, 0, LAYOUT_FILL_X|FRAME_SUNKEN|FRAME_THICK);
+  vbox = new FXVerticalFrame(this, LAYOUT_FILL_X|LAYOUT_FILL_Y, 
+                             0, 0, 0, 0,
+                             0, 0, 0, 0);
+  
+  FXPacker* frame  = new FXPacker(vbox, LAYOUT_FILL_Y|LAYOUT_FILL_X|FRAME_SUNKEN, 0, 0, 0, 0,   0, 0, 0, 0);
+  log              = new FXText(frame, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN|FRAME_THICK);
   log->setVisibleRows(25);
   log->setEditable(FALSE);
 
-  FXMatrix* matrix = new FXMatrix(this, 2, MATRIX_BY_COLUMNS|LAYOUT_FILL_X);
+  FXMatrix* matrix = new FXMatrix(vbox, 2, MATRIX_BY_COLUMNS|LAYOUT_FILL_X);
 
-  new FXLabel(matrix, "Current:", NULL, LAYOUT_RIGHT);
+  level3_label    = new FXLabel(matrix, "Current:", NULL, LAYOUT_RIGHT);
+  level3_progress = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 0, 0, 300, 20);
+
+  current_label    = new FXLabel(matrix, "Current:", NULL, LAYOUT_RIGHT);
   current_progress = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 0, 0, 300, 20);
 
   new FXLabel(matrix, "Total:",   NULL, LAYOUT_RIGHT);
   total_progress   = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 0, 0, 300, 20);
 
-  ok_button        = new FXButton(this, "Close", NULL, this, ID_HIDE, ICON_ABOVE_TEXT|FRAME_RAISED|LAYOUT_RIGHT|LAYOUT_FIX_WIDTH, 0, 0, 80, 0);
+  ok_button        = new FXButton(vbox, "Close", NULL, this, ID_HIDE, ICON_ABOVE_TEXT|FRAME_RAISED|LAYOUT_RIGHT|LAYOUT_FIX_WIDTH, 0, 0, 80, 0);
   ok_button->disable();
 }
 
@@ -101,12 +109,34 @@ ProgressDialog::onThreadUpdate(FXObject*, FXSelector, void* data)
   ProgressLogger* sublogger = logger->get_subtask();
   if (sublogger)
     {
-      current_progress->setProgress(logger->get_task_status());
-      current_progress->setTotal(sublogger->get_task_size());
+      if (!current_progress->shown())
+        {
+          current_progress->show();
+          current_label->show();
+          vbox->recalc();
+        }
+
+      if (sublogger->get_subtask())
+        {
+          level3_progress->setProgress(sublogger->get_subtask()->get_collected_task_status());
+          level3_progress->setTotal(sublogger->get_subtask()->get_collected_task_size());          
+        }
+
+      current_progress->setProgress(sublogger->get_collected_task_status());
+      current_progress->setTotal(sublogger->get_collected_task_size());
     }
-  
-  total_progress->setTotal(logger->get_task_size());
-  total_progress->setProgress(logger->get_task_status());
+  else
+    {
+      if (current_progress->shown())
+        {
+          current_progress->hide();
+          current_label->hide();
+          vbox->recalc();
+        }
+    }
+
+      total_progress->setTotal(logger->get_collected_task_size());
+      total_progress->setProgress(logger->get_collected_task_status());
 
   log->appendText(logger->pop_log().c_str());
   log->makePositionVisible(log->getLength());
@@ -114,9 +144,9 @@ ProgressDialog::onThreadUpdate(FXObject*, FXSelector, void* data)
   if (logger->is_done())
     {
       ok_button->enable();
-      while(thread->running());
-      delete thread;
-      thread = NULL;
+      //while(!logger->is_done()); // Child for thread to get done
+      //delete thread;
+      //thread = NULL;
 
       // FIXME:
       // window->install_button->enable();

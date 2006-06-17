@@ -858,11 +858,17 @@ TLJPak::scan(const std::vector<std::string>& lst, ProgressLogger& logger)
           files[i].guesses = guess(i);
           assert(files[i].guesses.size() > 0);
           files[i].pathname = files[i].guesses.front();
+          logger.println("found " + files[i].pathname + " (guessed)");
+        }
+      else if (!files[i].pathname.empty())
+        {
+          logger.println("found " + files[i].pathname);
         }
 
       files[i].filetype = get_type(i);
 
       logger.set_task_status(i);
+      logger.sync();
     }
 }
 

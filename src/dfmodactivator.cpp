@@ -317,7 +317,8 @@ DFModActivatorWindow::onCmdInstall(FXObject* obj, FXSelector sel, void* data)
       install_button->disable();
       uninstall_button->disable();
 
-      GUIProgressLogger* logger = new GUIProgressLogger(); // FIXME: Delete me
+      GUIProgressLogger* logger = new GUIProgressLogger(getApp(), progress_dialog,
+                                                        ProgressDialog::ID_THREAD_UPDATE); // FIXME: delete me
       progress_dialog->set_thread(new PakInsertThread(getApp(), progress_dialog, inserts, logger));
       progress_dialog->show(PLACEMENT_OWNER);
       //progress_dialog->execute();

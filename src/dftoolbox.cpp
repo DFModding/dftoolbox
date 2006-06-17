@@ -68,6 +68,7 @@ FXDEFMAP(DFToolBoxWindow) DFToolBoxWindowMap[] = {
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_DIRECTORYCHANG, DFToolBoxWindow::onDirChange),
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_GOTO_PARENTDIR, DFToolBoxWindow::onCmdGotoParentDir),
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_SCAN_FOR_MP3,   DFToolBoxWindow::onCmdScanForMP3),
+  FXMAPFUNC(SEL_IO_READ,       DFToolBoxWindow::ID_BUILD_TREE,     DFToolBoxWindow::onCmdBuildTree),
 };
 
 // Object implementation
@@ -206,7 +207,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   new FXButton(toolbar2, "\tGo\tGo", Icon::go, 
                this, ID_LOCATIONBAR, BUTTON_TOOLBAR|FRAME_RAISED);
 
-  progress_dialog = new ProgressDialog(getApp(), "Installing data, this may take a while");
+  progress_dialog = new ProgressDialog(getApp(), "Reading pak data, this may take a while");
 
   // Look for dreamfall_path
   std::ifstream in((get_exe_path() + "dreamfall_path.txt").c_str());
@@ -242,20 +243,6 @@ DFToolBoxWindow::~DFToolBoxWindow()
 void
 DFToolBoxWindow::init()
 {
-  tree->clearItems();
-
-  {  
-    DreamfallFileEntry* dfentry = new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY);
-    filetable.push_back(dfentry);
-
-    topmost = tree->appendItem(0, "Dreamfall", Icon::folder_open, Icon::folder_closed);
-    topmost->setData(dfentry);
-    current_tree_item = topmost;
-  }
-
-  tree->expandTree(topmost);
-
-  pak_manager.add_directory(dreamfall_path + "/bin/res/");
   load_files();  
 
   // Init GUI stuff that needs the pak manager
@@ -349,34 +336,112 @@ FXint directory_tree_sorter(const FXTreeItem* a, const FXTreeItem* b)
     return (lhs->get_type() > rhs->get_type());
 }
 
+class LoadFileThread : public FXThread
+{
+private:
+  TLJPakManager&  pak_manager;
+  ProgressLogger& logger;
+  FXGUISignal&    sig;
+
+public:
+  LoadFileThread(TLJPakManager& pak_manager_, ProgressLogger& logger_, FXGUISignal& sig_)
+    : pak_manager(pak_manager_),
+      logger(logger_),
+      sig(sig_)
+  {
+  }
+
+  virtual FXint run() 
+  {
+    logger.set_task_size(2);
+    logger.set_task_status(0);
+    logger.println("Reading Directory: " + dreamfall_path + "/bin/res/");
+    logger.sync();
+    
+    pak_manager.add_directory(dreamfall_path + "/bin/res/", logger.start_subtask());
+    
+    logger.increment_status();
+    logger.println("Reading filelist");
+    logger.sync();
+
+    pak_manager.add_filelist(get_exe_path() + "df-directory.txt");
+
+    logger.println("Scanning paks... done");
+    logger.sync();
+
+    pak_manager.scan_paks(logger.start_subtask());
+
+    logger.increment_status();
+    logger.set_done();
+    logger.sync();
+    
+    std::cout << "Firing signal" << std::endl;
+    sig.signal();
+
+    return 0;
+  }
+};
+
 void 
 DFToolBoxWindow::load_files()
 {
   progress_dialog->show(PLACEMENT_OWNER);
 
   // Generate proper filetables for the pak
-  GUIProgressLogger logger;
-  pak_manager.add_filelist(get_exe_path() + "df-directory.txt");
-  pak_manager.scan_paks(logger);
+  GUIProgressLogger* logger = new GUIProgressLogger(getApp(), progress_dialog, ProgressDialog::ID_THREAD_UPDATE);
+  (new LoadFileThread(pak_manager, *logger, *(new FXGUISignal(getApp(), this, ID_BUILD_TREE))))->start();
+}
 
+long
+DFToolBoxWindow::onCmdBuildTree(FXObject* sender, FXSelector, void* data)
+{
+  std::cout << "Build Tree" << std::endl; 
+  build_trees();
+  return 1;
+}
+
+void 
+DFToolBoxWindow::build_trees()
+{
+  // In case we change the Dreamfall directory we clear what we have 
+  tree->clearItems();
+
+  {  
+    DreamfallFileEntry* dfentry = new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY);
+    dfentry->get_dir().name     = "Dreamfall";
+    dfentry->get_dir().fullname = "Dreamfall";
+    filetable.push_back(dfentry);
+
+    topmost = tree->appendItem(0, "Dreamfall", Icon::folder_open, Icon::folder_closed);
+    topmost->setData(dfentry);
+    current_tree_item = topmost;
+  }
+
+  tree->expandTree(topmost);
+
+  std::cout << "Build 'all paks' tree" << std::endl;
   FXTreeItem* all_paks = tree->appendItem(topmost, "all paks", Icon::folder_open, Icon::folder_closed);
   FXTreeItem* by_pak   = tree->appendItem(topmost, "by pak",   Icon::folder_open, Icon::folder_closed);
 
   filetable.push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
+  filetable.back()->get_dir().name     = "all paks";
+  filetable.back()->get_dir().fullname = "all paks";
   all_paks->setData(filetable.back()); 
 
   filetable.push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
+  filetable.back()->get_dir().name     = "by pak";
+  filetable.back()->get_dir().fullname = "by pak";
   by_pak->setData(filetable.back()); 
 
-  std::vector<std::string> pakfiles = pak_manager.get_paks();
+  const std::vector<std::string>& pakfiles = pak_manager.get_paks();
 
   // Get filelist and pack it into Tree
   {
-    for(std::vector<std::string>::iterator pak = pakfiles.begin(); pak != pakfiles.end(); ++pak)
+    for(std::vector<std::string>::const_iterator pak = pakfiles.begin(); pak != pakfiles.end(); ++pak)
       {
-        TLJPakManager::Files files = pak_manager.get_files(*pak);
+        const TLJPakManager::Files& files = pak_manager.get_files(*pak);
 
-        for(TLJPakManager::Files::iterator i = files.begin(); i != files.end(); ++i)
+        for(TLJPakManager::Files::const_iterator i = files.begin(); i != files.end(); ++i)
           {
             if (!i->second->filename.empty() || i->second->filename == "/") // FIXME: Empty files shouldn't happen, but they do
               {
@@ -397,7 +462,7 @@ DFToolBoxWindow::load_files()
       }
   }
   {
-    for(std::vector<std::string>::iterator i = pakfiles.begin(); i != pakfiles.end(); ++i)
+    for(std::vector<std::string>::const_iterator i = pakfiles.begin(); i != pakfiles.end(); ++i)
       {
         FXTreeItem* this_pak   = tree->appendItem(by_pak, i->c_str(), Icon::folder_open, Icon::folder_closed);
 
@@ -406,8 +471,8 @@ DFToolBoxWindow::load_files()
         filetable.back()->get_dir().fullname = *i;
         this_pak->setData(filetable.back());
 
-        TLJPakManager::Files files = pak_manager.get_files(*i);
-        for(TLJPakManager::Files::iterator i = files.begin(); i != files.end(); ++i)
+        const TLJPakManager::Files& files = pak_manager.get_files(*i);
+        for(TLJPakManager::Files::const_iterator i = files.begin(); i != files.end(); ++i)
           {
             if (!i->second->filename.empty() || i->second->filename == "/") // FIXME: Empty files shouldn't happen, but they do
               {
@@ -428,6 +493,7 @@ DFToolBoxWindow::load_files()
       }
   }
 
+  std::cout << "Build 'by pak' tree" << std::endl;
   FXTreeItem* save_item  = add_directory("savegames", topmost);
   Directory directory = open_directory(dreamfall_path + "/saves/", ".sav");
   for(Directory::iterator i = directory.begin(); i != directory.end(); ++i)
@@ -460,6 +526,7 @@ DFToolBoxWindow::load_files()
       static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry2); 
     }
 
+  std::cout << "Sorting tree" << std::endl;
   // Tree is finished, so sort it
   tree->setSortFunc(directory_tree_sorter);
   tree->sortItems();

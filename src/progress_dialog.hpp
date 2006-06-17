@@ -36,11 +36,16 @@ private:
   FXDECLARE(ProgressDialog);
 
   FXText*          log;
+
+  FXProgressBar*   level3_progress;
+  FXLabel*         level3_label;
+
   FXProgressBar*   current_progress;
+  FXLabel*         current_label;
   FXProgressBar*   total_progress;
   FXButton*        ok_button;
   PakInsertThread* thread;
-
+  FXVerticalFrame* vbox;
 public:
   ProgressDialog();
   ProgressDialog(FXApp* app, const FXString& title);

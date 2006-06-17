@@ -117,6 +117,7 @@ public:
   void create();
   FXTreeItem* add_directory(const std::string& pathname, FXTreeItem* rootitem);
   void load_files();
+  void build_trees();
 
   void display(DirectoryFileEntry* dfentry);
   void display(FXTreeItem* item);
@@ -141,6 +142,7 @@ public:
   long onCmdExpandTree(FXObject*, FXSelector,void*);
   long onCmdGotoParentDir(FXObject* sender, FXSelector, void* data);
   long onCmdScanForMP3(FXObject* sender, FXSelector, void* data);
+  long onCmdBuildTree(FXObject* sender, FXSelector, void* data);
   void scan_for_mp3s(const std::string& filename);
   
   /** Find the tree item matching url */
@@ -168,7 +170,8 @@ public:
     ID_EXPAND_TREE,
     ID_DREAMFALL_PATH,
     ID_GOTO_PARENTDIR,
-    ID_SCAN_FOR_MP3
+    ID_SCAN_FOR_MP3,
+    ID_BUILD_TREE
   };
 };
 

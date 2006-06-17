@@ -49,7 +49,7 @@ public:
   TLJPakManager();
   ~TLJPakManager();
   
-  void add_directory(const std::string& pakdirectory);
+  void add_directory(const std::string& pakdirectory, ProgressLogger& logger);
 
   /** Add a filelist with filelist to resolve the hash values */
   void add_filelist(const std::string& filename);

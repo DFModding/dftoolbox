@@ -121,18 +121,47 @@ env.Program('cir',
             LIBS=['dftoolbox'],
             LIBPATH='.')
 
+foxenv  = env.Copy(CCFLAGS = '-O2')
+
+env.StaticLibrary('dftoolbox-gui',
+                  ['src/util.cpp',
+                   'src/system.cpp',
+                   'src/tljpak.cpp',
+                   'src/location.cpp',
+                   'src/tljpak_manager.cpp',
+                   'src/shark3d.cpp',
+                   'src/shark3d_nodes.cpp',
+                   'src/config.cpp'
+                   ])
+
+
+progress_dialog_obj = env.Object('src/progress_dialog.cpp',
+                                 LINKFLAGS = fox_CXXFLAGS,
+                                 CPPPATH   = fox_CPPPATH,
+                                 LIBPATH   = ['.'] + fox_LIBPATH,
+                                 LIBS      = ['dftoolbox'] + fox_LIBS)
+
+icon_obj = env.Object('src/icons.cpp',
+                      LINKFLAGS = fox_CXXFLAGS,
+                      CPPPATH   = fox_CPPPATH,
+                      LIBPATH   = ['.'] + fox_LIBPATH,
+                      LIBS      = ['dftoolbox'] + fox_LIBS)
+
+progress_logger = env.Object('src/progress_logger.cpp')
+
 env.Program('dfmodtool',
             ['src/dfmodactivator.cpp',
              'src/pak_insert_thread.cpp',
-             'src/pak_insert_dialog.cpp'] + (cross and ['dfmodtool-res.o'] or []),
+             icon_obj,
+             progress_logger,
+             progress_dialog_obj] + (cross and ['dfmodtool-res.o'] or []),
             LINKFLAGS = fox_CXXFLAGS,
-            CPPPATH  = fox_CPPPATH,
-            LIBPATH  = ['.'] + fox_LIBPATH,
-            LIBS     = ['dftoolbox'] + fox_LIBS)
+            CPPPATH   = fox_CPPPATH,
+            LIBPATH   = ['.'] + fox_LIBPATH,
+            LIBS      = ['dftoolbox'] + fox_LIBS)
 
 env.Program('dftoolbox',
             ['src/dftoolbox.cpp',
-             'src/icons.cpp',
              'src/shark_view.cpp',
              'src/image_view.cpp',
              'src/dialog_view.cpp',
@@ -140,12 +169,13 @@ env.Program('dftoolbox',
              'src/export_dialog.cpp',
              'src/dreamfall_file_entry.cpp',
              'src/directory_view.cpp',
-             'src/sound_view.cpp'] + (cross and ['dftoolbox-res.o'] or []),
+             'src/sound_view.cpp',
+             icon_obj,
+             progress_logger,
+             progress_dialog_obj] + (cross and ['dftoolbox-res.o'] or []),
             LINKFLAGS = fox_CXXFLAGS,
-            CPPPATH  = fox_CPPPATH  + sdl_CPPATH,
-            LIBPATH  = ['.'] + fox_LIBPATH,
-            LIBS     = ['dftoolbox'] + fox_LIBS + sdl_LIBS)
-
-
+            CPPPATH   = fox_CPPPATH  + sdl_CPPATH,
+            LIBPATH   = ['.'] + fox_LIBPATH,
+            LIBS      = ['dftoolbox'] + fox_LIBS + sdl_LIBS)
 
 # EOF #

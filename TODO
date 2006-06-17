@@ -4,4 +4,8 @@ ModActivator
 - download of mods from the web
 - automatic handling of zip and drag&drop
 
+DFModTool:
+==========
+- Optimze inserter, with using mmap() it should be possible to get instant inserts
+
 # EOF #

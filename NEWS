@@ -1,3 +1,9 @@
+
+DFToolBox
+
+- fixed mp3 and wav playback, now using Windows functions instead of SDL
+
+
 DFToolBox
 - simple bundle reader (parsing only)
 

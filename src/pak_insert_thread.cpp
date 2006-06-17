@@ -57,16 +57,16 @@ PakInsertThread::run()
     mlogger->set_task_size(4);
     mlogger->set_task_status(0);
 
-    group_insert_requests(inserts, paks, mlogger->start_subtask());
+    group_insert_requests(inserts, paks, &mlogger->start_subtask());
     mlogger->increment_status();
 
-    check_errors(inserts, mlogger->start_subtask());
+    check_errors(inserts, &mlogger->start_subtask());
     mlogger->increment_status();
 
-    do_backup(paks, mlogger->start_subtask());
+    do_backup(paks, &mlogger->start_subtask());
     mlogger->increment_status();
 
-    install_paks(paks, mlogger->start_subtask());
+    install_paks(paks, &mlogger->start_subtask());
     mlogger->increment_status();
 
     mlogger->println("");

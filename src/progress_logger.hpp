@@ -40,17 +40,22 @@ public:
   virtual void set_task_status(int s) =0;
 
   virtual void increment_status(int n = 1) {
-    set_task_status(get_task_size() + n);
+    set_task_status(get_task_status() + n);
   }
 
   virtual int get_task_size()   const =0;
-  virtual int get_task_status() const =0;
+  virtual int get_task_status()   const =0;
+  virtual int get_collected_task_status() const;
+  virtual int get_collected_task_size() const;
   
-  virtual ProgressLogger* start_subtask() =0;
-  virtual ProgressLogger* get_subtask() =0;
+  virtual ProgressLogger& start_subtask() =0;
+  virtual ProgressLogger* get_subtask() const =0;
 
   virtual void set_done() =0;
   virtual bool is_done()  const =0;
+
+  /** Signal the parent that the logger got updated */
+  virtual void sync() =0;
 };
 
 #endif

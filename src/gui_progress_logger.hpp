@@ -73,12 +73,12 @@ public:
     task_status = s;
   }
   
-  ProgressLogger* start_subtask() 
+  ProgressLogger& start_subtask() 
   { FXMutexLock lock(mutex);
 
     delete subtask;
     subtask = new GUIChildProgressLogger(this);
-    return subtask;
+    return *subtask;
   }
 
   int get_task_size()  const
@@ -93,7 +93,7 @@ public:
     return task_status;
   }
 
-  ProgressLogger* get_subtask()
+  ProgressLogger* get_subtask() const
   { FXMutexLock lock(mutex);
     
     return subtask;
@@ -108,12 +108,17 @@ public:
   { FXMutexLock lock(mutex);
     return done;
   }
+
+  void sync() {
+    parent->sync();
+  }
 };
 
 /** */
 class GUIProgressLogger : public ProgressLogger
 {
 private:
+  FXGUISignal signal;
   int task_size;
   int task_status;
   std::ostringstream log;
@@ -123,12 +128,14 @@ private:
 public:
   mutable FXMutex mutex;
 
-  GUIProgressLogger()
-    : task_size(1),
+  GUIProgressLogger(FXApp* app, FXObject* target, FXSelector sel)
+    : signal(app, target, sel),
+      task_size(1),
       task_status(0),
       done(false),
       subtask(0)
-  {}
+  {
+  }
 
   virtual ~GUIProgressLogger() 
   {
@@ -153,12 +160,12 @@ public:
     task_status = s;
   }
 
-  ProgressLogger* start_subtask() 
+  ProgressLogger& start_subtask() 
   { FXMutexLock lock(mutex);
 
     delete subtask; // FIXME:
     subtask = new GUIChildProgressLogger(this);
-    return subtask;
+    return *subtask;
   }
 
   int get_task_size()  const
@@ -173,7 +180,7 @@ public:
     return task_status;
   }
 
-  ProgressLogger* get_subtask()
+  ProgressLogger* get_subtask() const
   { FXMutexLock lock(mutex);
     
     return subtask;
@@ -194,6 +201,12 @@ public:
   bool is_done() const 
   { FXMutexLock lock(mutex);
     return done;
+  }
+
+  void sync()
+  {
+    signal.setData(this);
+    signal.signal();
   }
 };
 
