@@ -63,8 +63,9 @@ public:
 
   void set_task_size(int s) 
   { FXMutexLock lock(mutex);
-
-    task_size = s;
+    
+    // can't allow task size smaller 1, else crash due to div by zero 
+    task_size = std::max(1, s);
   }
 
   void set_task_status(int s) 

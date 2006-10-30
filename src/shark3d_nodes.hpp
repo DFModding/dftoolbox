@@ -131,6 +131,8 @@ public:
   void write_text(std::ostream& out, const std::string& prefix);
   void write_binary(std::ostream& out);
 
+  bool         has_subnode(const std::string& ident) const;
+
   int          get_int(const std::string& ident) const;
   float        get_float(const std::string& ident) const;
   std::string  get_string(const std::string& ident) const;

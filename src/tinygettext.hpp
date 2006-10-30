@@ -44,7 +44,7 @@ struct LanguageDef {
     languages and .po files at once use the DictionaryManager. */
 class Dictionary
 {
-private:
+public:
   typedef std::map<std::string, std::string> Entries;
   Entries entries;
 

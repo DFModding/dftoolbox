@@ -30,6 +30,7 @@
 FXDEFMAP(DialogView) DialogViewMap[] = {
   FXMAPFUNC(SEL_COMMAND,         DialogView::ID_LANGUAGE_SWITCH,   DialogView::onCmdLanguageSwitch),
   FXMAPFUNC(SEL_LEFTBUTTONPRESS, DialogView::ID_HYPERLINK,         DialogView::onCmdHyperlink),
+  FXMAPFUNC(SEL_COMMAND,         DialogView::ID_SAVE_TEXT,         DialogView::onCmdSaveText),
 };
 
 // Object implementation
@@ -41,9 +42,11 @@ DialogView::DialogView(FXComposite* parent, FXComposite* dock,  DFToolBoxWindow*
                     0, 0, 0, 0),
     dftoolbox(dftoolbox_)
 {
-  toolbar = new FXToolBar(dock, LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|PACK_UNIFORM_WIDTH|PACK_UNIFORM_HEIGHT|FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y);
+  toolbar = new FXToolBar(dock, LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y);
 
   // FIXME: add text wrap buttons
+  new FXButton(toolbar, "\tSave text\tSave text", Icon::save_file, 
+               this, ID_SAVE_TEXT, BUTTON_TOOLBAR|FRAME_RAISED);
 
   langbox = new FXListBox(toolbar, this, ID_LANGUAGE_SWITCH, LAYOUT_CENTER_Y);
 
@@ -114,6 +117,8 @@ DialogView::set_language(int id)
               str << std::endl;
               str << dialogs[j].language << ": ";
               str << "[[dialog:" << j << ":" << dialogs[j].entries[i].id << "]]";
+              //str << "                ";
+              //str << (dialogs[j].entries[i].id & 0xffff);
               str << std::endl;
               str << &*dialogs[j].texts.begin() + dialogs[j].entries[i].offset << std::endl;
             }
@@ -188,6 +193,34 @@ DialogView::onCmdHyperlink(FXObject*,FXSelector,void* data)
     {
       return 0;
     }
+}
+
+long
+DialogView::onCmdSaveText(FXObject*,FXSelector,void*)
+{
+  FXFileDialog savedialog(this,tr("Save Document"));
+  FXString file;
+  savedialog.setSelectMode(SELECTFILE_ANY);
+  // savedialog.setPatternList(getPatterns());
+  // savedialog.setCurrentPattern(getCurrentPattern());
+  // savedialog.setFilename(file);
+  if(savedialog.execute())
+    {
+      //setCurrentPattern(savedialog.getCurrentPattern());
+      file=savedialog.getFilename();
+      if(FXStat::exists(file))
+        {
+          if(MBOX_CLICKED_NO==FXMessageBox::question(this,MBOX_YES_NO, "Overwrite Document",
+                                                     "Overwrite existing document: %s?",file.text()))
+            return 1;
+        }
+
+      std::ofstream out(file.text());
+      out << text->getText().text();
+      out.close();
+    }
+  
+  return 1;
 }
 
 /* EOF */

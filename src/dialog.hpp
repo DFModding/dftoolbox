@@ -25,9 +25,13 @@
 #ifndef HEADER_DIALOG_HPP
 #define HEADER_DIALOG_HPP
 
+#include <assert.h>
 #include <vector>
+#include <stdexcept>
 #include <fstream>
+#include <sstream>
 #include <iostream>
+#include <iomanip>
 
 // Dialog can be found in:
 // c2d59212e9753be95c6ef8d425a9e14f  dreamfall-extractor/init/dat/0212.dat
@@ -52,6 +56,38 @@ struct TextEntry
   unsigned int id;
 };
 
+inline int compare_bits(unsigned int id1, unsigned int id2)
+{
+  int same = 0;
+  for(int i = 0; i < 32; ++i)
+    if ((id1 & (1 << i)) == (id2 & (1 << i)))
+      same += 1;
+  return same;
+}
+
+inline int compare_bits2(unsigned int id1, unsigned int id2)
+{
+  int same = 0;
+  for(int i = 0; i < 5; ++i)
+    if ((id1 & (0xf << i*4)) == (id2 & (0xf << i*4)))
+      {
+        // score early matches higher then late ones
+        same += (8 - (i+1))*(8 - (i+1));
+      }
+  return same;
+}
+
+inline int compare_bits3(unsigned int id1, unsigned int id2)
+{
+  int same = 0;
+  for(int i = 0; i < 21; ++i)
+    if ((id1 & (1 << i)) == (id2 & (1 << i)))
+      {
+        same += 1;
+      }
+  return same;
+}
+
 struct Dialog
 {
   std::string            lang_code;
@@ -59,7 +95,73 @@ struct Dialog
   std::vector<TextEntry> entries;
   std::vector<char>      texts;
 
-  std::string get_by_id(unsigned int id) 
+  std::string get_by_wrong_id(unsigned int id) const
+  {
+    int best_match_count = 0;
+    std::vector<unsigned int> best_matchs;
+
+    for(unsigned int i = 0; i < entries.size(); ++i)
+      {
+        int new_match = compare_bits3(entries[i].id, id);
+        if (new_match > best_match_count)
+          {
+            best_matchs.clear();
+            best_matchs.push_back(i);
+            best_match_count = new_match;
+          }
+        else if (new_match == best_match_count)
+          {
+            best_matchs.push_back(i);
+          }
+      }
+
+    for(int i = 0; i < int(best_matchs.size()); ++i)
+      {
+        std::cout << std::setw(12) << id << " "
+                  << std::setw(12) << entries[best_matchs[i]].id << " " << std::flush
+                  << (&*texts.begin() + entries[best_matchs[i]].offset)
+                  << std::endl;
+      }
+
+    assert(best_matchs.size() > 0);
+    return (&*texts.begin() + entries[best_matchs.front()].offset);
+  }
+
+  std::string get_by_cut_id(unsigned int id) const
+  {
+    std::string fallback;
+    for(unsigned int i = 0; i < entries.size(); ++i)
+      {
+        if ((entries[i].id & 0xfff) == (id & 0xfff)) 
+          {
+            fallback = &*texts.begin() + entries[i].offset;
+            
+            if ((entries[i].id & 0xfff00fff) == (id & 0xfff00fff))
+              {
+                return fallback;
+              }
+          }
+      }
+    if (fallback.empty())
+      return fallback;
+    else
+      return "FALLBACK:" + fallback;
+  }
+
+  std::string get_by_dialog_id(unsigned int id) const
+  {
+    std::string fallback;
+    for(unsigned int i = 0; i < entries.size(); ++i)
+      {
+        if ((entries[i].id & 0x1fffff) == (id & 0x1fffff))
+          {
+            return &*texts.begin() + entries[i].offset;
+          }
+      }
+    return fallback;
+  }
+
+  std::string get_by_id(unsigned int id) const
   {
     for(unsigned int i = 0; i < entries.size(); ++i)
       {
@@ -71,19 +173,36 @@ struct Dialog
     return "";
   }
 
-  void write(const std::string& outfile)
+  void write(const std::string& outfile, unsigned int version)
   {
-    std::ofstream out(outfile.c_str(), std::ios::binary);
-    unsigned int version = 2;
+    assert(version == 2 || version == 0);
 
+    std::ofstream out(outfile.c_str(), std::ios::binary);
 
     out.write(reinterpret_cast<char*>(&version), sizeof(version));
 
-    unsigned int language_len = language.size();   
+    if(version == 0)
+      {
+        for(int i = 0; i < 8; ++i)
+          out.put(0);
 
-    out.write(lang_code.c_str(), lang_code.size());
-    out.write(reinterpret_cast<char*>(&language_len), sizeof(language_len));
-    out.write(language.c_str(),  language.size());
+        out.put(2);
+        out.put(0);
+        out.put(0);
+        out.put(0);
+
+        out.put('e');
+        out.put('n');
+      }
+    else
+      {
+        unsigned int language_len = language.size();
+
+        out.write(lang_code.c_str(), lang_code.size());
+
+        out.write(reinterpret_cast<char*>(&language_len), sizeof(language_len));
+        out.write(language.c_str(),  language.size());
+      }
 
     unsigned int entry_count = entries.size();
     out.write(reinterpret_cast<char*>(&entry_count), sizeof(entry_count));
@@ -162,8 +281,9 @@ inline void read_dialogs(const std::string& filename, std::vector<Dialog>& dialo
         }
       else
         {
-          std::cout << "Error: wrong version: " << version << std::endl;
-          exit(EXIT_FAILURE);
+          std::ostringstream str;
+          str << "Error: wrong version: " << version;
+          throw std::runtime_error(str.str());
         }
 
       for(unsigned int i = 0; in && (i < entry_count); ++i)

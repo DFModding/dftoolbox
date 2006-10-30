@@ -44,9 +44,13 @@ int read_int(std::istream& in)
   do
     {
       c = in.get();
+      
+      if (c == -1)
+        throw std::runtime_error("shark3d_nodes: read_int(): Premature end of file");
+
       num |= (c & 0x7f) << shift;
       shift += 7;
-    } while (c >= 0x80 && c != -1);
+    } while (c & 0x80);
 
   return num;
 }
@@ -706,6 +710,19 @@ SectionNode::get_strings(const std::string& ident) const
         }
     }  
   return std::vector<std::string>();
+}
+
+bool
+SectionNode::has_subnode(const std::string& ident) const
+{
+  for(Entries::const_iterator i = entries.begin(); i != entries.end(); ++i)
+    {
+      if (i->name == ident)
+        {
+          return true;
+        }
+    }  
+  return false;
 }
 
 /* EOF */

@@ -51,6 +51,8 @@ public:
   virtual ProgressLogger& start_subtask() =0;
   virtual ProgressLogger* get_subtask() const =0;
 
+  virtual int get_depth() const;
+
   virtual void set_done() =0;
   virtual bool is_done()  const =0;
 

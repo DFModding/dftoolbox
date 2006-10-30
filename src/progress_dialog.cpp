@@ -45,10 +45,6 @@ ProgressDialog::ProgressDialog()
 ProgressDialog::ProgressDialog(FXApp* app, const FXString& title)
   : FXDialogBox(app, title, DECOR_RESIZE|DECOR_TITLE|DECOR_BORDER,//|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,
                 0, 0, 800, 0),
-    // FXuint opts=DECOR_TITLE|DECOR_BORDER, FXint x=0,
-    // FXint y=0, FXint w=0, FXint h=0, FXint pl=10, FXint
-    // pr=10, FXint pt=10, FXint pb=10, FXint hs=4, FXint
-    // vs=4)
     thread(0)
 {
   sig = new FXGUISignal(getApp(), this, ProgressDialog::ID_THREAD_UPDATE);
@@ -64,34 +60,27 @@ ProgressDialog::ProgressDialog(FXApp* app, const FXString& title)
 
   FXMatrix* matrix = new FXMatrix(vbox, 2, MATRIX_BY_COLUMNS|LAYOUT_FILL_X);
 
-  level3_label    = new FXLabel(matrix, "Current:", NULL, LAYOUT_RIGHT);
-  level3_progress = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 0, 0, 300, 20);
+  label.resize(3);
+  progress.resize(3);
 
-  current_label    = new FXLabel(matrix, "Current:", NULL, LAYOUT_RIGHT);
-  current_progress = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 0, 0, 300, 20);
+  label[2]    = new FXLabel(matrix, "Subtask:", NULL, LAYOUT_RIGHT);
+  progress[2] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 
+                                  0, 0, 300, 20);
 
-  new FXLabel(matrix, "Total:",   NULL, LAYOUT_RIGHT);
-  total_progress   = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 0, 0, 300, 20);
+  label[1]    = new FXLabel(matrix, "Task:", NULL, LAYOUT_RIGHT);
+  progress[1] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 
+                                  0, 0, 300, 20);
 
+  label[0]    = new FXLabel(matrix, "Total:", NULL, LAYOUT_RIGHT);
+  progress[0] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 
+                                  0, 0, 300, 20);
+  
   ok_button        = new FXButton(vbox, "Close", NULL, this, ID_HIDE, ICON_ABOVE_TEXT|FRAME_RAISED|LAYOUT_RIGHT|LAYOUT_FIX_WIDTH, 0, 0, 80, 0);
   ok_button->disable();
 }
 
 ProgressDialog::~ProgressDialog() {
 
-}
-
-void
-ProgressDialog::set_thread(PakInsertThread* thread_)
-{
-  thread = thread_;
-  thread->start();
-}
-
-void
-ProgressDialog::appendMessage(const std::string& msg) {
-  log->appendText(msg.c_str());
-  log->makePositionVisible(log->getLength());
 }
 
 long
@@ -101,52 +90,61 @@ ProgressDialog::onCmdToggleLongDesc(FXObject*,FXSelector,void*)
   return 1;
 }
 
+void
+ProgressDialog::relayout(int bars)
+{
+  std::cout << "ProgressDialog::relayout()" << std::endl;
+  log->setText("");
+  for(int i = 0; i < int(progress.size()); ++i)
+    {
+      if (i < bars)
+        {
+          progress[i]->show();
+          label[i]->show();
+        }
+      else
+        {
+          progress[i]->hide();
+          label[i]->hide();
+        }
+    }
+  vbox->recalc(); 
+}
+
+void
+ProgressDialog::set_thread(FXThread* t)
+{
+  thread = t;
+}
+
 long
 ProgressDialog::onThreadUpdate(FXObject*, FXSelector, void* data)
 {
   GUIProgressLogger* logger = static_cast<GUIProgressLogger*>(data);
 
-  ProgressLogger* sublogger = logger->get_subtask();
-  if (sublogger)
+  int i = 0;
+  for(ProgressLogger* l = logger; l != NULL && i < int(progress.size()); l = l->get_subtask())
     {
-      if (!current_progress->shown())
-        {
-          current_progress->show();
-          current_label->show();
-          vbox->recalc();
-        }
-
-      if (sublogger->get_subtask())
-        {
-          level3_progress->setProgress(sublogger->get_subtask()->get_collected_task_status());
-          level3_progress->setTotal(sublogger->get_subtask()->get_collected_task_size());          
-        }
-
-      current_progress->setProgress(sublogger->get_collected_task_status());
-      current_progress->setTotal(sublogger->get_collected_task_size());
+      progress[i]->setTotal(l->get_collected_task_size());
+      progress[i]->setProgress(l->get_collected_task_status());
+      i += 1;
     }
-  else
-    {
-      if (current_progress->shown())
-        {
-          current_progress->hide();
-          current_label->hide();
-          vbox->recalc();
-        }
-    }
-
-      total_progress->setTotal(logger->get_collected_task_size());
-      total_progress->setProgress(logger->get_collected_task_status());
-
+  
   log->appendText(logger->pop_log().c_str());
+
+  //std::cout << log->getYPosition() << " "  << log->getContentHeight()  << std::endl;
   log->makePositionVisible(log->getLength());
   
   if (logger->is_done())
     {
       ok_button->enable();
-      //while(!logger->is_done()); // Child for thread to get done
-      //delete thread;
-      //thread = NULL;
+      
+      // Kill thread 
+      if (thread){
+        thread->join();
+        delete thread;
+        thread = 0;
+      }
 
       // FIXME:
       // window->install_button->enable();

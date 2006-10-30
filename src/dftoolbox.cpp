@@ -36,7 +36,7 @@
 
 #include "FXExpression.h"
 #include "dds.hpp"
-#include "tljpak_manager.hpp"
+#include "data_manager.hpp"
 #include "system.hpp"
 #include "util.hpp"
 #include "shark3d.hpp"
@@ -51,6 +51,7 @@
 #include "sound_view.hpp"
 #include "image_view.hpp"
 #include "progress_dialog.hpp"
+#include "savegame.hpp"
 #include "dialog_view.hpp"
 
 std::string dreamfall_path;
@@ -67,7 +68,7 @@ FXDEFMAP(DFToolBoxWindow) DFToolBoxWindowMap[] = {
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_ADD_BOOKMARK,   DFToolBoxWindow::onCmdAddBookmark),
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_DIRECTORYCHANG, DFToolBoxWindow::onDirChange),
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_GOTO_PARENTDIR, DFToolBoxWindow::onCmdGotoParentDir),
-  FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_SCAN_FOR_MP3,   DFToolBoxWindow::onCmdScanForMP3),
+  //  FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_SCAN_FOR_MP3,   DFToolBoxWindow::onCmdScanForMP3),
   FXMAPFUNC(SEL_IO_READ,       DFToolBoxWindow::ID_BUILD_TREE,     DFToolBoxWindow::onCmdBuildTree),
 };
 
@@ -91,6 +92,8 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   // Icons
   big_folder_closed = new FXGIFIcon(getApp(), bigfolder);
   big_folder_closed->create();
+
+  load_bookmarks(get_exe_path() + "/bookmarks.txt");
   
   menubar = new FXMenuBar(this,LAYOUT_SIDE_TOP|LAYOUT_FILL_X|FRAME_RAISED);
 
@@ -103,7 +106,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   filemenu = new FXMenuPane(this);
   new FXMenuCommand(filemenu,"&Dreamfall Path",  NULL, this, ID_DREAMFALL_PATH);
   (new FXMenuCommand(filemenu,"&Preferences",    NULL, this, ID_PREFERENCES))->disable();
-  new FXMenuCommand(filemenu,"Scan for Dialogs", NULL, this, ID_SCAN_FOR_MP3);
+  //  new FXMenuCommand(filemenu,"Scan for Dialogs", NULL, this, ID_SCAN_FOR_MP3);
   new FXMenuSeparator(filemenu);
   new FXMenuCommand(filemenu,"&Quit\tCtl-Q",NULL,getApp(),FXApp::ID_QUIT);
   new FXMenuTitle(menubar,"&File",NULL,filemenu);
@@ -113,7 +116,6 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   new FXMenuCommand(bookmarkmenu,"Edit Bookmarks",  NULL, NULL, 0);
   new FXMenuSeparator(bookmarkmenu);
 
-  bookmarks.push_back(new Bookmark("Dialogs", "pak://init.pak/data/generated/config/universe/localization.dat"));
   for(std::vector<Bookmark*>::iterator i = bookmarks.begin(); i != bookmarks.end(); ++i)
     {
       (new FXMenuCommand(bookmarkmenu, (*i)->label.c_str(), Icon::unknown_document, 
@@ -144,7 +146,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   parent_button = new FXButton(toolbar, "\tGo to parent directory", Icon::up, 
                this, ID_GOTO_PARENTDIR, BUTTON_TOOLBAR|FRAME_RAISED);
 
-  splitter = new FXSplitter(this,LAYOUT_SIDE_TOP|LAYOUT_FILL_X|LAYOUT_FILL_Y|SPLITTER_TRACKING);
+  splitter = new FXSplitter(this,LAYOUT_SIDE_TOP|LAYOUT_FILL_X|LAYOUT_FILL_Y);
 
   group1 = new FXVerticalFrame(splitter,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y, 
                                0, 0, 0, 0,
@@ -252,7 +254,7 @@ DFToolBoxWindow::init()
   paklist->appendItem("Modifications");
   //paklist->appendItem("----------------------");
   {
-    const std::vector<std::string>& lst =  pak_manager.get_paks();
+    const std::vector<std::string>& lst =  data_manager.get_paks();
     for(std::vector<std::string>::const_iterator i = lst.begin(); i != lst.end(); ++i)
       paklist->appendItem(i->c_str());
   }
@@ -291,7 +293,7 @@ DFToolBoxWindow::add_directory(const std::string& pathname, FXTreeItem* rootitem
           FXTreeItem* child  = tree->appendItem(parent, filepart.c_str(), Icon::folder_open, Icon::folder_closed);
 
           DreamfallFileEntry* dfentry = new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY);
-          filetable.push_back(dfentry);
+          data_manager.get_filetable().push_back(dfentry);
 
           dfentry->get_dir().name     = filepart;
           dfentry->get_dir().fullname = pathname;
@@ -311,7 +313,7 @@ DFToolBoxWindow::add_directory(const std::string& pathname, FXTreeItem* rootitem
           dir[pathname] = child;
 
           DreamfallFileEntry* dfentry = new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY);
-          filetable.push_back(dfentry);
+          data_manager.get_filetable().push_back(dfentry);
 
           dfentry->get_dir().name     = pathname;
           dfentry->get_dir().fullname = pathname;
@@ -339,13 +341,13 @@ FXint directory_tree_sorter(const FXTreeItem* a, const FXTreeItem* b)
 class LoadFileThread : public FXThread
 {
 private:
-  TLJPakManager&  pak_manager;
+  DataManager&  data_manager;
   ProgressLogger& logger;
   FXGUISignal&    sig;
 
 public:
-  LoadFileThread(TLJPakManager& pak_manager_, ProgressLogger& logger_, FXGUISignal& sig_)
-    : pak_manager(pak_manager_),
+  LoadFileThread(DataManager& data_manager_, ProgressLogger& logger_, FXGUISignal& sig_)
+    : data_manager(data_manager_),
       logger(logger_),
       sig(sig_)
   {
@@ -358,20 +360,22 @@ public:
     logger.println("Reading Directory: " + dreamfall_path + "/bin/res/");
     logger.sync();
     
-    pak_manager.add_directory(dreamfall_path + "/bin/res/", logger.start_subtask());
+    data_manager.add_directory(dreamfall_path + "/bin/res/", logger.start_subtask());
     
     logger.increment_status();
     logger.println("Reading filelist");
     logger.sync();
 
-    pak_manager.add_filelist(get_exe_path() + "df-directory.txt");
+    data_manager.add_filelist(get_exe_path() + "df-directory.txt");
 
     logger.println("Scanning paks... done");
     logger.sync();
 
-    pak_manager.scan_paks(logger.start_subtask());
+    data_manager.scan_paks(logger.start_subtask());
 
     logger.increment_status();
+    logger.println("");
+    logger.println("### Done ###");
     logger.set_done();
     logger.sync();
     
@@ -386,10 +390,15 @@ void
 DFToolBoxWindow::load_files()
 {
   progress_dialog->show(PLACEMENT_OWNER);
-
+  progress_dialog->relayout(3);
   // Generate proper filetables for the pak
   GUIProgressLogger* logger = new GUIProgressLogger(getApp(), progress_dialog, ProgressDialog::ID_THREAD_UPDATE);
-  (new LoadFileThread(pak_manager, *logger, *(new FXGUISignal(getApp(), this, ID_BUILD_TREE))))->start();
+  // FIXME: Move buildtree into the worker thread
+
+
+  FXThread* thread = new LoadFileThread(data_manager, *logger, *(new FXGUISignal(getApp(), this, ID_BUILD_TREE)));
+  progress_dialog->set_thread(thread);
+  thread->start();
 }
 
 long
@@ -410,7 +419,7 @@ DFToolBoxWindow::build_trees()
     DreamfallFileEntry* dfentry = new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY);
     dfentry->get_dir().name     = "Dreamfall";
     dfentry->get_dir().fullname = "Dreamfall";
-    filetable.push_back(dfentry);
+    data_manager.get_filetable().push_back(dfentry);
 
     topmost = tree->appendItem(0, "Dreamfall", Icon::folder_open, Icon::folder_closed);
     topmost->setData(dfentry);
@@ -423,25 +432,25 @@ DFToolBoxWindow::build_trees()
   FXTreeItem* all_paks = tree->appendItem(topmost, "all paks", Icon::folder_open, Icon::folder_closed);
   FXTreeItem* by_pak   = tree->appendItem(topmost, "by pak",   Icon::folder_open, Icon::folder_closed);
 
-  filetable.push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
-  filetable.back()->get_dir().name     = "all paks";
-  filetable.back()->get_dir().fullname = "all paks";
-  all_paks->setData(filetable.back()); 
+  data_manager.get_filetable().push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
+  data_manager.get_filetable().back()->get_dir().name     = "all paks";
+  data_manager.get_filetable().back()->get_dir().fullname = "all paks";
+  all_paks->setData(data_manager.get_filetable().back()); 
 
-  filetable.push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
-  filetable.back()->get_dir().name     = "by pak";
-  filetable.back()->get_dir().fullname = "by pak";
-  by_pak->setData(filetable.back()); 
+  data_manager.get_filetable().push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
+  data_manager.get_filetable().back()->get_dir().name     = "by pak";
+  data_manager.get_filetable().back()->get_dir().fullname = "by pak";
+  by_pak->setData(data_manager.get_filetable().back()); 
 
-  const std::vector<std::string>& pakfiles = pak_manager.get_paks();
+  const std::vector<std::string>& pakfiles = data_manager.get_paks();
 
   // Get filelist and pack it into Tree
   {
     for(std::vector<std::string>::const_iterator pak = pakfiles.begin(); pak != pakfiles.end(); ++pak)
       {
-        const TLJPakManager::Files& files = pak_manager.get_files(*pak);
+        const DataManager::Files& files = data_manager.get_files(*pak);
 
-        for(TLJPakManager::Files::const_iterator i = files.begin(); i != files.end(); ++i)
+        for(DataManager::Files::const_iterator i = files.begin(); i != files.end(); ++i)
           {
             if (!i->second->filename.empty() || i->second->filename == "/") // FIXME: Empty files shouldn't happen, but they do
               {
@@ -453,7 +462,7 @@ DFToolBoxWindow::build_trees()
                                                          Icon::unknown_document, Icon::unknown_document);
 
                     DreamfallFileEntry* dfentry = new DreamfallFileEntry(*i->second);
-                    filetable.push_back(dfentry);
+                    data_manager.get_filetable().push_back(dfentry);
                     child->setData(dfentry);
                     static_cast<DreamfallFileEntry*>(item->getData())->get_dir().children.push_back(dfentry);
                   }
@@ -466,13 +475,13 @@ DFToolBoxWindow::build_trees()
       {
         FXTreeItem* this_pak   = tree->appendItem(by_pak, i->c_str(), Icon::folder_open, Icon::folder_closed);
 
-        filetable.push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
-        filetable.back()->get_dir().name     = *i;
-        filetable.back()->get_dir().fullname = *i;
-        this_pak->setData(filetable.back());
+        data_manager.get_filetable().push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
+        data_manager.get_filetable().back()->get_dir().name     = *i;
+        data_manager.get_filetable().back()->get_dir().fullname = *i;
+        this_pak->setData(data_manager.get_filetable().back());
 
-        const TLJPakManager::Files& files = pak_manager.get_files(*i);
-        for(TLJPakManager::Files::const_iterator i = files.begin(); i != files.end(); ++i)
+        const DataManager::Files& files = data_manager.get_files(*i);
+        for(DataManager::Files::const_iterator i = files.begin(); i != files.end(); ++i)
           {
             if (!i->second->filename.empty() || i->second->filename == "/") // FIXME: Empty files shouldn't happen, but they do
               {
@@ -484,7 +493,7 @@ DFToolBoxWindow::build_trees()
                                                          Icon::unknown_document, Icon::unknown_document);
 
                     DreamfallFileEntry* dfentry = new DreamfallFileEntry(*i->second);
-                    filetable.push_back(dfentry);
+                    data_manager.get_filetable().push_back(dfentry);
                     child->setData(dfentry);
                     static_cast<DreamfallFileEntry*>(item->getData())->get_dir().children.push_back(dfentry);
                   }
@@ -498,6 +507,8 @@ DFToolBoxWindow::build_trees()
   Directory directory = open_directory(dreamfall_path + "/saves/", ".sav");
   for(Directory::iterator i = directory.begin(); i != directory.end(); ++i)
     {
+      FXTreeItem* this_save_item  = add_directory(i->name, save_item);
+
       SaveFileEntry save_image;
       save_image.type = SaveFileEntry::IMAGE_DATA;
       save_image.name = i->name;
@@ -508,22 +519,55 @@ DFToolBoxWindow::build_trees()
       save_shark.name = i->name;
       save_shark.fullname = i->fullname;
 
+      SaveFileEntry save_text;
+      save_text.type = SaveFileEntry::TEXT_DATA;
+      save_text.name = i->name;
+      save_text.fullname = i->fullname;
+
+      SaveFileEntry save_messagelog;
+      save_messagelog.type = SaveFileEntry::MESSAGELOG_DATA;
+      save_messagelog.name = i->name;
+      save_messagelog.fullname = i->fullname;
+
+      SaveFileEntry save_journal;
+      save_journal.type = SaveFileEntry::JOURNAL_DATA;
+      save_journal.name = i->name;
+      save_journal.fullname = i->fullname;
+
       DreamfallFileEntry* dfentry1 = new DreamfallFileEntry(save_image);
       DreamfallFileEntry* dfentry2 = new DreamfallFileEntry(save_shark);
+      DreamfallFileEntry* dfentry3 = new DreamfallFileEntry(save_text);
+      DreamfallFileEntry* dfentry4 = new DreamfallFileEntry(save_messagelog);
+      DreamfallFileEntry* dfentry5 = new DreamfallFileEntry(save_journal);
 
-      filetable.push_back(dfentry1);
-      filetable.push_back(dfentry2);
+      data_manager.get_filetable().push_back(dfentry1);
+      data_manager.get_filetable().push_back(dfentry2);
+      data_manager.get_filetable().push_back(dfentry3);
+      data_manager.get_filetable().push_back(dfentry4);
+      data_manager.get_filetable().push_back(dfentry5);
 
-      FXTreeItem* child1 = tree->appendItem(save_item, dfentry1->get_label().c_str(),
+      FXTreeItem* child1 = tree->appendItem(this_save_item, dfentry1->get_label().c_str(),
                                             Icon::unknown_document, Icon::unknown_document);
-      FXTreeItem* child2 = tree->appendItem(save_item, dfentry2->get_label().c_str(),
+      FXTreeItem* child2 = tree->appendItem(this_save_item, dfentry2->get_label().c_str(),
+                                            Icon::unknown_document, Icon::unknown_document);
+      FXTreeItem* child3 = tree->appendItem(this_save_item, dfentry3->get_label().c_str(),
+                                            Icon::unknown_document, Icon::unknown_document);
+      FXTreeItem* child4 = tree->appendItem(this_save_item, dfentry4->get_label().c_str(),
+                                            Icon::unknown_document, Icon::unknown_document);
+      FXTreeItem* child5 = tree->appendItem(this_save_item, dfentry5->get_label().c_str(),
                                             Icon::unknown_document, Icon::unknown_document);
 
       child1->setData(dfentry1);
       child2->setData(dfentry2);
+      child3->setData(dfentry3);
+      child4->setData(dfentry4);
+      child5->setData(dfentry5);
       
       static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry1); 
       static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry2); 
+      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry3); 
+      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry4); 
+      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry5); 
     }
 
   std::cout << "Sorting tree" << std::endl;
@@ -706,93 +750,178 @@ DFToolBoxWindow::show_switcher(int i)
 void
 DFToolBoxWindow::play_dialog(int id, const std::string& lang)
 {
-  std::map<unsigned int, Speech>::iterator it = id_to_speech.find(id);
-  if (it == id_to_speech.end())
+  Speech speech = data_manager.get_speech_by_id(id);
+
+  // add a extract that takes a lang code
+  data_manager.extract_by_language(lang, speech.wavefile, get_exe_path() + "tmp.mp3");
+  soundview->set_music(get_exe_path() + "tmp.mp3", ""); //dialogs[lang].get_by_id(id));
+}
+
+unsigned int
+pad_with_ones(unsigned int num)
+{
+  for(int i = 0; i < 32; ++i)
     {
-      std::cout << "DFToolBoxWindow::play_dialog: Dialog not fonud: " << id << std::endl;
+      if ((num & (1 << (31 - i))) == 0)
+        num |= (1 << (31 - i));
+      else
+        return num;
     }
-  else
-    {
-      // add a extract that takes a lang code
-      pak_manager.extract_by_language(lang, it->second.wavefile, get_exe_path() + "tmp.mp3");
-      soundview->set_music(get_exe_path() + "tmp.mp3", ""); //dialogs[lang].get_by_id(id));
-    }
+  return num;
 }
 
 void 
 DFToolBoxWindow::display(FXTreeItem* item)
 {
-  DreamfallFileEntry* entry = static_cast<DreamfallFileEntry*>(item->getData());
+  try {
+    DreamfallFileEntry* entry = static_cast<DreamfallFileEntry*>(item->getData());
 
-  if (entry->is_dir() && !entry->get_dir().parent)
-    parent_button->disable();
-  else
-    parent_button->enable();
+    if (entry->is_dir() && !entry->get_dir().parent)
+      parent_button->disable();
+    else
+      parent_button->enable();
 
-  current_tree_item = item;
+    current_tree_item = item;
 
-  // FIXME: add info from where the file comes, ie. foo.pak:/foo/bar/baz
-  //locationbar->setText(("pak://" + entry->fullname).c_str());
-  locationbar->setText(entry->get_url().c_str());
+    // FIXME: add info from where the file comes, ie. foo.pak:/foo/bar/baz
+    //locationbar->setText(("pak://" + entry->fullname).c_str());
+    locationbar->setText(entry->get_url().c_str());
 
-  if (entry->get_type() == DreamfallFileEntry::DIRECTORY_FILE_ENTRY)
-    {
-      directoryview->change_directory(item);
-      show_switcher(SWITCHER_ICONVIEW);
-    }
-  else if (entry->get_type() == DreamfallFileEntry::SAVE_FILE_ENTRY)
-    {
-      if (entry->get_save().type == SaveFileEntry::IMAGE_DATA)
-        {
-          imageview->set_save_image(entry->get_save().fullname);
-          show_switcher(SWITCHER_IMAGEVIEW);
-        }
-      else
-        {
-          try {
-            sharkview->set_shark(entry->get_save().fullname);
-            show_switcher(SWITCHER_SHARKVIEW);
-          } catch (std::exception& err) {
-            error_log->setText(FXString().format("%s: %s",  
-                                                 entry->get_save().fullname.c_str(),
-                                                 err.what()));
-            show_switcher(SWITCHER_ERRORLOG);            
-          }
-        }
-    }
-  else if (entry->get_type() == DreamfallFileEntry::PAK_FILE_ENTRY)
-    {
-      switch(entry->get_pak().type)
-        {
-        case FILETYPE_SHARK3D:
-          {   
-            if (pak_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
-              {
-                sharkview->set_shark(get_exe_path() + "tmp.dat");
-                show_switcher(SWITCHER_SHARKVIEW);
-              }
-          }
-          break;
-
-        case FILETYPE_WAV:
-          if (pak_manager.extract(entry->get_pak(), get_exe_path() + "tmp.wav"))
-            {
-              soundview->set_music(get_exe_path() + "tmp.wav", "Wave File");
-              show_switcher(SWITCHER_SOUNDVIEW);
-            }
-          break;
-
-        case FILETYPE_MP3:
+    if (entry->get_type() == DreamfallFileEntry::DIRECTORY_FILE_ENTRY)
+      {
+        directoryview->change_directory(item);
+        show_switcher(SWITCHER_ICONVIEW);
+      }
+    else if (entry->get_type() == DreamfallFileEntry::SAVE_FILE_ENTRY)
+      {
+        if (entry->get_save().type == SaveFileEntry::IMAGE_DATA)
           {
-            if (pak_manager.extract(entry->get_pak(), get_exe_path() + "tmp.mp3"))
+            imageview->set_save_image(entry->get_save().fullname);
+            show_switcher(SWITCHER_IMAGEVIEW);
+          }
+        else if (entry->get_save().type == SaveFileEntry::JOURNAL_DATA)
+          {
+            std::ostringstream str;
+                
+            Savegame savegame(entry->get_save().fullname);
+            const std::vector<Journal::Entry>& entries = savegame.get_journal().entries;
+                
+            for(std::vector<Journal::Entry>::const_iterator i = entries.begin();
+                i != entries.end(); ++i)
               {
-                std::map<std::string, Speech>::iterator it = mp3_to_speech.find(entry->get_pak().fullname);
-                if (it != mp3_to_speech.end())
+                int last = 0;
+                for(int j = 0; j < int((*i).array.size()); ++j)
                   {
-                    std::ostringstream str;
-                    for(std::vector<Dialog>::iterator i = dialogs.begin(); i != dialogs.end(); ++i)
+                    str << "ThisCombined: " << last+(*i).array[j] << "    "
+                        << "Last: " << last << "    "
+                        << "This: " << (*i).array[j] << std::endl;
+                        
+                    last += (*i).array[j];
+                    str << data_manager.get_dialog(0).get_by_cut_id(last) 
+                        << std::endl
+                        << std::endl;
+                  }
+              }
+
+            sharkview->set_text(str.str());
+            show_switcher(SWITCHER_SHARKVIEW);
+          }
+        else if (entry->get_save().type == SaveFileEntry::MESSAGELOG_DATA)
+          {
+            Savegame savegame(entry->get_save().fullname);
+            const std::vector<MessageLog::Entry>& entries = savegame.get_message_log().entries;
+            std::ostringstream str;
+            for(std::vector<MessageLog::Entry>::const_iterator i = entries.begin();
+                i != entries.end(); ++i)
+              {
+                str << data_manager.get_dialog(0).get_by_id((*i).subj) << std::endl;
+                str << data_manager.get_dialog(0).get_by_id((*i).body) << std::endl << std::endl;
+                str << "read: " << (*i).read << std::endl;
+                str << "________________________________________________________\n\n";
+              }
+
+            sharkview->set_text(str.str());
+            show_switcher(SWITCHER_SHARKVIEW);
+          }
+        else if (entry->get_save().type == SaveFileEntry::TEXT_DATA)
+          {
+            Savegame savegame(entry->get_save().fullname);
+            const std::vector<ConversationLog::Entry>& ints = savegame.get_conversation_log().entries;
+            std::ostringstream str;
+            for(int i = 0; i < int(ints.size()); ++i)
+              {
+                unsigned int last = 0;
+                for(int j = 0; j < int(ints[i].list.size()); ++j)
+                  {
+                    std::cout << j << "/" << ints[i].list.size() << std::endl;
+
+                    unsigned int this_id = last + ints[i].list[j];
+                        
+                    std::string text = data_manager.get_dialog(0).get_by_id(this_id);
+                    if (text.empty())
                       {
-                        const std::string& text = i->get_by_id(it->second.text);
+                        this_id = last + pad_with_ones(ints[i].list[j]);
+                        text = data_manager.get_dialog(0).get_by_id(this_id);
+                      }
+                       
+                    str << ints[i].list[j] << " " << this_id << " " << last << std::endl;
+                    str << "  " << text << std::endl  << std::endl;
+
+                    last = this_id;
+                  }
+
+                str << "\n________________________________________________________\n\n";
+              }
+            sharkview->set_text(str.str());
+            show_switcher(SWITCHER_SHARKVIEW);          
+          }
+        else // SaveFileEntry::SHARK3D_DATA
+          {
+            try {
+              sharkview->set_shark(entry->get_save().fullname);
+              show_switcher(SWITCHER_SHARKVIEW);
+            } catch (std::exception& err) {
+              error_log->setText(FXString().format("%s: %s",  
+                                                   entry->get_save().fullname.c_str(),
+                                                   err.what()));
+              show_switcher(SWITCHER_ERRORLOG);            
+            }
+          }
+      }
+    else if (entry->get_type() == DreamfallFileEntry::PAK_FILE_ENTRY)
+      {
+        switch(entry->get_pak().type)
+          {
+          case FILETYPE_SHARK3D:
+            {   
+              if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
+                {
+                  sharkview->set_shark(get_exe_path() + "tmp.dat");
+                  show_switcher(SWITCHER_SHARKVIEW);
+                }
+            }
+            break;
+
+          case FILETYPE_WAV:
+            if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.wav"))
+              {
+                soundview->set_music(get_exe_path() + "tmp.wav", "Wave File");
+                show_switcher(SWITCHER_SOUNDVIEW);
+              }
+            break;
+
+          case FILETYPE_MP3:
+            {
+              if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.mp3"))
+                {
+                  try {
+                    Speech speech = data_manager.get_speech_by_mp3(entry->get_pak().fullname);
+
+                    std::ostringstream str;
+                    for(std::vector<Dialog>::const_iterator i = data_manager.get_dialogs().begin(); 
+                        i != data_manager.get_dialogs().end(); ++i)
+                      {
+                        const std::string& text = i->get_by_id(speech.text);
                         if (text.empty())
                           {
                             str << "<empty>\nError: Shouldn't happen!" << std::endl;
@@ -802,57 +931,60 @@ DFToolBoxWindow::display(FXTreeItem* item)
                             // FIXME: We could also add the actor's
                             // name, but its a bit hard to get from
                             // down here
-                            str << i->get_by_id(it->second.actor_name) 
+                            str << i->get_by_id(speech.actor_name) 
                                 << " (" << i->lang_code << " - " << i->language << "):\n"
                                 << text << std::endl << std::endl;
                           }
                       }
 
                     soundview->set_music(get_exe_path() + "tmp.mp3", str.str());
-                  }
-                else
-                  {
+                    
+                  } catch(...) {
                     soundview->set_music(get_exe_path() + "tmp.mp3", 
                                          "<nothing found>\n\n"
                                          "If you want to see the dialog in text form displayed here, click \"File->Scan for Dialogs\".");
                   }
 
-                show_switcher(SWITCHER_SOUNDVIEW);
-              }
-          }
-          break;
-
-        case FILETYPE_LOCALISATION:
-          if (pak_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
-            {
-              dialogview->set_dialog(get_exe_path() + "tmp.dat");
-              show_switcher(SWITCHER_DIALOGVIEW);          
-            }
-          break;
-
-        case FILETYPE_DDS:
-          {
-            try {
-              if (pak_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
-                {
-                  imageview->set_image(get_exe_path() + "tmp.dat");
-                  show_switcher(SWITCHER_IMAGEVIEW);
+                  show_switcher(SWITCHER_SOUNDVIEW);
                 }
-            } catch (std::exception& err) {
-              error_log->setText(FXString().format("Error: %s", err.what()));
-              show_switcher(SWITCHER_ERRORLOG);
             }
-          }
-          break;
+            break;
 
-        default:
-          error_log->setText(FXString().format("Error: Unhandled file type: \"%s\" for file:\n  \"%s\"",
-                                               "UNKNOWN", // filetype2string(entry->type),
-                                               entry->get_url().c_str()));
-          show_switcher(SWITCHER_ERRORLOG);
-          break;
-        }
-    }
+          case FILETYPE_LOCALISATION:
+            if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
+              {
+                dialogview->set_dialog(get_exe_path() + "tmp.dat");
+                show_switcher(SWITCHER_DIALOGVIEW);          
+              }
+            break;
+
+          case FILETYPE_DDS:
+            {
+              try {
+                if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
+                  {
+                    imageview->set_image(get_exe_path() + "tmp.dat");
+                    show_switcher(SWITCHER_IMAGEVIEW);
+                  }
+              } catch (std::exception& err) {
+                error_log->setText(FXString().format("Error: %s", err.what()));
+                show_switcher(SWITCHER_ERRORLOG);
+              }
+            }
+            break;
+
+          default:
+            error_log->setText(FXString().format("Error: Unhandled file type: \"%s\" for file:\n  \"%s\"",
+                                                 "UNKNOWN", // filetype2string(entry->type),
+                                                 entry->get_url().c_str()));
+            show_switcher(SWITCHER_ERRORLOG);
+            break;
+          }
+      }
+  } catch(std::exception& err) {
+    error_log->setText(FXString().format("Error: %s", err.what()));
+    show_switcher(SWITCHER_ERRORLOG);    
+  }
 }
 
 FXTreeItem*
@@ -906,15 +1038,77 @@ DFToolBoxWindow::onCmdAddBookmark(FXObject*, FXSelector, void* data)
                              this, ID_BOOKMARK))->setUserData(bookmarks.back());
           bookmarkmenu->create();
         }
+
+      save_bookmarks(get_exe_path() + "/bookmarks.txt");
     }
   return 1;
+}
+
+void
+DFToolBoxWindow::clear_bookmarks()
+{
+  for(std::vector<Bookmark*>::iterator i = bookmarks.begin(); i != bookmarks.end(); ++i)
+    {
+      delete *i;
+    }
+  bookmarks.clear();
+}
+
+void
+DFToolBoxWindow::load_bookmarks(const std::string& filename)
+{
+  std::ifstream in(filename.c_str());
+  if (!in)
+    {
+      std::cout << "DFToolBoxWindow: Couldn't open file " << filename << std::endl;
+    }
+  else
+    {
+      clear_bookmarks();
+      Shark3D* shark3d = Shark3D::parse_text(in);
+      SectionNodes* nodes = shark3d->get_sections("bookmarks");
+      if (nodes)
+        {
+          for(std::vector<SectionNode*>::iterator i = nodes->sections.begin(); 
+              i != nodes->sections.end(); ++i)
+            {
+              bookmarks.push_back(new Bookmark((*i)->get_string("label"),
+                                               (*i)->get_string("url")));
+            }          
+        }
+
+      delete shark3d;
+    }
+}
+
+void
+DFToolBoxWindow::save_bookmarks(const std::string& filename)
+{
+  std::ofstream out(filename.c_str());
+  if (!out)
+    {
+      std::cout << "DFToolBoxWindow::save_bookmarks: Couldn't write file: " << filename << std::endl;
+    }
+  else
+    {
+      out << "bookmarks" << std::endl;
+      for(std::vector<Bookmark*>::iterator i = bookmarks.begin(); i != bookmarks.end(); ++i)
+        {
+          out << "{" << std::endl;
+          out << "    label \"" << (*i)->label << "\"" << std::endl;
+          out << "    url   \"" << (*i)->url   << "\"" << std::endl;
+          out << "}" << std::endl;
+        }
+      out << "\n$" << std::endl;
+      out.close();
+    }
 }
 
 long
 DFToolBoxWindow::onCmdLocationbar(FXObject*, FXSelector, void* data)
 {
   /*
-    TLJPakManager::Files::iterator i = files.find(locationbar->getText().text());
+    DataManager::Files::iterator i = files.find(locationbar->getText().text());
     if (i != files.end())
     {
     // FIXME: add code here that opens the tree
@@ -1004,7 +1198,7 @@ DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
 
               if ((*i)->get_pak().type == FILETYPE_SHARK3D && shark_as_text)
                 {
-                  pak_manager.extract((*i)->get_pak(), get_exe_path() + "/tmp.shark");
+                  data_manager.extract((*i)->get_pak(), get_exe_path() + "/tmp.shark");
                   std::ifstream in((get_exe_path() + "/tmp.shark").c_str(), std::ios::binary);
                   if (!in) 
                     {
@@ -1030,7 +1224,7 @@ DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
                 }
               else
                 {
-                  pak_manager.extract((*i)->get_pak(), outfile);
+                  data_manager.extract((*i)->get_pak(), outfile);
                 }
             }
         }
@@ -1041,55 +1235,38 @@ DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
     }
 }
 
-void
-DFToolBoxWindow::scan_for_mp3s(const std::string& filename)
+class ScanForMp3 : public FXThread
 {
-  std::cout << "Reading locations: " << std::endl;
-  Location location(filename);
-  std::cout << "Speeches: " << filename << " " << location.get_speechs().size() << std::endl;
-  for(std::map<unsigned int, Speech>::const_iterator i = location.get_speechs().begin();
-      i != location.get_speechs().end(); ++i)
-    {
-      mp3_to_speech[i->second.wavefile] = i->second;
-      id_to_speech[i->second.text]      = i->second;
-    }
-}
+private:
+  DFToolBoxWindow* dftoolbox;
+  ProgressLogger& logger;
+
+public:
+  ScanForMp3(DFToolBoxWindow* dftoolbox_, ProgressLogger& logger_)
+    : dftoolbox(dftoolbox_),
+      logger(logger_)
+  {
+  }
+  
+  FXint run() 
+  {
+    //dftoolbox->scan_for_all_mp3s(logger);
+    return 0;
+  }
+};
 
 long 
 DFToolBoxWindow::onCmdScanForMP3(FXObject* sender, FXSelector, void* data)
 {
-  std::cout << "Reading dialogs: " << std::endl;
-  dialogs.clear();
-  pak_manager.extract("data/generated/config/universe/localization.dat", get_exe_path() + "/tmp.dialog");
-  read_dialogs(get_exe_path() + "/tmp.dialog", dialogs);
+  progress_dialog->show(PLACEMENT_OWNER);
+  progress_dialog->relayout(2);
 
-  DreamfallFileEntry* dfentry = 0; // Little slow
-  for(std::vector<DreamfallFileEntry*>::iterator i = filetable.begin(); i != filetable.end(); ++i)
-    {
-      if ((*i)->is_dir() && (*i)->get_dir().fullname == "data/generated/locations")
-        {
-          dfentry = (*i);
-          break;
-        }
-    }
+  GUIProgressLogger* logger = new GUIProgressLogger(getApp(), progress_dialog, ProgressDialog::ID_THREAD_UPDATE);
 
-  if (!dfentry)
-    {
-      std::cout << "Error: Couldn't find locations" << std::endl;
-    }
-  else
-    {
-      for(std::vector<DreamfallFileEntry*>::iterator i = dfentry->get_dir().children.begin();
-          i != dfentry->get_dir().children.end(); ++i)
-        {
-          std::cout << (*i)->get_url() << std::endl;
-          if ((*i)->is_pak())
-            {
-              pak_manager.extract((*i)->get_pak(), get_exe_path() + "/tmp.shark3d");
-              scan_for_mp3s(get_exe_path() + "/tmp.shark3d");
-            }
-        }
-    }
+  FXThread* thread = new ScanForMp3(this, *logger);
+  progress_dialog->set_thread(thread);
+  thread->start();
+
   return 1;
 }
 

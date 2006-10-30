@@ -84,8 +84,7 @@ ImageView::set_image(const std::string& filename)
   std::cout << "DDS: " << dds.width << "x" << dds.height << std::endl;
 
   // FIXME: is this ok or should we use malloc()?
-  FXColor* image_data;
-  FXMALLOC(&image_data, FXColor, dds.get_data().size()/4);
+  FXColor* image_data = static_cast<FXColor*>(malloc(sizeof(FXColor)*dds.get_data().size()/4));
 
   memcpy(image_data,
          reinterpret_cast<const FXColor*>(&*dds.get_data().begin()),
@@ -126,8 +125,7 @@ ImageView::set_save_image(const std::string& filename)
     }
   else
     {
-      FXColor* buffer;
-      FXMALLOC(&buffer, FXColor, 256*256);
+      FXColor* buffer = static_cast<FXColor*>(malloc(sizeof(FXColor)*256*256));
 
       // Extract screenshot
       in.seekg(-(256*256*4), std::ios::end);

@@ -60,6 +60,13 @@ struct Conversation
           unsigned int camera;
           std::string  metastate;
           unsigned int speech;
+
+          Action()
+            : action_type(0),
+              camera(0),
+              metastate(0),
+              speech(-1)
+          {}
         };
 
         bool canskip;
@@ -70,7 +77,7 @@ struct Conversation
       std::vector<unsigned int> enable_keywords;
       unsigned int goto_choicelist;
       unsigned int firstline;
-      Cutscene cutscene;
+      std::vector<Cutscene> cutscene;
     };
     unsigned int id;
     unsigned int keyword_enabled;
@@ -94,6 +101,9 @@ private:
   typedef std::map<unsigned int, Speech> Speechs;
   Speechs speechs;
 
+  typedef std::map<unsigned int, Conversation> Conversations;
+  Conversations conversations;
+
 public:
   Location(const std::string& filename);
   
@@ -105,6 +115,7 @@ public:
   void parse_conversation(SectionNode* );
 
   const Speechs& get_speechs() const { return speechs; }
+  const Conversations& get_conversations() const { return conversations; }
 };
 
 #endif

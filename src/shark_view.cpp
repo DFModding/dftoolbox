@@ -32,7 +32,8 @@
 #include "shark_view.hpp"
 
 FXDEFMAP(SharkView) SharkViewMap[] = {
-  FXMAPFUNC(SEL_COMMAND,       SharkView::ID_TOGGLE_WRAP,        SharkView::onCmdToggleWrap),
+  FXMAPFUNC(SEL_COMMAND,       SharkView::ID_TOGGLE_WRAP,    SharkView::onCmdToggleWrap),
+  FXMAPFUNC(SEL_COMMAND,       SharkView::ID_SAVE_TEXT,      SharkView::onCmdSaveText),
 };
 
 // Object implementation
@@ -50,6 +51,7 @@ SharkView::SharkView(FXComposite* parent, FXComposite* toolbar_dock)
   toolbar = new FXToolBar(toolbar_dock, LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|PACK_UNIFORM_WIDTH|PACK_UNIFORM_HEIGHT|FRAME_RAISED|LAYOUT_FILL_X);
 
   new FXButton(toolbar, "\tToggle Word Wrap\tToggle Word Wrap", Icon::indent, this, ID_TOGGLE_WRAP, BUTTON_TOOLBAR|FRAME_RAISED);
+  new FXButton(toolbar, "\tSave Shark3D as text\tSave Shark3D as text", Icon::save_file, this, ID_SAVE_TEXT, BUTTON_TOOLBAR|FRAME_RAISED);
 
   text = new FXText(this, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y);
   text->setEditable(FALSE);
@@ -57,6 +59,12 @@ SharkView::SharkView(FXComposite* parent, FXComposite* toolbar_dock)
   text->setTextStyle(text->getTextStyle() | TEXT_WORDWRAP);
 
   new Searchbar(this, text);
+}
+
+void
+SharkView::set_text(const std::string& str)
+{
+  text->setText(str.c_str());
 }
 
 void
@@ -87,6 +95,34 @@ SharkView::onCmdToggleWrap(FXObject*,FXSelector,void*)
   else
     text->setTextStyle(text->getTextStyle() | TEXT_WORDWRAP);
 
+  return 1;
+}
+
+long
+SharkView::onCmdSaveText(FXObject*,FXSelector,void*)
+{
+  FXFileDialog savedialog(this,tr("Save Document"));
+  FXString file;
+  savedialog.setSelectMode(SELECTFILE_ANY);
+  // savedialog.setPatternList(getPatterns());
+  // savedialog.setCurrentPattern(getCurrentPattern());
+  // savedialog.setFilename(file);
+  if(savedialog.execute())
+    {
+      //setCurrentPattern(savedialog.getCurrentPattern());
+      file = savedialog.getFilename();
+      if(FXStat::exists(file))
+        {
+          if(MBOX_CLICKED_NO==FXMessageBox::question(this,MBOX_YES_NO, "Overwrite Document",
+                                                     "Overwrite existing document: %s?",file.text()))
+            return 1;
+        }
+
+      std::ofstream out(file.text());
+      out << text->getText().text();
+      out.close();
+    }
+  
   return 1;
 }
 

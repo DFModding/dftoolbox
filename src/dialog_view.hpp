@@ -51,12 +51,14 @@ public:
   void set_dialog(const std::string& filename);
   long onCmdLanguageSwitch(FXObject*,FXSelector,void*);
   long onCmdHyperlink(FXObject*,FXSelector,void*);
+  long onCmdSaveText(FXObject*,FXSelector,void*);
   void set_language(int id);
   void show_toolbar(bool t) { if (t) toolbar->show(); else toolbar->hide(); }
 
   enum {
     ID_LANGUAGE_SWITCH = FXHorizontalFrame::ID_LAST,
     ID_HYPERLINK,
+    ID_SAVE_TEXT
   };
 };
 

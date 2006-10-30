@@ -23,7 +23,7 @@
 ##  02111-1307, USA.
 ##
 
-env = Environment(CCFLAGS = ['-O0', '-Wall', '-g', '-DDEBUG'])
+env = Environment(CCFLAGS = ['-O2', '-Wall', '-g', '-DDEBUG'])
 
 fox_LIBS = ['FOX-1.6', 'Xext', 'X11', 'Xcursor', 'Xrandr', 'dl', 'pthread', 'rt',
             'jpeg', 'png', 'tiff', 'z', 'bz2', 'm', 'GLU', 'GL']
@@ -34,7 +34,7 @@ sdl_LIBS     = ['SDL_mixer', 'SDL']
 sdl_CPPATH   = []
 env['CCFLAGS']  += ['-DUSE_SDL']
 
-cross = False
+cross = True
 if cross: # Make this True for cross compiling
     env['CXX']        = 'i586-mingw32msvc-g++'
     env['AS']         = 'i586-mingw32msvc-as'
@@ -54,7 +54,8 @@ env.StaticLibrary('dftoolbox', ['src/util.cpp',
                                 'src/system.cpp',
                                 'src/tljpak.cpp',
                                 'src/location.cpp',
-                                'src/tljpak_manager.cpp',
+                                'src/savegame.cpp',
+                                'src/data_manager.cpp',
                                 'src/shark3d.cpp',
                                 'src/shark3d_nodes.cpp',
                                 'src/config.cpp'
@@ -76,8 +77,13 @@ env.Program('dialog',
             LIBS=['dftoolbox', 'tinygettext'],
             LIBPATH='.')
 
-env.Program('savegame',
-            ['src/savegame.cpp'],
+env.Program('dialog-fix',
+            ['src/dialog-fix.cpp'],
+            LIBS=['dftoolbox'],
+            LIBPATH='.')
+
+env.Program('savegame2tga',
+            ['src/savegame2tga.cpp'],
             LIBS=['dftoolbox'],
             LIBPATH='.')
 
@@ -120,20 +126,6 @@ env.Program('cir',
             ['src/cir.cpp'],
             LIBS=['dftoolbox'],
             LIBPATH='.')
-
-foxenv  = env.Copy(CCFLAGS = '-O2')
-
-env.StaticLibrary('dftoolbox-gui',
-                  ['src/util.cpp',
-                   'src/system.cpp',
-                   'src/tljpak.cpp',
-                   'src/location.cpp',
-                   'src/tljpak_manager.cpp',
-                   'src/shark3d.cpp',
-                   'src/shark3d_nodes.cpp',
-                   'src/config.cpp'
-                   ])
-
 
 progress_dialog_obj = env.Object('src/progress_dialog.cpp',
                                  LINKFLAGS = fox_CXXFLAGS,

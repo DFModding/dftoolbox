@@ -33,7 +33,7 @@ class DreamfallFileEntry;
 
 struct SaveFileEntry 
 {
-  enum Type { IMAGE_DATA, SHARK3D_DATA };
+  enum Type { IMAGE_DATA, SHARK3D_DATA, TEXT_DATA, MESSAGELOG_DATA, JOURNAL_DATA };
 
   /** Select Image Data or Shark3D tree */
   Type type;

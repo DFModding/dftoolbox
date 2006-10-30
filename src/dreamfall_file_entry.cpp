@@ -30,10 +30,19 @@ SaveFileEntry::get_url() const
   switch (type)
     {
     case IMAGE_DATA:
-      return "sav://" + name + "#image";
+      return "sav://" + name + "/image";
       
     case SHARK3D_DATA:
-      return "sav://" + name + "#shark3d";
+      return "sav://" + name + "/shark3d";
+
+    case TEXT_DATA:
+      return "sav://" + name + "/text";
+
+    case MESSAGELOG_DATA:
+      return "sav://" + name + "/messagelog";
+
+    case JOURNAL_DATA:
+      return "sav://" + name + "/journal";
     }
   return "<unknown>";
 }
@@ -77,9 +86,15 @@ DreamfallFileEntry::get_label() const
 
     case SAVE_FILE_ENTRY:
       if (save.type == SaveFileEntry::IMAGE_DATA)
-        return save.name + "#image";
+        return "image";
+      else if (save.type == SaveFileEntry::SHARK3D_DATA)
+        return "shark3d";
+      else if (save.type == SaveFileEntry::MESSAGELOG_DATA)
+        return "messagelog";
+      else if (save.type == SaveFileEntry::JOURNAL_DATA)
+        return "journal";
       else
-        return save.name + "#shark3d";
+        return "text";
 
     case DIRECTORY_FILE_ENTRY:
       return dir.name;

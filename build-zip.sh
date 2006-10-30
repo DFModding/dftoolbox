@@ -2,12 +2,15 @@
 
 set -e
 
-PREFIX=dftoolbox-`date -I`
+PREFIX=dftoolbox-`date -I`-1
 OUTFILE=$PREFIX.zip
 
 rm -vfr $PREFIX
 
 mkdir $PREFIX
+mkdir $PREFIX/sound/
+mkdir $PREFIX/icons/
+mkdir $PREFIX/icons/large/
 mkdir $PREFIX/src/
 mkdir $PREFIX/doc/
 for i in README TODO COPYING; do
@@ -17,13 +20,11 @@ cp -v *.exe SConstruct df-directory.txt $PREFIX
 cp -v dftoolbox-default.ini $PREFIX/dftoolbox.ini
 cp src/*.?pp $PREFIX/src
 cp doc/*.txt $PREFIX/doc
-
-pushd $PREFIX
-mkdir -p dreamfall-mods/yourmod/
-pushd dreamfall-mods/yourmod/
-unzip ../../../df-directories.zip
-popd
-popd
+cp icons/*.png $PREFIX/icons
+cp icons/*.gif $PREFIX/icons
+cp icons/large/*.gif $PREFIX/icons/large/
+cp icons/large/*.png $PREFIX/icons/large/
+cp sound/*.wav $PREFIX/sound
 
 rm -vf $OUTFILE
 cd $PREFIX

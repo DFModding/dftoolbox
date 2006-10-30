@@ -59,6 +59,8 @@ Location::parse_root(SectionNode* root)
 void
 Location::parse_actor_param(SectionNode* node)
 { 
+  if (!node) return;
+
   node->get_string("scope");
   node->get_string("local_name");
   node->get_string("deleg_target");
@@ -69,15 +71,19 @@ Location::parse_actor_param(SectionNode* node)
 void
 Location::parse_children(SectionNode* node)
 {
-  std::vector<SectionNode*> sections = node->get_sections("children");
+  const std::vector<SectionNode*>& sections = node->get_sections("children");
 
-  for(std::vector<SectionNode*>::iterator i = sections.begin();
+  for(std::vector<SectionNode*>::const_iterator i = sections.begin();
       i != sections.end(); ++i)
     {
       std::string type = (*i)->get_string("type");
       if (type == "mod_engobj_funcom.speech")
         {
           parse_speech((*i)->get_section("param"));
+        } 
+      else if (type == "mod_engobj_funcom.conversation")
+        {
+          parse_conversation((*i)->get_section("param"));
         }
       else
         {
@@ -111,9 +117,69 @@ Location::parse_speech(SectionNode* node)
 }
 
 void
-Location::parse_conversation(SectionNode* )
+Location::parse_conversation(SectionNode* node)
 {
-  
+  Conversation conversation;
+
+  conversation.id = node->get_int("id");
+  std::vector<SectionNode*> choices = node->get_sections("choices");
+  for(std::vector<SectionNode*>::const_iterator i = choices.begin(); 
+      i != choices.end(); ++i)
+    {
+      Conversation::Choice choice;
+
+      choice.id              = (*i)->get_int("id");
+      choice.keyword_enabled = (*i)->get_int("keyword_enabled");
+      choice.keyword         = (*i)->get_int("keyword");
+      choice.preview         = (*i)->get_int("preview");
+
+      std::vector<SectionNode*> actions_nodes = (*i)->get_sections("actions");
+      
+      for(std::vector<SectionNode*>::iterator ai = actions_nodes.begin();
+          ai != actions_nodes.end(); ++ai)
+        {
+          Conversation::Choice::Action action;
+          
+          action.action_enabled  = (*ai)->get_int("action_enabled");
+          action.goto_choicelist = (*ai)->get_int("goto_choicelist");
+          action.firstline      = (*ai)->get_int("firstline");
+          
+          std::vector<SectionNode*> cutscene_nodes = (*ai)->get_sections("cutscene");
+          for(std::vector<SectionNode*>::iterator ci = cutscene_nodes.begin();
+              ci != cutscene_nodes.end(); ++ci)
+            {
+              Conversation::Choice::Action::Cutscene cutscene;
+
+              cutscene.canskip = (*ci)->get_int("canskip");
+
+              std::vector<SectionNode*> cutscene_action_nodes = (*ci)->get_sections("actions");
+              for(std::vector<SectionNode*>::iterator cai = cutscene_action_nodes.begin();
+                  cai != cutscene_action_nodes.end(); ++cai)
+                {
+                  Conversation::Choice::Action::Cutscene::Action cutscene_action;
+              
+                  if ((*cai)->has_subnode("speech"))
+                    {
+                      cutscene_action.speech = (*cai)->get_int("speech");
+                    }
+                  else
+                    {
+                    }
+
+                  cutscene.actions.push_back(cutscene_action);
+                }
+
+              action.cutscene.push_back(cutscene);
+            }
+
+          choice.actions.push_back(action);
+        }
+
+      conversation.choices.push_back(choice);
+    }
+
+  std::cout << "Found Conversation: " << conversation.id  << std::endl;
+  conversations[conversation.id] = conversation;
 }
 
 /* EOF */

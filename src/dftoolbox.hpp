@@ -30,7 +30,7 @@
 #include "icons.hpp"
 #include "dialog.hpp"
 #include "location.hpp"
-#include "tljpak_manager.hpp"
+#include "data_manager.hpp"
 
 class SharkView;
 class SoundView;
@@ -93,18 +93,9 @@ protected:
   FXMenuTitle* bookmark_title;
   ProgressDialog* progress_dialog;
 
-  std::map<unsigned int, Speech> id_to_speech;
-  std::map<std::string,  Speech> mp3_to_speech;
-  std::vector<Dialog> dialogs; 
-
   // Cache to speed up tree insertion
   typedef std::map<FXTreeItem*, std::map<std::string, FXTreeItem*> > Directories;
   Directories directories;
-
-  TLJPakManager pak_manager;
-
-  // Simple cache to collect all pointers pointing to allocated memory
-  std::vector<DreamfallFileEntry*> filetable;
 
   std::vector<Bookmark*> bookmarks;
 
@@ -115,7 +106,10 @@ public:
   virtual ~DFToolBoxWindow();
 
   void create();
+
+  /** the \a directories table is used for cashing */
   FXTreeItem* add_directory(const std::string& pathname, FXTreeItem* rootitem);
+
   void load_files();
   void build_trees();
 
@@ -143,10 +137,13 @@ public:
   long onCmdGotoParentDir(FXObject* sender, FXSelector, void* data);
   long onCmdScanForMP3(FXObject* sender, FXSelector, void* data);
   long onCmdBuildTree(FXObject* sender, FXSelector, void* data);
-  void scan_for_mp3s(const std::string& filename);
   
   /** Find the tree item matching url */
   FXTreeItem* find(FXTreeItem* root, const std::string& url);
+
+  void clear_bookmarks();
+  void load_bookmarks(const std::string& filename);
+  void save_bookmarks(const std::string& filename);
 
   enum {
     SWITCHER_ICONVIEW,

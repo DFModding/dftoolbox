@@ -40,11 +40,15 @@ public:
   SharkView(FXComposite* parent, FXComposite* toolbar_dock);
 
   void set_shark(const std::string& filename);
+  void set_text(const std::string& text);
+  
   long onCmdToggleWrap(FXObject*,FXSelector,void*); 
+  long onCmdSaveText(FXObject*,FXSelector,void*); 
   void show_toolbar(bool t) { if (t) toolbar->show(); else toolbar->hide(); }
 
   enum {
     ID_TOGGLE_WRAP=FXVerticalFrame::ID_LAST,
+    ID_SAVE_TEXT,
   };
 };
 

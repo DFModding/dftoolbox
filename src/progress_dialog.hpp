@@ -28,7 +28,7 @@
 #include "fx.h"
 #include <string>
 
-class PakInsertThread;
+class GUIProgressLogger;
 
 class ProgressDialog : public FXDialogBox
 {
@@ -37,25 +37,26 @@ private:
 
   FXText*          log;
 
-  FXProgressBar*   level3_progress;
-  FXLabel*         level3_label;
+  std::vector<FXLabel*>       label;
+  std::vector<FXProgressBar*> progress;
 
-  FXProgressBar*   current_progress;
-  FXLabel*         current_label;
-  FXProgressBar*   total_progress;
   FXButton*        ok_button;
-  PakInsertThread* thread;
   FXVerticalFrame* vbox;
+  FXThread* thread;
 public:
   ProgressDialog();
   ProgressDialog(FXApp* app, const FXString& title);
   ~ProgressDialog();
 
-  void set_thread(PakInsertThread* thread);
-  void appendMessage(const std::string& msg);
   long onCmdToggleLongDesc(FXObject*,FXSelector,void*);
 
   long onThreadUpdate(FXObject*, FXSelector, void*);
+
+  /** Relayout the widget to show \a bars number of progressbars */
+  void relayout(int bars);
+
+  void set_thread(FXThread*);
+  FXThread* get_thread() const { return thread; }
 
   enum {
     ID_HIDE = FXDialogBox::ID_LAST,

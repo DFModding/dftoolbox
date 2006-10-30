@@ -45,4 +45,13 @@ ProgressLogger::get_collected_task_size() const
   return 1000*get_task_size();
 }
 
+int
+ProgressLogger::get_depth() const
+{
+  int depth = 1;
+  for(ProgressLogger* i = get_subtask(); i != NULL; i = i->get_subtask())
+    depth += 1;
+  return depth;
+}
+
 /* EOF */

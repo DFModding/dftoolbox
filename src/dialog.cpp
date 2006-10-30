@@ -31,7 +31,6 @@
 #include "tinygettext.hpp"
 #include "system.hpp"
 
-
 std::string escape(const std::string& text)
 {
   std::string res;
@@ -45,8 +44,15 @@ std::string escape(const std::string& text)
   return res;
 }
 
-void write_po2(const Dialog& dialog)
+void write_po2(const Dialog& dialog, const Dialog& dialog_en)
 {
+  std::map<int, std::vector<int> > offset2entry;
+
+  for(unsigned int i = 0; i < dialog.entries.size(); ++i)
+    {
+      offset2entry[dialog.entries[i].offset].push_back(i);
+    }
+
   std::string filename = get_exe_path() + "dreamfall-" + dialog.lang_code + ".po";
   std::ofstream out(filename.c_str(), std::ios::binary);
   out << "# Dreamfall Dialog Extractor V0.0\n"
@@ -61,8 +67,30 @@ void write_po2(const Dialog& dialog)
   int   size  = dialog.texts.size();
   for(int i = 0; i < size; ++i)
     {
-      out << "msgid \"" << escape(texts+i) << "\"" << std::endl;
-      out << "msgstr \"\"\n" << std::endl;          
+      std::map<int, std::vector<int> >::iterator j = offset2entry.find(i);
+      if (j == offset2entry.end())
+        {
+          std::cout << "Error: localization.dat looks inconsistent" << std::endl;
+        }
+      else
+        {
+          out << "# offset: " << i << ", entries: ";
+          for(int k = 0; k < int(j->second.size()); ++k)
+            out << j->second[k] << " ";
+          out << std::endl;      
+          if (dialog_en.entries.size() != 0)
+            {
+              out << "msgid \"" << escape((&*dialog_en.texts.begin()) + dialog_en.entries[j->second.front()].offset) << "\"" << std::endl;
+              out << "msgstr \"" << escape(texts+i) << "\"" << std::endl;
+            }
+          else
+            {
+              out << "msgid \"" << escape(texts+i) << "\"" << std::endl;
+              out << "msgstr \"\"" << std::endl;
+            }
+          out << std::endl;
+        }
+
       
       i += strlen(texts+i);
     }
@@ -100,13 +128,15 @@ void write_po(const Dialog& dialog, const Dialog& dialog_en)
           const TextEntry& entry    = dialog.entries[i];
           const TextEntry& entry_en = dialog_en.entries[i];
           
-          out << "msgid \"" << escape(&*dialog_en.texts.begin() + entry_en.offset) << "\"" << std::endl;
+          out << "# " << std::endl;
+          out << "msgid \""  << escape(&*dialog_en.texts.begin() + entry_en.offset) << "\"" << std::endl;
           out << "msgstr \"" << escape(&*dialog.texts.begin() + entry.offset) << "\"\n" << std::endl;
         }
       else
         {
           const TextEntry& entry = dialog.entries[i];
           
+          out << "# " << std::endl;
           out << "msgid \"" << escape(&*dialog.texts.begin() + entry.offset) << "\"" << std::endl;
           out << "msgstr \"\"\n" << std::endl;          
         }
@@ -125,7 +155,7 @@ void extract(const char* filename)
   Dialog dialog_en;
   if (dialogs.size() == 1)
     {
-      write_po2(dialogs.front());
+      write_po2(dialogs.front(), Dialog());
     }
   else
     {
@@ -134,18 +164,26 @@ void extract(const char* filename)
           if (i->lang_code == "en")
             {
               dialog_en = *i;
-              //write_po(dialog_en, Dialog());
-              write_po2(dialog_en);
             }
         }
   
-      assert(dialog_en.entries.size() != 0);
-
-      for(std::vector<Dialog>::iterator i = dialogs.begin(); i != dialogs.end(); ++i)
+      if (dialog_en.entries.size() == 0)
         {
-          if (i->lang_code != "en")
+          std::cout << "Couldn't find english dialogs" << std::endl;
+        }
+      else
+        {
+          for(std::vector<Dialog>::iterator i = dialogs.begin(); i != dialogs.end(); ++i)
             {
-              write_po(*i, dialog_en);
+              std::cout << "Writing: " << i->language << std::endl;
+              if (i->lang_code != "en")
+                {
+                  write_po2(*i, dialog_en);
+                }
+              else
+                {
+                  write_po2(*i, Dialog());
+                }
             }
         }
     }
@@ -167,6 +205,7 @@ void generate(const std::string& localisation, const std::string& po_filename,
       if (i->lang_code == "en")
         {
           dialog = *i;
+          std::cout << "Found english file" << std::endl;
           break;
         }
     }
@@ -206,7 +245,9 @@ void generate(const std::string& localisation, const std::string& po_filename,
 
       // copy text entry to buffer
       for(unsigned int j = 0; j < trans.length(); ++j)
+        {
           new_dialog.texts.push_back(trans[j]);
+        }
       new_dialog.texts.push_back('\0');
       
       // advance
@@ -214,7 +255,7 @@ void generate(const std::string& localisation, const std::string& po_filename,
     }
 
   std::cout << "Writing to " << outfile << std::endl;
-  new_dialog.write(outfile);
+  new_dialog.write(outfile, 2);
 }
 
 int main(int argc, char** argv)
@@ -242,12 +283,35 @@ int main(int argc, char** argv)
       std::cout << "\nPress Enter to continue" << std::endl;
       getchar();
     }
+  else if (strcmp(argv[1], "--downversion") == 0)
+    {
+      if (argc == 4)
+        {
+          std::vector<Dialog> dialogs;
+          read_dialogs(argv[2], dialogs);
+
+          for(int i = 0; i < int(dialogs.size()); ++i)
+            {
+              std::cout << "Language: " << dialogs[i].lang_code << " " << dialogs[i].language << std::endl;
+            }
+
+          dialogs[1].write(argv[3], 0);
+         }
+      else
+        {
+          std::cout << "Usage: ./dialog --downversion INFILE OUTFILE" << std::endl;
+        }
+    }
+  else if (strcmp(argv[1], "--writepo") == 0)
+    {
+      
+    }
   else if (strcmp(argv[1], "--generate") == 0)
     {
       if (argc == 4)
         {
           std::cout << "Generator mode" << std::endl;
-          generate(argv[2], argv[3], "localisation-new.dat");
+          generate(argv[2], argv[3], "localization-new.dat");
         }
       else
         {

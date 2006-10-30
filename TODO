@@ -6,6 +6,10 @@ ModActivator
 
 DFModTool:
 ==========
-- Optimze inserter, with using mmap() it should be possible to get instant inserts
+
+- Optimze inserter, with using mmap() it should be possible to get
+  instant inserts
+
+- filter out ^M in strings from shark files
 
 # EOF #
