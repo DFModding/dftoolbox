@@ -22,6 +22,7 @@
 **  02111-1307, USA.
 */
 
+#include <string.h>
 #include <assert.h>
 #include <vector>
 #include <iostream>
@@ -91,7 +92,6 @@ void write_po2(const Dialog& dialog, const Dialog& dialog_en)
           out << std::endl;
         }
 
-      
       i += strlen(texts+i);
     }
 

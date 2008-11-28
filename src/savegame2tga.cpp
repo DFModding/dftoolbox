@@ -22,6 +22,7 @@
 **  02111-1307, USA.
 */
 
+#include <string.h>
 #include <fstream>
 #include <iostream>
 #include <vector>

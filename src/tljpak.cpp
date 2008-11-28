@@ -22,6 +22,8 @@
 **  02111-1307, USA.
 */
 
+#include <algorithm>
+#include <string.h>
 #include <assert.h>
 #include <iomanip>
 #include <iostream>

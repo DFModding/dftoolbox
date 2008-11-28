@@ -68,7 +68,7 @@ FXDEFMAP(DFToolBoxWindow) DFToolBoxWindowMap[] = {
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_ADD_BOOKMARK,   DFToolBoxWindow::onCmdAddBookmark),
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_DIRECTORYCHANG, DFToolBoxWindow::onDirChange),
   FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_GOTO_PARENTDIR, DFToolBoxWindow::onCmdGotoParentDir),
-  //  FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_SCAN_FOR_MP3,   DFToolBoxWindow::onCmdScanForMP3),
+  FXMAPFUNC(SEL_COMMAND,       DFToolBoxWindow::ID_SCAN_FOR_MP3,   DFToolBoxWindow::onCmdScanForMP3),
   FXMAPFUNC(SEL_IO_READ,       DFToolBoxWindow::ID_BUILD_TREE,     DFToolBoxWindow::onCmdBuildTree),
 };
 
@@ -106,7 +106,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   filemenu = new FXMenuPane(this);
   new FXMenuCommand(filemenu,"&Dreamfall Path",  NULL, this, ID_DREAMFALL_PATH);
   (new FXMenuCommand(filemenu,"&Preferences",    NULL, this, ID_PREFERENCES))->disable();
-  //  new FXMenuCommand(filemenu,"Scan for Dialogs", NULL, this, ID_SCAN_FOR_MP3);
+  new FXMenuCommand(filemenu,"Scan for Dialogs", NULL, this, ID_SCAN_FOR_MP3);
   new FXMenuSeparator(filemenu);
   new FXMenuCommand(filemenu,"&Quit\tCtl-Q",NULL,getApp(),FXApp::ID_QUIT);
   new FXMenuTitle(menubar,"&File",NULL,filemenu);
