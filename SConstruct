@@ -25,16 +25,20 @@
 
 env = Environment(CCFLAGS = ['-O2', '-Wall', '-g', '-DDEBUG'])
 
-fox_LIBS = ['FOX-1.6', 'Xext', 'X11', 'Xcursor', 'Xrandr', 'dl', 'pthread', 'rt',
-            'jpeg', 'png', 'tiff', 'z', 'bz2', 'm', 'GLU', 'GL']
-fox_LIBPATH = ['/home/ingo/projects/dftoolbox/libs/lib']
-fox_CPPPATH = ['/home/ingo/projects/dftoolbox/libs/include/fox-1.6']
+#fox_LIBS = ['FOX-1.6', 'Xext', 'X11', 'Xcursor', 'Xrandr', 'dl', 'pthread', 'rt',
+#            'jpeg', 'png', 'tiff', 'z', 'bz2', 'm', 'GLU', 'GL']
+
+fox_LIBS = ['FOX-1.6', 'Xext', 'X11', 'Xft', 'fontconfig', 'Xcursor', 'Xrandr', 'dl', 'pthread',
+            'rt', 'jpeg', 'png', 'tiff', 'z', 'bz2', 'm', 'cups', 'nsl', 'GLU', 'GL']
+fox_LIBPATH = [] # ['/home/ingo/projects/dftoolbox/libs/lib']
+fox_CPPPATH = ['/usr/include/fox-1.6'] # ['/home/ingo/projects/dftoolbox/libs/include/fox-1.6']
 fox_CXXFLAGS = []
+
 sdl_LIBS     = ['SDL_mixer', 'SDL']
 sdl_CPPATH   = []
 env['CCFLAGS']  += ['-DUSE_SDL']
 
-cross = True
+cross = False
 if cross: # Make this True for cross compiling
     env['CXX']        = 'i586-mingw32msvc-g++'
     env['AS']         = 'i586-mingw32msvc-as'

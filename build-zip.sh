@@ -2,7 +2,7 @@
 
 set -e
 
-PREFIX=dftoolbox-`date -I`-1
+PREFIX=dftoolbox-`date -I`
 OUTFILE=$PREFIX.zip
 
 rm -vfr $PREFIX
