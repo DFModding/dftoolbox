@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <string>
+#include <stdint.h>
 #include "util.hpp"
 
 std::string get_exe_path();
