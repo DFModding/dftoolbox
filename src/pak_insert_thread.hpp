@@ -70,7 +70,7 @@ public:
                   const std::vector<InsertRequest>& inserts_,
                   ProgressLogger* logger_);
 
-  virtual ~PakInsertThread() {}
+  virtual ~PakInsertThread();
 
   FXint run();
   std::string getLog() const;

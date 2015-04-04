@@ -48,6 +48,10 @@ PakInsertThread::PakInsertThread(FXApp* app_, ProgressDialog* progress_dialog_,
 {
 }
 
+PakInsertThread::~PakInsertThread()
+{
+}
+
 FXint
 PakInsertThread::run()
 {
