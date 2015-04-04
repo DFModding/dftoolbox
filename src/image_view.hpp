@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -29,7 +29,7 @@
 #include <string>
 
 /** */
-class ImageView : FXVerticalFrame 
+class ImageView : FXVerticalFrame
 {
   FXDECLARE(ImageView);
 private:
@@ -40,7 +40,7 @@ private:
 
   int scale;
   std::vector<FXImage*>  scaled_images;
-  
+
 public:
   ImageView();
   ImageView(FXComposite* parent, FXDockSite* dock);
@@ -53,9 +53,9 @@ public:
 
   void show_toolbar(bool t);
 
-  long onCmdZoom1_1(FXObject*,FXSelector,void*); 
-  long onCmdZoomIn(FXObject*,FXSelector,void*); 
-  long onCmdZoomOut(FXObject*,FXSelector,void*); 
+  long onCmdZoom1_1(FXObject*,FXSelector,void*);
+  long onCmdZoomIn(FXObject*,FXSelector,void*);
+  long onCmdZoomOut(FXObject*,FXSelector,void*);
 
   enum {
     ID_ZOOM_IN = FXVerticalFrame::ID_LAST,

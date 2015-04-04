@@ -1,5 +1,5 @@
 //  $Id: tinygettext.hpp,v 1.1 2006/06/16 02:17:53 ingo Exp ingo $
-// 
+//
 //  TinyGetText - A small flexible gettext() replacement
 //  Copyright (C) 2004 Ingo Ruhnke <grumbel@gmx.de>
 //
@@ -12,7 +12,7 @@
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
-// 
+//
 //  You should have received a copy of the GNU General Public License
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -80,7 +80,7 @@ public:
   std::string translate(const std::string& msgid);
   /** Translate the string \a msgid. */
   const char* translate(const char* msgid);
-    
+
   /** Add a translation from \a msgid to \a msgstr to the dictionary,
       where \a msgid is the singular form of the message, msgid2 the
       plural form and msgstrs a table of translations. The right

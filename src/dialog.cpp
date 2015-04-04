@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -62,7 +62,7 @@ void write_po2(const Dialog& dialog, const Dialog& dialog_en)
       << "\"MIME-Version: 1.0\\n\"\n"
       << "\"Content-Type: text/plain; charset=UTF-8\\n\"\n"
       << "\"Content-Transfer-Encoding: 8bit\\n\"\n"
-      << std::endl;        
+      << std::endl;
 
   const char* texts = &*dialog.texts.begin();
   int   size  = dialog.texts.size();
@@ -78,7 +78,7 @@ void write_po2(const Dialog& dialog, const Dialog& dialog_en)
           out << "# offset: " << i << ", entries: ";
           for(int k = 0; k < int(j->second.size()); ++k)
             out << j->second[k] << " ";
-          out << std::endl;      
+          out << std::endl;
           if (dialog_en.entries.size() != 0)
             {
               out << "msgid \"" << escape((&*dialog_en.texts.begin()) + dialog_en.entries[j->second.front()].offset) << "\"" << std::endl;
@@ -96,7 +96,7 @@ void write_po2(const Dialog& dialog, const Dialog& dialog_en)
     }
 
   //out << "\n# EOF #\n";
-  out.close(); 
+  out.close();
 }
 
 void write_po(const Dialog& dialog, const Dialog& dialog_en)
@@ -119,7 +119,7 @@ void write_po(const Dialog& dialog, const Dialog& dialog_en)
       << "\"MIME-Version: 1.0\\n\"\n"
       << "\"Content-Type: text/plain; charset=UTF-8\\n\"\n"
       << "\"Content-Transfer-Encoding: 8bit\\n\"\n"
-      << std::endl;        
+      << std::endl;
 
   for(unsigned int i = 0; i < dialog.entries.size(); ++i)
     {
@@ -127,7 +127,7 @@ void write_po(const Dialog& dialog, const Dialog& dialog_en)
         {
           const TextEntry& entry    = dialog.entries[i];
           const TextEntry& entry_en = dialog_en.entries[i];
-          
+
           out << "# " << std::endl;
           out << "msgid \""  << escape(&*dialog_en.texts.begin() + entry_en.offset) << "\"" << std::endl;
           out << "msgstr \"" << escape(&*dialog.texts.begin() + entry.offset) << "\"\n" << std::endl;
@@ -135,10 +135,10 @@ void write_po(const Dialog& dialog, const Dialog& dialog_en)
       else
         {
           const TextEntry& entry = dialog.entries[i];
-          
+
           out << "# " << std::endl;
           out << "msgid \"" << escape(&*dialog.texts.begin() + entry.offset) << "\"" << std::endl;
-          out << "msgstr \"\"\n" << std::endl;          
+          out << "msgstr \"\"\n" << std::endl;
         }
     }
 
@@ -166,7 +166,7 @@ void extract(const char* filename)
               dialog_en = *i;
             }
         }
-  
+
       if (dialog_en.entries.size() == 0)
         {
           std::cout << "Couldn't find english dialogs" << std::endl;
@@ -195,7 +195,7 @@ void generate(const std::string& localisation, const std::string& po_filename,
   TinyGetText::Dictionary dictionary;
   std::ifstream po_in(po_filename.c_str());
   read_po_file(dictionary, po_in);
-  
+
   std::vector<Dialog> dialogs;
   read_dialogs(localisation.c_str(), dialogs);
 
@@ -213,7 +213,7 @@ void generate(const std::string& localisation, const std::string& po_filename,
   Dialog new_dialog;
   new_dialog.lang_code = "nw";
   new_dialog.language  = "newlanguage";
-  new_dialog.entries   = dialog.entries; 
+  new_dialog.entries   = dialog.entries;
 
   // Generate translation table
   typedef std::map<std::string, std::vector<int> > String2Entries;
@@ -230,7 +230,7 @@ void generate(const std::string& localisation, const std::string& po_filename,
   for(int i = 0; i < size; ++i)
     {
       std::string trans = dictionary.translate(texts+i);
-      
+
       // generate new offsets
       String2Entries::iterator e = string2entries.find(texts+i);
       if (e != string2entries.end())
@@ -249,7 +249,7 @@ void generate(const std::string& localisation, const std::string& po_filename,
           new_dialog.texts.push_back(trans[j]);
         }
       new_dialog.texts.push_back('\0');
-      
+
       // advance
       i += strlen(texts+i);
     }
@@ -304,7 +304,7 @@ int main(int argc, char** argv)
     }
   else if (strcmp(argv[1], "--writepo") == 0)
     {
-      
+
     }
   else if (strcmp(argv[1], "--generate") == 0)
     {

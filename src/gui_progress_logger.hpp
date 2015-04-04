@@ -16,7 +16,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -44,7 +44,7 @@ public:
 
   GUIChildProgressLogger(ProgressLogger* parent_)
     : parent(parent_),
-      task_size(1), 
+      task_size(1),
       task_status(0),
       done(false),
       subtask(0)
@@ -55,26 +55,26 @@ public:
     delete subtask;
   }
 
-  void println(const std::string& str) 
+  void println(const std::string& str)
   { FXMutexLock lock(mutex);
 
     parent->println("    " + str);
   }
 
-  void set_task_size(int s) 
+  void set_task_size(int s)
   { FXMutexLock lock(mutex);
-    
-    // can't allow task size smaller 1, else crash due to div by zero 
+
+    // can't allow task size smaller 1, else crash due to div by zero
     task_size = std::max(1, s);
   }
 
-  void set_task_status(int s) 
+  void set_task_status(int s)
   { FXMutexLock lock(mutex);
-    
+
     task_status = s;
   }
-  
-  ProgressLogger& start_subtask() 
+
+  ProgressLogger& start_subtask()
   { FXMutexLock lock(mutex);
 
     delete subtask;
@@ -89,23 +89,23 @@ public:
   }
 
   int get_task_status()  const
-  { FXMutexLock lock(mutex);  
+  { FXMutexLock lock(mutex);
 
     return task_status;
   }
 
   ProgressLogger* get_subtask() const
   { FXMutexLock lock(mutex);
-    
+
     return subtask;
   }
 
-  void set_done() 
+  void set_done()
   { FXMutexLock lock(mutex);
     done = true;
   }
 
-  bool is_done() const 
+  bool is_done() const
   { FXMutexLock lock(mutex);
     return done;
   }
@@ -138,30 +138,30 @@ public:
   {
   }
 
-  virtual ~GUIProgressLogger() 
+  virtual ~GUIProgressLogger()
   {
     delete subtask;
   }
 
-  void println(const std::string& str) 
+  void println(const std::string& str)
   { FXMutexLock lock(mutex);
-    
+
     log << str << std::endl;
   }
 
-  void set_task_size(int s) 
+  void set_task_size(int s)
   { FXMutexLock lock(mutex);
 
     task_size = s;
   }
 
-  void set_task_status(int s) 
+  void set_task_status(int s)
   { FXMutexLock lock(mutex);
-    
+
     task_status = s;
   }
 
-  ProgressLogger& start_subtask() 
+  ProgressLogger& start_subtask()
   { FXMutexLock lock(mutex);
 
     delete subtask; // FIXME:
@@ -170,20 +170,20 @@ public:
   }
 
   int get_task_size()  const
-  { FXMutexLock lock(mutex);  
+  { FXMutexLock lock(mutex);
 
     return task_size;
   }
 
   int get_task_status()  const
-  { FXMutexLock lock(mutex);  
+  { FXMutexLock lock(mutex);
 
     return task_status;
   }
 
   ProgressLogger* get_subtask() const
   { FXMutexLock lock(mutex);
-    
+
     return subtask;
   }
 
@@ -194,12 +194,12 @@ public:
     return ret;
   }
 
-  void set_done() 
+  void set_done()
   { FXMutexLock lock(mutex);
     done = true;
   }
 
-  bool is_done() const 
+  bool is_done() const
   { FXMutexLock lock(mutex);
     return done;
   }

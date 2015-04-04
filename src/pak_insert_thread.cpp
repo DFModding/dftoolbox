@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -86,7 +86,7 @@ PakInsertThread::run()
 }
 
 void
-PakInsertThread::update() 
+PakInsertThread::update()
 {
   sig->setData(mlogger);
   sig->signal();
@@ -126,7 +126,7 @@ PakInsertThread::group_insert_requests(std::vector<InsertRequest>& inserts, PakL
                 std::ostringstream str;
                 str << "  found " << j->location << " in " << i->name;
                 logger->println(str.str());
-                
+
                 j->paks.push_back(i->fullname);
                 paks[i->fullname].push_back(*j);
               }
@@ -169,7 +169,7 @@ PakInsertThread::do_backup(const PakList& paks, ProgressLogger* logger)
 
   if (!backup_done)
     logger->println("  backup already done");
-  
+
   logger->println("");
 }
 
@@ -212,10 +212,10 @@ PakInsertThread::install_paks(PakList& paks, ProgressLogger* logger)
         {
           int loc = pak.lookup(j->location);
           const std::vector<char>& buffer = file_read(j->filename);
-          if (loc != -1) 
+          if (loc != -1)
             {
               pak.insert(loc, buffer);
-              
+
               logger->println(STR(" + " << j->filename)); // + " - " + buffer.size()/1024.0f + "KB\n");
             }
           else

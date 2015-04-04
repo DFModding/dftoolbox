@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -102,14 +102,14 @@ public:
   // format. dwFlags should include DDPF_RGB in this case. This value
   // is usually 16, 24, or 32. For A8R8G8B8, this value would be 32.
   uint32_t dwRGBBitCount;
-  
+
   // For RGB formats, these three fields contain the masks for the
   // red, green, and blue channels. For A8R8G8B8, these values would
   // be 0x00ff0000, 0x0000ff00, and 0x000000ff respectively.
   uint32_t dwRBitMask;
   uint32_t dwGBitMask;
   uint32_t dwBBitMask;
-  
+
   // For RGB formats, this contains the mask for the alpha channel, if
   // any. dwFlags should include DDPF_ALPHAPIXELS in this case. For
   // A8R8G8B8, this value would be 0xff000000.
@@ -167,7 +167,7 @@ public:
   uint32_t magic;
 
   // Size of structure. This member must be set to 124.
-  uint32_t dwSize; 
+  uint32_t dwSize;
 
   // Flags to indicate valid fields. Always include DDSD_CAPS,
   // DDSD_PIXELFORMAT, DDSD_WIDTH, DDSD_HEIGHT.
@@ -185,22 +185,22 @@ public:
   // total number of bytes for the main image. dwFlags should be
   // include DDSD_LINEARSIZE in this case.
   uint32_t dwPitchOrLinearSize;
-  
+
   // For volume textures, this is the depth of the volume. dwFlags
   // should include DDSD_DEPTH in this case.
   uint32_t dwDepth;
-  
+
   // For items with mipmap levels, this is the total number of levels
   // in the mipmap chain of the main image. dwFlags should include
   // DDSD_MIPMAPCOUNT in this case.
   uint32_t dwMipMapCount;
 
-  // Unused	
+  // Unused
   uint32_t dwReserved1[11];
 
   // 32-byte value that specifies the pixel format structure.
   PixelFormat pixel_format;
-  
+
   // 16-byte value that specifies the capabilities structure.
   DDSCapabilities ddsCaps;
 
@@ -210,7 +210,7 @@ public:
 private:
   // Contains the data of the image in RGBA format, only valid after calling read_data()
   std::vector<char> data;
-  
+
 public:
   DDS(std::istream& in) {
     magic  = read_uint32(in);
@@ -221,7 +221,7 @@ public:
     dwPitchOrLinearSize = read_uint32(in);
     dwDepth = read_uint32(in);
     dwMipMapCount = read_uint32(in);
-    
+
     for(int i = 0; i < 11; ++i)
       dwReserved1[i] = read_uint32(in);
 
@@ -230,7 +230,7 @@ public:
     ddsCaps = DDSCapabilities(in);
 
     dwReserved2 = read_uint32(in);
-    
+
     read_data(in);
   }
 
@@ -257,7 +257,7 @@ public:
           case DDS_DXT3:
             read_data_dtx3(in);
             break;
-            
+
           case DDS_DXT4:
             throw std::runtime_error("DXT4 Format not supported");
             break;
@@ -270,26 +270,26 @@ public:
             // HU?
             read_data_dxt1(in);
             break;
-            
+
           default:
 	       {
 		  std::ostringstream str;
 		  str << "Format unknown: " << pixel_format.dwFourCC << " " << std::string((char*)&pixel_format.dwFourCC, 4);
                   throw std::runtime_error(str.str());
 	       }
-	     
+
           }
       }
     else
       {
       }
   }
-  
+
   void decode_dxt1(unsigned char buf[8], unsigned char out[4*4*3])
   {
     unsigned short color0 = buf[0] | (buf[1] << 8);
     unsigned short color1 = buf[2] | (buf[3] << 8);
-    
+
     unsigned int bits = buf[4] + 256 * (buf[5] + 256 * (buf[6] + 256 * buf[7]));
 
     RGB rgb[4];
@@ -308,12 +308,12 @@ public:
         rgb[2] = (rgb[0] + rgb[1])/2;
         rgb[3] = RGB(0);
       }
-    
+
     for(int y1 = 0; y1 < 4; ++y1)
       for(int x1 = 0; x1 < 4; ++x1)
         {
           unsigned int idx = ((bits >> (2*(4*(y1)+(x1)))) & 0x3);
- 
+
           out[3*4*y1 + 3*x1 + 2] = rgb[idx].r;
           out[3*4*y1 + 3*x1 + 1] = rgb[idx].g;
           out[3*4*y1 + 3*x1 + 0] = rgb[idx].b;
@@ -324,11 +324,11 @@ public:
   {
     unsigned char buf[8];
     unsigned char out[4*4*3];
-    
+
     data.resize(width * height * 4);
     for(unsigned int y = 0; y < height; y += 4)
       for(unsigned int x = 0; x < width; x += 4)
-        {    
+        {
           in.read((char*)buf, 8);
           decode_dxt1(buf, out);
 
@@ -347,11 +347,11 @@ public:
   {
     unsigned char buf[8];
     unsigned char out[4*4*3];
-    
+
     data.resize(width * height * 4);
     for(unsigned int y = 0; y < height; y += 4)
       for(unsigned int x = 0; x < width; x += 4)
-        {    
+        {
           in.read((char*)buf, 8);
           decode_dxt1(buf, out);
 
@@ -366,10 +366,10 @@ public:
                 data[4*(y+y1)*width + 4*(x+x1) + 2] = out[3*4*y1 + 3*x1 + 2];
                 data[4*(y+y1)*width + 4*(x+x1) + 3] = 255;
               }
-        }    
+        }
   }
 };
 
-#endif 
+#endif
 
 /* EOF */

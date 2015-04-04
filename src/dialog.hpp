@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -43,7 +43,7 @@
 // 0x1b5f8(112120): second text (14 distantce from 1.)
 // 9564 lines of text in the file (index doing double refs -> yes, sort|uniq|wc gives exactly 9564)
 // indexs: 0, 14, 19, ..., 580862, 580998
-// number1 
+// number1
 // Double refs:
 // 869 times: 56
 // 1039 times: 85
@@ -52,7 +52,7 @@
 struct TextEntry
 {
   /** offset where the text starts, offset is relative to the first string */
-  unsigned int offset; 
+  unsigned int offset;
   unsigned int id;
 };
 
@@ -132,10 +132,10 @@ struct Dialog
     std::string fallback;
     for(unsigned int i = 0; i < entries.size(); ++i)
       {
-        if ((entries[i].id & 0xfff) == (id & 0xfff)) 
+        if ((entries[i].id & 0xfff) == (id & 0xfff))
           {
             fallback = &*texts.begin() + entries[i].offset;
-            
+
             if ((entries[i].id & 0xfff00fff) == (id & 0xfff00fff))
               {
                 return fallback;
@@ -169,7 +169,7 @@ struct Dialog
           {
             return &*texts.begin() + entries[i].offset;
           }
-      } 
+      }
     return "";
   }
 
@@ -233,7 +233,7 @@ inline void read_dialogs(const std::string& filename, std::vector<Dialog>& dialo
     {
       Dialog dialog;
 
-      unsigned int entry_count = 0;  
+      unsigned int entry_count = 0;
       unsigned int version = 0;
       in.read(reinterpret_cast<char*>(&version), sizeof(unsigned int));
 
@@ -246,7 +246,7 @@ inline void read_dialogs(const std::string& filename, std::vector<Dialog>& dialo
 
       if (version == 0)
         { // english file
-          in.seekg(0x12, std::ios::beg); 
+          in.seekg(0x12, std::ios::beg);
           in.read(reinterpret_cast<char*>(&entry_count), sizeof(unsigned int));
           //std::cout << "EntryCount: " << entry_count << std::endl;
 
@@ -263,7 +263,7 @@ inline void read_dialogs(const std::string& filename, std::vector<Dialog>& dialo
 
           unsigned int language_len = 0;
           in.read(reinterpret_cast<char*>(&language_len), sizeof(unsigned int));
-      
+
           char language[language_len + 1];
           in.read(reinterpret_cast<char*>(&language), language_len);
           language[language_len] = '\0';
@@ -304,7 +304,7 @@ inline void read_dialogs(const std::string& filename, std::vector<Dialog>& dialo
           for(unsigned int i = 0; i < entry_count; ++i)
             {
               TextEntry& entry = dialog.entries[i];
-              printf("%5i: %10d %10d  \"%s\"\n", i, 
+              printf("%5i: %10d %10d  \"%s\"\n", i,
                      entry.offset, entry.id, &*dialog.texts.begin() + entry.offset);
             }
         }

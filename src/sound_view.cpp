@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -41,7 +41,7 @@ FXDEFMAP(SoundView) SoundViewMap[] = {
 // Object implementation
 FXIMPLEMENT(SoundView, FXVerticalFrame, SoundViewMap, ARRAYNUMBER(SoundViewMap));
 
-SoundView::SoundView() 
+SoundView::SoundView()
 {
 }
 
@@ -59,7 +59,7 @@ SoundView::SoundView(FXComposite* parent)
   play_button = new FXToggleButton(hbox, "\tPlay", "\tPause", Icon::play, Icon::pause, this, ID_PLAY);
   new FXButton(hbox, "\tStop", Icon::stop, this, ID_STOP);
   (new FXSlider(hbox, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y))->disable();
-    
+
   text  = new FXText(this, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y|TEXT_WORDWRAP);
 #ifndef __linux__
   input = new FXTextField(this, 0, this, ID_MCI_COMMAND,
@@ -67,26 +67,26 @@ SoundView::SoundView(FXComposite* parent)
 #endif
 }
 
-SoundView::~SoundView() 
+SoundView::~SoundView()
 {
-    
+
 }
 
 void
-SoundView::set_music(const std::string& filename, const std::string& desc) 
-{           
+SoundView::set_music(const std::string& filename, const std::string& desc)
+{
   text->setText(desc.c_str());
   play_button->setState(1);
 
 #ifdef USE_SDL
   if (music)
     Mix_FreeMusic(music);
-    
+
   music = Mix_LoadMUS(filename.c_str());
   if(!music) {
     std::cout << "Mix_LoadMUS(\"" << filename << "\"): " <<  Mix_GetError() << std::endl;
-  } 	
-            
+  }
+
   if(Mix_PlayMusic(music, 1)==-1) {
     printf("Mix_PlayMusic: %s\n", Mix_GetError());
   }
@@ -119,7 +119,7 @@ long
 SoundView::onCmdPlay(FXObject*,FXSelector,void*)
 {
 #ifdef USE_SDL
-  if (Mix_PausedMusic()) 
+  if (Mix_PausedMusic())
     Mix_ResumeMusic();
   else if (!Mix_PlayingMusic())
     Mix_PlayMusic(music, 1);
@@ -138,7 +138,7 @@ SoundView::onCmdPlay(FXObject*,FXSelector,void*)
 	issue_msi_command("pause sound1");
 	play_button->setState(0);
      }
-   
+
   return 1;
 #endif
 }

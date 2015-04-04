@@ -36,7 +36,7 @@ void xmp_list(std::istream& in)
       << "# CREATOR: The GIMP's PNM Filter Version 1.0\n"
       << width << " " << height/2 << "\n"
       << "255\n" << std::flush;
-  
+
   int y = 0;
   while(in)
     {
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
           xmp_list(in);
           in.close();
         }
-    } 
+    }
 }
 
 /* EOF */

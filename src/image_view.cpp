@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -42,7 +42,7 @@ FXIMPLEMENT(ImageView, FXVerticalFrame, ImageViewMap, ARRAYNUMBER(ImageViewMap))
 #define SCALE_LIMIT 4
 
 ImageView::ImageView()
-{ 
+{
 }
 
 ImageView::ImageView(FXComposite* parent, FXDockSite* dock)
@@ -79,7 +79,7 @@ ImageView::set_image(const std::string& filename)
   std::ifstream in(filename.c_str(), std::ios::binary);
   if (!in)
     throw std::runtime_error("Error: Couldn't open " + filename);
-              
+
   DDS dds(in);
   std::cout << "DDS: " << dds.width << "x" << dds.height << std::endl;
 
@@ -89,14 +89,14 @@ ImageView::set_image(const std::string& filename)
   memcpy(image_data,
          reinterpret_cast<const FXColor*>(&*dds.get_data().begin()),
          dds.get_data().size());
-  
+
   image = new FXImage(getApp(), image_data,
                       IMAGE_KEEP|IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED, dds.width, dds.height);
 
   image->create();
   imageview->setImage(image);
   //delete old;
-  in.close(); 
+  in.close();
 
   set_scale(scale);
 }
@@ -104,7 +104,7 @@ ImageView::set_image(const std::string& filename)
 void
 ImageView::cleanup()
 {
-  for(std::vector<FXImage*>::iterator i = scaled_images.begin(); 
+  for(std::vector<FXImage*>::iterator i = scaled_images.begin();
       i != scaled_images.end(); ++i)
     {
       delete *i;
@@ -131,10 +131,10 @@ ImageView::set_save_image(const std::string& filename)
       in.seekg(-(256*256*4), std::ios::end);
       in.read(reinterpret_cast<char*>(buffer), 256*256*4);
       in.close();
-      
+
       // FIXME: Memleak
       image = new FXImage(getApp(), buffer,
-                          IMAGE_KEEP|IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED, 
+                          IMAGE_KEEP|IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED,
                           256, 256);
       image->create();
       imageview->setImage(image);
@@ -152,24 +152,24 @@ ImageView::set_scale(int scale_)
       FXColor* data = image->getData();
       int width     = image->getWidth();
       int height    = image->getHeight();
-      
+
       if (width*height * factor <= 1048*1048*2 && width*height*factor > 8*8)
         {
           scale = scale_;
-      
+
           if (scaled_images[scale + SCALE_LIMIT])
             {
               imageview->setImage(scaled_images[scale + SCALE_LIMIT]);
             }
           else
-            {      
+            {
               // FIXME: this is slow, but FXImageView doesn't support scaling of the view
               FXColor* newdata = new FXColor[width*height*4];
               memcpy(newdata, data, width*height*4);
               scaled_images[scale+SCALE_LIMIT] = new FXImage(getApp(), newdata,
-                                                             IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED, 
+                                                             IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED,
                                                              width, height);
-              scaled_images[scale+SCALE_LIMIT]->scale(static_cast<int>(width*factor), 
+              scaled_images[scale+SCALE_LIMIT]->scale(static_cast<int>(width*factor),
                                                       static_cast<int>(height*factor));
               scaled_images[scale+SCALE_LIMIT]->create();
               imageview->setImage(scaled_images[scale+SCALE_LIMIT]);
@@ -179,7 +179,7 @@ ImageView::set_scale(int scale_)
   else
     {
       std::cout << "Ignoring scale request" << std::endl;
-    }  
+    }
 }
 
 long

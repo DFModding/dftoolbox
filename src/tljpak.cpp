@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -65,7 +65,7 @@ inline char  nametable2ascii(char c)
     {
       return nametabel2ascii_tbl[int(c)];
     }
-  else 
+  else
     {
       std::cerr << "\nERROR: " << int(c) << " out of table " << sizeof(nametabel2ascii_tbl) << std::endl;
       return 'a';
@@ -78,10 +78,10 @@ const char* filetype2string(FileType type)
     {
     case FILETYPE_DDS:
       return "DDS";
-      
+
     case FILETYPE_STFU4:
       return "STFU4";
-      
+
     case FILETYPE_TLJBONE:
       return "TLJBONE";
 
@@ -93,10 +93,10 @@ const char* filetype2string(FileType type)
 
     case FILETYPE_BUNDLE:
       return "BUNDLE";
-            
+
     case FILETYPE_TEXT:
       return "TEXT";
-      
+
     case FILETYPE_UNKNOWN:
       return "UNKNOWN";
 
@@ -118,10 +118,10 @@ FileType string2filetype(const char* str)
 {
   if (strcmp(str, "DDS") == 0)
     return FILETYPE_DDS;
-      
+
   else if (strcmp(str, "STFU4") == 0)
     return FILETYPE_STFU4;
-  
+
   else if (strcmp(str, "TLJBONE") == 0)
     return FILETYPE_TLJBONE;
 
@@ -133,10 +133,10 @@ FileType string2filetype(const char* str)
 
   else if (strcmp(str, "BUNDLE") == 0)
     return FILETYPE_BUNDLE;
-      
+
   else if (strcmp(str, "TEXT") == 0)
     return FILETYPE_TEXT;
-      
+
   else if (strcmp(str, "UNKNOWN") == 0)
     return FILETYPE_UNKNOWN;
 
@@ -145,7 +145,7 @@ FileType string2filetype(const char* str)
 
   else if (strcmp(str, "MP3") == 0)
     return FILETYPE_MP3;
-  
+
   else if (strcmp(str, "LIP") == 0)
     return FILETYPE_LIP;
 
@@ -178,7 +178,7 @@ TLJPak::TLJPak(const std::string& filename_)
       FileEntry entry;
       int vals[5];
 
-      in.read(reinterpret_cast<char*>(vals), sizeof(int)*5); 
+      in.read(reinterpret_cast<char*>(vals), sizeof(int)*5);
 
       entry.offset           = vals[0];
       entry.filesize         = vals[1];
@@ -210,7 +210,7 @@ TLJPak::generate_filetable()
 {
   //std::cout << "generate_filetable()" << std::endl;
 
-  int pos = 
+  int pos =
     12 + 4 + 4 + 4 +       // Header
     files.size() * 4 * 5 + // Filetable
     nametable.size() +     // Nametable
@@ -222,11 +222,11 @@ TLJPak::generate_filetable()
   // Round pos up to a multiple of 2048, not sure if its needed, but
   // thats how the original .paks look like
   if ((pos % 2048) != 0)
-    pos = ((pos / 2048) + 1) * 2048; 
-  
+    pos = ((pos / 2048) + 1) * 2048;
+
   //int start_pos = pos;
   header_padding = pos - header_padding;
-  
+
   //std::cout << "Start Pos: " << pos << " " << header_padding << std::endl;
 
   std::vector<ChunkDesc> chunk_descs;
@@ -240,7 +240,7 @@ TLJPak::generate_filetable()
     {
       assert(files[i].chunk_id != -1);
       files[i].offset = chunk_descs[files[i].chunk_id].offset;
-      
+
       if (files[i].filesize != 0)
         files[i].filesize = chunk_descs[files[i].chunk_id].size;
     }
@@ -263,14 +263,14 @@ TLJPak::insert(int pos, const std::vector<char>& buffer)
         }
       else
         {
-          std::cout << "Error: TLJPak::insert(): Couldn't insert file at " << chunk_id << " only have " 
+          std::cout << "Error: TLJPak::insert(): Couldn't insert file at " << chunk_id << " only have "
                     << chunks.size() << " entries"
                     << std::endl;
         }
     }
   else
     {
-      std::cout << "Error: TLJPak::insert(): " << chunk_id << " not a valid file entry" << std::endl; 
+      std::cout << "Error: TLJPak::insert(): " << chunk_id << " not a valid file entry" << std::endl;
     }
 }
 
@@ -296,11 +296,11 @@ TLJPak::write(const std::string& outfile)
   // write file index table
   for(int i = 0; i < file_count; ++i)
     {
-      out.write(reinterpret_cast<char*>(&files[i].offset),           sizeof(int)); 
-      out.write(reinterpret_cast<char*>(&files[i].filesize),         sizeof(int)); 
-      out.write(reinterpret_cast<char*>(&files[i].nametable_offset), sizeof(int)); 
-      out.write(reinterpret_cast<char*>(&files[i].path_length),      sizeof(int)); 
-      out.write(reinterpret_cast<char*>(&files[i].nametable_index),  sizeof(int)); 
+      out.write(reinterpret_cast<char*>(&files[i].offset),           sizeof(int));
+      out.write(reinterpret_cast<char*>(&files[i].filesize),         sizeof(int));
+      out.write(reinterpret_cast<char*>(&files[i].nametable_offset), sizeof(int));
+      out.write(reinterpret_cast<char*>(&files[i].path_length),      sizeof(int));
+      out.write(reinterpret_cast<char*>(&files[i].nametable_index),  sizeof(int));
     }
 
   // write byte block
@@ -337,7 +337,7 @@ TLJPak::write(const std::string& outfile)
         for(int i = 0; i < 131072 - (end % 131072); ++i)
           out.put(0xae);
       }
-  } 
+  }
 
   out.close();
 }
@@ -365,12 +365,12 @@ TLJPak::collect_chunk_desc()
   std::sort(firstsweep.begin(), firstsweep.end(), ChunkSort());
 
   std::vector<ChunkDesc> chunk_lst;
-  
+
   // Remove any duplicates
   for(int i = 0; i < int(firstsweep.size()); ++i)
     {
       if (chunk_lst.size() == 0 || chunk_lst.back() != firstsweep[i])
-        { 
+        {
           chunk_lst.push_back(firstsweep[i]);
         }
     }
@@ -388,7 +388,7 @@ TLJPak::collect_chunk_desc()
           if (0)
             std::cout << "Hole in file: got "
                       << chunk_lst[i].offset
-                      << " expected " << chunk_lst[i-1].offset + chunk_lst[i-1].size 
+                      << " expected " << chunk_lst[i-1].offset + chunk_lst[i-1].size
                       << " distance "
                       << chunk_lst[i].padding
                       << std::endl;
@@ -406,14 +406,14 @@ TLJPak::read_chunks()
 
   if (0)
     {
-      std::cout << std::setw(10) << "Offset" 
+      std::cout << std::setw(10) << "Offset"
                 << std::setw(10) << "Size"
                 << std::setw(10) << "Padding"
                 << std::endl;
 
       for(int i = 0; i < int(chunk_descs.size()); ++i)
         {
-          std::cout << std::setw(10) << chunk_descs[i].offset   << " " 
+          std::cout << std::setw(10) << chunk_descs[i].offset   << " "
                     << std::setw(10) << chunk_descs[i].size     << " "
                     << std::setw(10) << chunk_descs[i].padding  << " "
                     << std::endl;
@@ -422,11 +422,11 @@ TLJPak::read_chunks()
 
   // Write chunk ids into the filetable
   std::map<int, int> offset2chunkid;
-  for(int i = 0; i < int(chunk_descs.size()); ++i)  
+  for(int i = 0; i < int(chunk_descs.size()); ++i)
     {
       offset2chunkid[chunk_descs[i].offset] = i;
     }
-  
+
   for(int i = 0; i < int(files.size()); ++i)
     {
       std::map<int, int>::iterator it = offset2chunkid.find(files[i].offset);
@@ -437,14 +437,14 @@ TLJPak::read_chunks()
                chunk_descs[it->second].size   != files[i].filesize))
             {
               std::ostringstream str;
-              str << "Error: Inconsistent File table at: " 
+              str << "Error: Inconsistent File table at: "
                   << files[i].offset << ":" << files[i].filesize << " "
                   << chunk_descs[it->second].offset << ":" << chunk_descs[it->second].size;
               throw std::runtime_error(str.str());
             }
           else
             {
-              files[i].chunk_id = it->second;          
+              files[i].chunk_id = it->second;
             }
         }
       else
@@ -459,13 +459,13 @@ TLJPak::read_chunks()
       if (files[i].chunk_id == -1)
         {
           std::ostringstream str;
-          str << "Error: Inconsistentcy file table, entry not mapped to chunk: " 
+          str << "Error: Inconsistentcy file table, entry not mapped to chunk: "
               << files[i].offset << " " << files[i].filesize;
           throw std::runtime_error(str.str());
         }
     }
 
-  
+
   std::ifstream in(filename.c_str(), std::ios::binary);
   if (!in)
     {
@@ -473,7 +473,7 @@ TLJPak::read_chunks()
     }
 
   chunks.resize(chunk_descs.size());
-  for(int i = 0; i < int(chunk_descs.size()); ++i)  
+  for(int i = 0; i < int(chunk_descs.size()); ++i)
     {
       std::vector<char>& chunk = chunks[i];
       chunk.resize(chunk_descs[i].size + chunk_descs[i].padding, 0);
@@ -496,10 +496,10 @@ TLJPak::read_nametable(int offset)
 
 int
 TLJPak::lookup(const char* pathname, int ptr, int i, int depth)
-{    
+{
   if (depth > 20)
     return -1;
-    
+
   if (i < 0 || i >= int(files.size()))
     {
       std::cerr << "Error: Lookup out of range " << std::endl;
@@ -516,7 +516,7 @@ TLJPak::lookup(const char* pathname, int ptr, int i, int depth)
   else
     {
       assert(files[i].nametable_index >= 0 && files[i].nametable_index < int(nametable.size()));
-        
+
       char* ntbl_entry     = &*nametable.begin() + files[i].nametable_index;
       int   ntbl_entry_len = strlen(ntbl_entry);
 
@@ -548,12 +548,12 @@ TLJPak::lookup(const char* pathname, int ptr, int i, int depth)
                             << "NTblOffset: " << files[i].nametable_offset << "\n"
                             << "PathLength: " << files[i].path_length << "\n"
                             << "NTblIndex:  " << files[i].nametable_index << std::endl;
-        
+
                   std::cout << "Pathname:    " << pathname << " " << strlen(pathname) << std::endl;
                   std::cout << "PathPtr:     " << pathname + ptr << " " << strlen(pathname + ptr) << std::endl;
                   std::cout << "Path so far: "; std::cout.write(pathname, files[i].path_length+1); std::cout << std::endl;
                 }
-              return lookup(pathname, ptr + ntbl_entry_len + 1, 
+              return lookup(pathname, ptr + ntbl_entry_len + 1,
                             ascii2nametable(pathname[files[i].path_length+1]) + files[i].nametable_offset, depth+1);
             }
         }
@@ -602,16 +602,16 @@ TLJPak::guess()
 {
   for(int entry = 0; entry < file_count; ++entry)
     {
-      if (files[entry].is_file()) 
+      if (files[entry].is_file())
         {
           std::vector<std::string> guesses;
-  
+
           std::string pathname = &nametable[files[entry].nametable_index];
           guess_lookup(entry, entry, pathname, files[entry].path_length, guesses);
 
           //            if (guesses.size() == 1)
           //              std::cout << guesses[0] << std::endl;
-            
+
           if (1)
             {
               for(int j = 0; j < int(guesses.size()); ++j)
@@ -624,12 +624,12 @@ TLJPak::guess()
 }
 
 void
-TLJPak::guess_lookup(int orig_entry, int source_entry, const std::string& pathname, int path_length, 
+TLJPak::guess_lookup(int orig_entry, int source_entry, const std::string& pathname, int path_length,
                      std::vector<std::string>& guesses)
 {
   if (int(pathname.size()) + 1 == path_length)
     {
-      //std::cout 
+      //std::cout
       //<< orig_entry << " "
       //<< nametable2ascii(source_entry) << pathname << std::endl;
       guesses.push_back(nametable2ascii(source_entry) + pathname);
@@ -638,7 +638,7 @@ TLJPak::guess_lookup(int orig_entry, int source_entry, const std::string& pathna
     {
       for(int entry = 0; entry < file_count; ++entry)
         {
-          if (!files[entry].is_file()) 
+          if (!files[entry].is_file())
             {
               for(int j = 1; j < 44; ++j)
                 {
@@ -671,7 +671,7 @@ void
 TLJPak::extract(int file_entry, const std::string& outfile)
 {
   assert(file_entry >= 0 && file_entry < int(files.size()));
-    
+
   create_hierachy(outfile);
 
   if (files[file_entry].is_file())
@@ -697,7 +697,7 @@ TLJPak::extract(int file_entry, const std::string& outfile)
 
 void
 TLJPak::print_nametable()
-{ 
+{
   for(int i = 0; i < int(nametable.size()); ++i)
     {
       std::cout << i << ") ";
@@ -724,9 +724,9 @@ TLJPak::print_file_table()
     }
 
   for(int i = 0; i < int(files.size()); ++i)
-    printf("%4d) %10d %10d %10d %10d %10d        %s\n", 
+    printf("%4d) %10d %10d %10d %10d %10d        %s\n",
            i,
-           files[i].offset, 
+           files[i].offset,
            files[i].filesize,
            files[i].nametable_offset,
            files[i].path_length,
@@ -760,9 +760,9 @@ TLJPak::print_info()
       std::cout << std::endl;
 
       std::cout << "relative: " << indextable.back() << " < " << byte_count << std::flush;
-      if (indextable.back() >= byte_count) std::cout << "!!!WRONG!!!" << std::endl; 
+      if (indextable.back() >= byte_count) std::cout << "!!!WRONG!!!" << std::endl;
       else std::cout << std::endl;
-    
+
     }
   print_nametable();
   print_file_table();
@@ -828,7 +828,7 @@ TLJPak::get_type(int i)
         return FILETYPE_TEXT;
       else if (strncmp(magic, "; ", 2) == 0 || strncmp(magic, "//", 2) == 0)
         return FILETYPE_TEXT;
-      else          
+      else
         return FILETYPE_UNKNOWN;
     }
 }
@@ -843,7 +843,7 @@ void
 TLJPak::scan(const std::vector<std::string>& lst, ProgressLogger& logger)
 {
   std::map<int, std::string> entry2name;
-  
+
   for(std::vector<std::string>::const_iterator i = lst.begin(); i != lst.end(); ++i)
     {
       int j = lookup(*i);
@@ -862,7 +862,7 @@ TLJPak::scan(const std::vector<std::string>& lst, ProgressLogger& logger)
           files[i].pathname = files[i].guesses.front();
           logger.println("found " + files[i].pathname + " (guessed)");
         }
-      /* to much of an speed impact 
+      /* to much of an speed impact
       else if (!files[i].pathname.empty())
         {
         logger.println("found " + files[i].pathname);
@@ -920,11 +920,11 @@ TLJPak::read_filetable(std::istream& in)
     }
 
   SectionNodes* nodes = shark->get_sections("files");
-  for(std::vector<SectionNode*>::iterator i = nodes->sections.begin(); 
+  for(std::vector<SectionNode*>::iterator i = nodes->sections.begin();
       i != nodes->sections.end(); ++i)
     {
       int index = (*i)->get_ints("index").front();
-      
+
       assert(index >= 0 && index < int(files.size()) && files[index].is_file());
 
       files[index].guesses  = (*i)->get_strings("pathnames");

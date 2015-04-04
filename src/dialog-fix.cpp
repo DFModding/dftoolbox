@@ -69,7 +69,7 @@ public:
     // Seperate the header in lines
     typedef std::vector<std::string> Lines;
     Lines lines;
-    
+
     std::string::size_type start = 0;
     for(std::string::size_type i = 0; i < header.length(); ++i)
       {
@@ -105,10 +105,10 @@ public:
 
   void add_token(const Token& token)
   {
-    switch(state) 
+    switch(state)
       {
       case WANT_MSGID:
-        if (token.keyword == "msgid") 
+        if (token.keyword == "msgid")
           {
             current_msgid = token.content;
             state = WANT_MSGID_PLURAL;
@@ -119,17 +119,17 @@ public:
           }
         else
           {
-            std::cerr << "tinygettext: expected 'msgid' keyword, got '" << token.keyword 
+            std::cerr << "tinygettext: expected 'msgid' keyword, got '" << token.keyword
                       << "' at line " << line_num << std::endl;
           }
         break;
-    
+
       case WANT_MSGID_PLURAL:
-        if (token.keyword == "msgid_plural") 
+        if (token.keyword == "msgid_plural")
           {
             current_msgid_plural = token.content;
             state = WANT_MSGSTR_PLURAL;
-          } 
+          }
         else
           {
             state = WANT_MSGSTR;
@@ -138,9 +138,9 @@ public:
         break;
 
       case WANT_MSGSTR:
-        if (token.keyword == "msgstr") 
+        if (token.keyword == "msgstr")
           {
-            if (current_msgid == "") 
+            if (current_msgid == "")
               { // .po Header is hidden in the msgid with the empty string
                 parse_header(token.content);
               }
@@ -149,28 +149,28 @@ public:
                 dict.push_back(current_msgid);
               }
             state = WANT_MSGID;
-          } 
+          }
         else
           {
-            std::cerr << "tinygettext: expected 'msgstr' keyword, got " << token.keyword 
+            std::cerr << "tinygettext: expected 'msgstr' keyword, got " << token.keyword
                       << " at line " << line_num << std::endl;
           }
         break;
 
       case WANT_MSGSTR_PLURAL:
-        if (has_prefix(token.keyword, "msgstr[")) 
+        if (has_prefix(token.keyword, "msgstr["))
           {
             int num;
-            if (sscanf(token.keyword.c_str(), "msgstr[%d]", &num) != 1) 
+            if (sscanf(token.keyword.c_str(), "msgstr[%d]", &num) != 1)
               {
                 std::cerr << "Error: Couldn't parse: " << token.keyword << std::endl;
-              } 
-            else 
+              }
+            else
               {
                 msgstr_plural[num] = token.content;
               }
           }
-        else 
+        else
           {
             dict.push_back(current_msgid);
 
@@ -180,18 +180,18 @@ public:
         break;
       }
   }
-  
-  inline int getchar(std::istream& in) 
+
+  inline int getchar(std::istream& in)
   {
     int c = in.get();
     if (c == '\n')
       line_num += 1;
     return c;
   }
-  
+
   void tokenize_po(std::istream& in)
   {
-    enum State { READ_KEYWORD, 
+    enum State { READ_KEYWORD,
                  READ_CONTENT,
                  READ_CONTENT_IN_STRING,
                  SKIP_COMMENT };
@@ -214,8 +214,8 @@ public:
               {
                 // Read a new token
                 token = Token();
-                
-                do { // Read keyword 
+
+                do { // Read keyword
                   token.keyword += c;
                 } while((c = getchar(in)) != EOF && !isspace(c));
                 in.unget();
@@ -227,7 +227,7 @@ public:
           case READ_CONTENT:
             while((c = getchar(in)) != EOF)
               {
-                if (c == '"') { 
+                if (c == '"') {
                   // Found start of content
                   state = READ_CONTENT_IN_STRING;
                   break;
@@ -288,7 +288,7 @@ int main(int argc, char** argv)
 
   POFileReader reader1(en_in, dictionary_en);
   POFileReader reader2(nw_in, dictionary_nw);
-  
+
   //  std::cout << dictionary_en.size() << " "
   //            << dictionary_nw.size() << std::endl;
 

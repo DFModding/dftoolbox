@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -75,7 +75,7 @@ FXDEFMAP(DFToolBoxWindow) DFToolBoxWindowMap[] = {
 // Object implementation
 FXIMPLEMENT(DFToolBoxWindow, FXMainWindow, DFToolBoxWindowMap, ARRAYNUMBER(DFToolBoxWindowMap));
 
-DFToolBoxWindow::DFToolBoxWindow() 
+DFToolBoxWindow::DFToolBoxWindow()
 {
 }
 
@@ -94,7 +94,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   big_folder_closed->create();
 
   load_bookmarks(get_exe_path() + "/bookmarks.txt");
-  
+
   menubar = new FXMenuBar(this,LAYOUT_SIDE_TOP|LAYOUT_FILL_X|FRAME_RAISED);
 
   topdock = new FXDockSite(this,DOCKSITE_NO_WRAP|LAYOUT_SIDE_TOP|LAYOUT_FILL_X);
@@ -118,7 +118,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
 
   for(std::vector<Bookmark*>::iterator i = bookmarks.begin(); i != bookmarks.end(); ++i)
     {
-      (new FXMenuCommand(bookmarkmenu, (*i)->label.c_str(), Icon::unknown_document, 
+      (new FXMenuCommand(bookmarkmenu, (*i)->label.c_str(), Icon::unknown_document,
                          this, ID_BOOKMARK))->setUserData(*i);
     }
 
@@ -131,24 +131,24 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   toolbar = new FXToolBar(topdock,LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|FRAME_RAISED);
 
   // Toobar buttons: File manipulation
-  new FXButton(toolbar, "\tSet Dreamfall Path\tSet Dreamfall Path", Icon::dreamfall, 
+  new FXButton(toolbar, "\tSet Dreamfall Path\tSet Dreamfall Path", Icon::dreamfall,
                this, ID_DREAMFALL_PATH,
                BUTTON_TOOLBAR|FRAME_RAISED);
 
-  (new FXButton(toolbar, "\tImport file\tImport file", Icon::import_file, 
+  (new FXButton(toolbar, "\tImport file\tImport file", Icon::import_file,
                NULL, 0, //this, ID_OPEN,
                 BUTTON_TOOLBAR|FRAME_RAISED))->disable();
 
-  new FXButton(toolbar, "\tExport Selected File\tExport Selected File", Icon::export_file, 
+  new FXButton(toolbar, "\tExport Selected File\tExport Selected File", Icon::export_file,
                this, ID_SAVE, BUTTON_TOOLBAR|FRAME_RAISED);
 
   new FXHorizontalSeparator(toolbar, SEPARATOR_GROOVE);
-  parent_button = new FXButton(toolbar, "\tGo to parent directory", Icon::up, 
+  parent_button = new FXButton(toolbar, "\tGo to parent directory", Icon::up,
                this, ID_GOTO_PARENTDIR, BUTTON_TOOLBAR|FRAME_RAISED);
 
   splitter = new FXSplitter(this,LAYOUT_SIDE_TOP|LAYOUT_FILL_X|LAYOUT_FILL_Y);
 
-  group1 = new FXVerticalFrame(splitter,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y, 
+  group1 = new FXVerticalFrame(splitter,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
                                0, 0, 0, 0,
                                0, 0, 0, 0);
   //group2 = new FXVerticalFrame(splitter,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
@@ -156,36 +156,36 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   //                           0, 0, 0, 0);
 
   {
-    FXHorizontalFrame* hbox = new FXHorizontalFrame(group1, FRAME_RAISED|LAYOUT_FILL_X, 
+    FXHorizontalFrame* hbox = new FXHorizontalFrame(group1, FRAME_RAISED|LAYOUT_FILL_X,
                                                     0, 0, 0, 0,
                                                     0, 0, 0, 0);
-  
-    new FXButton(hbox, "\tCollapse Tree\tCollapse tree", Icon::collapse_tree, 
+
+    new FXButton(hbox, "\tCollapse Tree\tCollapse tree", Icon::collapse_tree,
                  this, ID_COLLAPSE_TREE,FRAME_RAISED|BUTTON_TOOLBAR);
-    new FXButton(hbox, "\tExpand Tree\tExpand tree", Icon::expand_tree, 
+    new FXButton(hbox, "\tExpand Tree\tExpand tree", Icon::expand_tree,
                  this, ID_EXPAND_TREE,FRAME_RAISED|BUTTON_TOOLBAR);
 
     paklist = new FXListBox(hbox, NULL, 0, LAYOUT_FILL_X|FRAME_SUNKEN|FRAME_THICK);
   }
 
-  tree = new FXTreeList(group1, this, ID_DIRECTORYCHANG, 
+  tree = new FXTreeList(group1, this, ID_DIRECTORYCHANG,
                         FRAME_SUNKEN|FRAME_THICK|LAYOUT_FILL_X|LAYOUT_FILL_Y|LAYOUT_TOP|LAYOUT_RIGHT|TREELIST_SHOWS_BOXES|TREELIST_SHOWS_LINES|TREELIST_EXTENDEDSELECT|LAYOUT_MIN_WIDTH|TREELIST_BROWSESELECT ,
                         0, 0, 0, 0);
   splitter->setSplit(0, 250);
-    
-  switcher = new FXSwitcher(splitter,LAYOUT_FILL_X|LAYOUT_FILL_Y|LAYOUT_RIGHT|FRAME_SUNKEN, 
+
+  switcher = new FXSwitcher(splitter,LAYOUT_FILL_X|LAYOUT_FILL_Y|LAYOUT_RIGHT|FRAME_SUNKEN,
                             0, 0, 0, 0,
                             0, 0, 0, 0);
 
   directoryview = new DirectoryView(switcher, topdock, this);
-  
+
   error_log = new FXText(switcher, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y);
 
   imageview     = new ImageView(switcher, topdock);
   sharkview     = new SharkView(switcher, topdock);
   soundview     = new SoundView(switcher);
   dialogview    = new DialogView(switcher, topdock, this);
-  
+
   show_switcher(SWITCHER_ICONVIEW);
 
   modbar  = new FXToolBar(topdock,LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|FRAME_RAISED);
@@ -206,7 +206,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   toolbar2 = new FXToolBar(topdock,LAYOUT_DOCK_NEXT|LAYOUT_SIDE_TOP|FRAME_RAISED|LAYOUT_FILL_X);
   new FXLabel(toolbar2, "Location:", NULL, LAYOUT_CENTER_Y);
   locationbar = new FXTextField(toolbar2,0, this, ID_LOCATIONBAR, TEXTFIELD_ENTER_ONLY|LAYOUT_FILL_X|FRAME_SUNKEN|LAYOUT_CENTER_Y);
-  new FXButton(toolbar2, "\tGo\tGo", Icon::go, 
+  new FXButton(toolbar2, "\tGo\tGo", Icon::go,
                this, ID_LOCATIONBAR, BUTTON_TOOLBAR|FRAME_RAISED);
 
   progress_dialog = new ProgressDialog(getApp(), "Reading pak data, this may take a while");
@@ -234,7 +234,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
 }
 
 DFToolBoxWindow::~DFToolBoxWindow()
-{ 
+{
   delete filemenu;
   delete bookmarkmenu;
   delete helpmenu;
@@ -245,7 +245,7 @@ DFToolBoxWindow::~DFToolBoxWindow()
 void
 DFToolBoxWindow::init()
 {
-  load_files();  
+  load_files();
 
   // Init GUI stuff that needs the pak manager
   paklist->clearItems();
@@ -270,13 +270,13 @@ DFToolBoxWindow::create()
   show(PLACEMENT_SCREEN);
 }
 
-FXTreeItem* 
+FXTreeItem*
 DFToolBoxWindow::add_directory(const std::string& pathname, FXTreeItem* rootitem)
 {
   std::map<std::string, FXTreeItem*>& dir = directories[rootitem];
 
   std::map<std::string, FXTreeItem*>::iterator i = dir.find(pathname);
-  
+
   if (i != dir.end())
     { // directory already there
       return i->second;
@@ -285,7 +285,7 @@ DFToolBoxWindow::add_directory(const std::string& pathname, FXTreeItem* rootitem
     {
       std::string pathpart, filepart;
       if (splitpath(pathname, pathpart, filepart))
-        { // 
+        { //
           FXTreeItem* parent = add_directory(pathpart, rootitem);
 
           DreamfallFileEntry* parententry = static_cast<DreamfallFileEntry*>(parent->getData());
@@ -318,7 +318,7 @@ DFToolBoxWindow::add_directory(const std::string& pathname, FXTreeItem* rootitem
           dfentry->get_dir().name     = pathname;
           dfentry->get_dir().fullname = pathname;
           dfentry->get_dir().parent   = static_cast<DreamfallFileEntry*>(rootitem->getData());
-          
+
           static_cast<DreamfallFileEntry*>(rootitem->getData())->get_dir().children.push_back(dfentry);
           child->setData(dfentry);
 
@@ -326,7 +326,7 @@ DFToolBoxWindow::add_directory(const std::string& pathname, FXTreeItem* rootitem
         }
     }
 }
-  	
+
 FXint directory_tree_sorter(const FXTreeItem* a, const FXTreeItem* b)
 {
   const DreamfallFileEntry* lhs = static_cast<DreamfallFileEntry*>(a->getData());
@@ -353,15 +353,15 @@ public:
   {
   }
 
-  virtual FXint run() 
+  virtual FXint run()
   {
     logger.set_task_size(2);
     logger.set_task_status(0);
     logger.println("Reading Directory: " + dreamfall_path + "/bin/res/");
     logger.sync();
-    
+
     data_manager.add_directory(dreamfall_path + "/bin/res/", logger.start_subtask());
-    
+
     logger.increment_status();
     logger.println("Reading filelist");
     logger.sync();
@@ -378,7 +378,7 @@ public:
     logger.println("### Done ###");
     logger.set_done();
     logger.sync();
-    
+
     std::cout << "Firing signal" << std::endl;
     sig.signal();
 
@@ -386,7 +386,7 @@ public:
   }
 };
 
-void 
+void
 DFToolBoxWindow::load_files()
 {
   progress_dialog->show(PLACEMENT_OWNER);
@@ -404,18 +404,18 @@ DFToolBoxWindow::load_files()
 long
 DFToolBoxWindow::onCmdBuildTree(FXObject* sender, FXSelector, void* data)
 {
-  std::cout << "Build Tree" << std::endl; 
+  std::cout << "Build Tree" << std::endl;
   build_trees();
   return 1;
 }
 
-void 
+void
 DFToolBoxWindow::build_trees()
 {
-  // In case we change the Dreamfall directory we clear what we have 
+  // In case we change the Dreamfall directory we clear what we have
   tree->clearItems();
 
-  {  
+  {
     DreamfallFileEntry* dfentry = new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY);
     dfentry->get_dir().name     = "Dreamfall";
     dfentry->get_dir().fullname = "Dreamfall";
@@ -435,12 +435,12 @@ DFToolBoxWindow::build_trees()
   data_manager.get_filetable().push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
   data_manager.get_filetable().back()->get_dir().name     = "all paks";
   data_manager.get_filetable().back()->get_dir().fullname = "all paks";
-  all_paks->setData(data_manager.get_filetable().back()); 
+  all_paks->setData(data_manager.get_filetable().back());
 
   data_manager.get_filetable().push_back(new DreamfallFileEntry(DreamfallFileEntry::DIRECTORY_FILE_ENTRY));
   data_manager.get_filetable().back()->get_dir().name     = "by pak";
   data_manager.get_filetable().back()->get_dir().fullname = "by pak";
-  by_pak->setData(data_manager.get_filetable().back()); 
+  by_pak->setData(data_manager.get_filetable().back());
 
   const std::vector<std::string>& pakfiles = data_manager.get_paks();
 
@@ -497,7 +497,7 @@ DFToolBoxWindow::build_trees()
                     child->setData(dfentry);
                     static_cast<DreamfallFileEntry*>(item->getData())->get_dir().children.push_back(dfentry);
                   }
-              }  
+              }
           }
       }
   }
@@ -513,7 +513,7 @@ DFToolBoxWindow::build_trees()
       save_image.type = SaveFileEntry::IMAGE_DATA;
       save_image.name = i->name;
       save_image.fullname = i->fullname;
-      
+
       SaveFileEntry save_shark;
       save_shark.type = SaveFileEntry::SHARK3D_DATA;
       save_shark.name = i->name;
@@ -562,12 +562,12 @@ DFToolBoxWindow::build_trees()
       child3->setData(dfentry3);
       child4->setData(dfentry4);
       child5->setData(dfentry5);
-      
-      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry1); 
-      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry2); 
-      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry3); 
-      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry4); 
-      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry5); 
+
+      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry1);
+      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry2);
+      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry3);
+      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry4);
+      static_cast<DreamfallFileEntry*>(save_item->getData())->get_dir().children.push_back(dfentry5);
     }
 
   std::cout << "Sorting tree" << std::endl;
@@ -593,7 +593,7 @@ void get_selection(FXTreeItem* item, std::vector<DreamfallFileEntry*>& selection
     get_selection(i, selection);
 }
 
-long 
+long
 DFToolBoxWindow::onCmdCollapseTree(FXObject*, FXSelector,void*)
 {
   if (topmost)
@@ -606,19 +606,19 @@ DFToolBoxWindow::onCmdCollapseTree(FXObject*, FXSelector,void*)
 }
 
 
-long 
+long
 DFToolBoxWindow::onCmdExpandTree(FXObject*, FXSelector,void*)
 {
   if (topmost)
     {
       for(FXTreeItem* i = topmost->getFirst(); i != NULL; i = i->getNext())
-        set_expanded_whole_tree(i, true);  
+        set_expanded_whole_tree(i, true);
     }
   tree->recalc();
   return 1;
 }
 
-long 
+long
 DFToolBoxWindow::onCmdDreamfallPath(FXObject*,FXSelector,void*)
 {
   FXDirDialog open(this,"Select the Dreamfall directory");
@@ -631,7 +631,7 @@ DFToolBoxWindow::onCmdDreamfallPath(FXObject*,FXSelector,void*)
       if (!file_exists((open.getDirectory() + "/bin/res/").text()))
         {
           FXMessageBox::error(this, MBOX_OK, "Dreamfall Path Error",
-                              "The given directory isn't the Dreamfall directory:\n%s", 
+                              "The given directory isn't the Dreamfall directory:\n%s",
                               open.getDirectory().text());
         }
       else
@@ -649,14 +649,14 @@ DFToolBoxWindow::onCmdDreamfallPath(FXObject*,FXSelector,void*)
       dreamfall_path = new_dreamfall_path;
       init();
     }
- 
+
   return 1;
 }
 
 // Open
 long
 DFToolBoxWindow::onCmdOpen(FXObject*,FXSelector,void*){
-    
+
   FXFileDialog open(this,"Open Image");
   //open.setFilename(filename.c_str());
   //open.setPatternList(patterns);
@@ -690,7 +690,7 @@ DFToolBoxWindow::onCmdSave(FXObject*,FXSelector,void*)
   else
     {
       ExportDialog* exportdialog = new ExportDialog(this);
-  
+
       exportdialog->set_file_entries(selection);
       exportdialog->create();
       exportdialog->show(PLACEMENT_SCREEN);
@@ -712,7 +712,7 @@ DFToolBoxWindow::onDirChange(FXObject* sender, FXSelector, void* data)
   return 1;
 }
 
-void 
+void
 DFToolBoxWindow::show_switcher(int i)
 {
   imageview->show_toolbar(false);
@@ -720,7 +720,7 @@ DFToolBoxWindow::show_switcher(int i)
   soundview->show_toolbar(false);
   dialogview->show_toolbar(false);
   directoryview->show_toolbar(false);
-  
+
   switch(i)
     {
     case SWITCHER_ICONVIEW:
@@ -730,7 +730,7 @@ DFToolBoxWindow::show_switcher(int i)
     case SWITCHER_IMAGEVIEW:
       imageview->show_toolbar(true);
       break;
-          
+
     case SWITCHER_SHARKVIEW:
       sharkview->show_toolbar(true);
       break;
@@ -770,7 +770,7 @@ pad_with_ones(unsigned int num)
   return num;
 }
 
-void 
+void
 DFToolBoxWindow::display(FXTreeItem* item)
 {
   try {
@@ -802,10 +802,10 @@ DFToolBoxWindow::display(FXTreeItem* item)
         else if (entry->get_save().type == SaveFileEntry::JOURNAL_DATA)
           {
             std::ostringstream str;
-                
+
             Savegame savegame(entry->get_save().fullname);
             const std::vector<Journal::Entry>& entries = savegame.get_journal().entries;
-                
+
             for(std::vector<Journal::Entry>::const_iterator i = entries.begin();
                 i != entries.end(); ++i)
               {
@@ -815,9 +815,9 @@ DFToolBoxWindow::display(FXTreeItem* item)
                     str << "ThisCombined: " << last+(*i).array[j] << "    "
                         << "Last: " << last << "    "
                         << "This: " << (*i).array[j] << std::endl;
-                        
+
                     last += (*i).array[j];
-                    str << data_manager.get_dialog(0).get_by_cut_id(last) 
+                    str << data_manager.get_dialog(0).get_by_cut_id(last)
                         << std::endl
                         << std::endl;
                   }
@@ -856,14 +856,14 @@ DFToolBoxWindow::display(FXTreeItem* item)
                     std::cout << j << "/" << ints[i].list.size() << std::endl;
 
                     unsigned int this_id = last + ints[i].list[j];
-                        
+
                     std::string text = data_manager.get_dialog(0).get_by_id(this_id);
                     if (text.empty())
                       {
                         this_id = last + pad_with_ones(ints[i].list[j]);
                         text = data_manager.get_dialog(0).get_by_id(this_id);
                       }
-                       
+
                     str << ints[i].list[j] << " " << this_id << " " << last << std::endl;
                     str << "  " << text << std::endl  << std::endl;
 
@@ -873,7 +873,7 @@ DFToolBoxWindow::display(FXTreeItem* item)
                 str << "\n________________________________________________________\n\n";
               }
             sharkview->set_text(str.str());
-            show_switcher(SWITCHER_SHARKVIEW);          
+            show_switcher(SWITCHER_SHARKVIEW);
           }
         else // SaveFileEntry::SHARK3D_DATA
           {
@@ -881,10 +881,10 @@ DFToolBoxWindow::display(FXTreeItem* item)
               sharkview->set_shark(entry->get_save().fullname);
               show_switcher(SWITCHER_SHARKVIEW);
             } catch (std::exception& err) {
-              error_log->setText(FXString().format("%s: %s",  
+              error_log->setText(FXString().format("%s: %s",
                                                    entry->get_save().fullname.c_str(),
                                                    err.what()));
-              show_switcher(SWITCHER_ERRORLOG);            
+              show_switcher(SWITCHER_ERRORLOG);
             }
           }
       }
@@ -893,7 +893,7 @@ DFToolBoxWindow::display(FXTreeItem* item)
         switch(entry->get_pak().type)
           {
           case FILETYPE_SHARK3D:
-            {   
+            {
               if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
                 {
                   sharkview->set_shark(get_exe_path() + "tmp.dat");
@@ -918,7 +918,7 @@ DFToolBoxWindow::display(FXTreeItem* item)
                     Speech speech = data_manager.get_speech_by_mp3(entry->get_pak().fullname);
 
                     std::ostringstream str;
-                    for(std::vector<Dialog>::const_iterator i = data_manager.get_dialogs().begin(); 
+                    for(std::vector<Dialog>::const_iterator i = data_manager.get_dialogs().begin();
                         i != data_manager.get_dialogs().end(); ++i)
                       {
                         const std::string& text = i->get_by_id(speech.text);
@@ -931,16 +931,16 @@ DFToolBoxWindow::display(FXTreeItem* item)
                             // FIXME: We could also add the actor's
                             // name, but its a bit hard to get from
                             // down here
-                            str << i->get_by_id(speech.actor_name) 
+                            str << i->get_by_id(speech.actor_name)
                                 << " (" << i->lang_code << " - " << i->language << "):\n"
                                 << text << std::endl << std::endl;
                           }
                       }
 
                     soundview->set_music(get_exe_path() + "tmp.mp3", str.str());
-                    
+
                   } catch(...) {
-                    soundview->set_music(get_exe_path() + "tmp.mp3", 
+                    soundview->set_music(get_exe_path() + "tmp.mp3",
                                          "<nothing found>\n\n"
                                          "If you want to see the dialog in text form displayed here, click \"File->Scan for Dialogs\".");
                   }
@@ -954,7 +954,7 @@ DFToolBoxWindow::display(FXTreeItem* item)
             if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
               {
                 dialogview->set_dialog(get_exe_path() + "tmp.dat");
-                show_switcher(SWITCHER_DIALOGVIEW);          
+                show_switcher(SWITCHER_DIALOGVIEW);
               }
             break;
 
@@ -983,7 +983,7 @@ DFToolBoxWindow::display(FXTreeItem* item)
       }
   } catch(std::exception& err) {
     error_log->setText(FXString().format("Error: %s", err.what()));
-    show_switcher(SWITCHER_ERRORLOG);    
+    show_switcher(SWITCHER_ERRORLOG);
   }
 }
 
@@ -1007,12 +1007,12 @@ DFToolBoxWindow::find(FXTreeItem* root, const std::string& url)
   return 0;
 }
 
-long 
+long
 DFToolBoxWindow::onCmdBookmark(FXObject* obj, FXSelector, void* data)
 {
   FXId* id = static_cast<FXId*>(obj);
   Bookmark* bookmark = static_cast<Bookmark*>(id->getUserData());
-  
+
   FXTreeItem* item = find(topmost, bookmark->url);
 
   if (item) display(item);
@@ -1028,13 +1028,13 @@ DFToolBoxWindow::onCmdAddBookmark(FXObject*, FXSelector, void* data)
       std::string url = static_cast<DreamfallFileEntry*>(current_tree_item->getData())->get_url();
       FXString result = static_cast<DreamfallFileEntry*>(current_tree_item->getData())->get_label().c_str();
 
-      if (FXInputDialog::getString(result, this, 
+      if (FXInputDialog::getString(result, this,
                                    ("Bookmark for " + url).c_str(),
-                                   "Please enter the name for the bookmark:", NULL)) 
+                                   "Please enter the name for the bookmark:", NULL))
         {
           std::cout << "Result: " << result.text() << std::endl;
           bookmarks.push_back(new Bookmark(result.text(), url));
-          (new FXMenuCommand(bookmarkmenu, result, Icon::unknown_document, 
+          (new FXMenuCommand(bookmarkmenu, result, Icon::unknown_document,
                              this, ID_BOOKMARK))->setUserData(bookmarks.back());
           bookmarkmenu->create();
         }
@@ -1069,12 +1069,12 @@ DFToolBoxWindow::load_bookmarks(const std::string& filename)
       SectionNodes* nodes = shark3d->get_sections("bookmarks");
       if (nodes)
         {
-          for(std::vector<SectionNode*>::iterator i = nodes->sections.begin(); 
+          for(std::vector<SectionNode*>::iterator i = nodes->sections.begin();
               i != nodes->sections.end(); ++i)
             {
               bookmarks.push_back(new Bookmark((*i)->get_string("label"),
                                                (*i)->get_string("url")));
-            }          
+            }
         }
 
       delete shark3d;
@@ -1113,7 +1113,7 @@ DFToolBoxWindow::onCmdLocationbar(FXObject*, FXSelector, void* data)
     {
     // FIXME: add code here that opens the tree
     display(i->second);
-    }      
+    }
   */
   return 1;
 }
@@ -1150,10 +1150,10 @@ void group_entries(const std::vector<DreamfallFileEntry*>& selection,
         {
           // ignoring saves for now
         }
-    } 
+    }
 }
 
-long 
+long
 DFToolBoxWindow::onCmdGotoParentDir(FXObject* sender, FXSelector, void* data)
 {
   display(current_tree_item->getParent());
@@ -1162,8 +1162,8 @@ DFToolBoxWindow::onCmdGotoParentDir(FXObject* sender, FXSelector, void* data)
 
 void
 DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
-                              const std::string& outpath, 
-                              bool preserve_path, 
+                              const std::string& outpath,
+                              bool preserve_path,
                               bool fix_extension,
                               bool shark_as_text)
 {
@@ -1200,7 +1200,7 @@ DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
                 {
                   data_manager.extract((*i)->get_pak(), get_exe_path() + "/tmp.shark");
                   std::ifstream in((get_exe_path() + "/tmp.shark").c_str(), std::ios::binary);
-                  if (!in) 
+                  if (!in)
                     {
                       throw std::runtime_error("Error: Couldn't open " + (get_exe_path() + "/tmp.shark"));
                     }
@@ -1208,7 +1208,7 @@ DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
                     {
                       Shark3D* shark = Shark3D::parse_binary(in);
                       in.close();
-   
+
                       std::ofstream out(outfile.c_str());
                       if (!out)
                         {
@@ -1247,15 +1247,15 @@ public:
       logger(logger_)
   {
   }
-  
-  FXint run() 
+
+  FXint run()
   {
     //dftoolbox->scan_for_all_mp3s(logger);
     return 0;
   }
 };
 
-long 
+long
 DFToolBoxWindow::onCmdScanForMP3(FXObject* sender, FXSelector, void* data)
 {
   progress_dialog->show(PLACEMENT_OWNER);
@@ -1276,7 +1276,7 @@ int main(int argc,char** argv)
 #ifdef USE_SDL
     std::cout << "Initing SDL audio" << std::endl;
     // start SDL with audio support
-    if(SDL_Init(SDL_INIT_AUDIO)==-1) 
+    if(SDL_Init(SDL_INIT_AUDIO)==-1)
       {
         printf("SDL_Init: %s\n", SDL_GetError());
         exit(1);
@@ -1285,7 +1285,7 @@ int main(int argc,char** argv)
     std::cout << "Initing SDL mixer" << std::endl;
     // open 44.1KHz, signed 16bit, system byte order,
     //      stereo audio, using 1024 byte chunks
-    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024)==-1) 
+    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024)==-1)
       {
         printf("Mix_OpenAudio: %s\n", Mix_GetError());
         exit(2);
@@ -1308,7 +1308,7 @@ int main(int argc,char** argv)
     application.create();
 
     main->show(PLACEMENT_SCREEN);
-  
+
     return application.run();
     // Icon::deinit();
   } catch(std::exception& err) {

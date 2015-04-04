@@ -16,7 +16,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
     else if (argc == 3 && strcmp(argv[1], "--compile") == 0)
       {
         std::ifstream in(argv[2]);
-      
+
         if(!in)
           {
             throw std::runtime_error("Error: Couldn't open '" + std::string(argv[2]) + "'");
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 
             doc->write_binary(std::cout);
 
-            delete doc;         
+            delete doc;
           }
       }
     else
@@ -64,9 +64,9 @@ int main(int argc, char** argv)
           {
             if (argc > 2)
               std::cout << "# " << argv[i] << std::endl;
-      
+
             std::ifstream in(argv[i]);
-            
+
             if(!in)
               {
                 throw std::runtime_error("Error: Couldn't open '" + std::string(argv[i]) + "'");

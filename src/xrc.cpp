@@ -40,7 +40,7 @@ int main(int argc, char** argv)
           in.close();
           std::cout << std::endl;
         }
-    } 
+    }
 }
 
 /* EOF */

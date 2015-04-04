@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -51,7 +51,7 @@ private:
   /** List of possible filenames, used to optimize guessing */
   std::vector<std::string> filelist;
 
-  std::vector<Dialog> dialogs; 
+  std::vector<Dialog> dialogs;
 
   std::map<unsigned int, Speech> id_to_speech;
   std::map<std::string,  Speech> mp3_to_speech;
@@ -62,7 +62,7 @@ private:
 public:
   DataManager();
   ~DataManager();
-  
+
   void init(ProgressLogger& logger);
 
   void add_directory(const std::string& pakdirectory, ProgressLogger& logger);
@@ -80,7 +80,7 @@ public:
 
   /** Query the file for the type */
   FileType get_type(const std::string& pathname);
-  
+
   /** Scans for all files, detects their name, filetype, etc. */
   void scan_paks(ProgressLogger& logger);
 

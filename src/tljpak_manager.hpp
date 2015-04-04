@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -48,7 +48,7 @@ private:
 public:
   TLJPakManager();
   ~TLJPakManager();
-  
+
   void add_directory(const std::string& pakdirectory, ProgressLogger& logger);
 
   /** Add a filelist with filelist to resolve the hash values */
@@ -64,7 +64,7 @@ public:
 
   /** Query the file for the type */
   FileType get_type(const std::string& pathname);
-  
+
   /** Scans for all files, detects their name, filetype, etc. */
   void scan_paks(ProgressLogger& logger);
 

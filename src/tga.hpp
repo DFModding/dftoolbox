@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -41,15 +41,15 @@ struct TGA
   short height;             // image height in pixels
   char  bits;               // image bits per pixel 8,16,24,32
   char  descriptor;         // image descriptor bits (vh flip bits)
-    
+
   std::vector<char> buffer;
 
   // pixel data follows header
   TGA(short width_, short height_, const std::vector<char>& buffer_)
-    : identsize(0), 
+    : identsize(0),
       colourmaptype(0),
       imagetype(2),
-      
+
       colourmapstart(0),
       colourmaplength(0),
       colourmapbits(0),
@@ -57,10 +57,10 @@ struct TGA
       xstart(0),
       ystart(0),
 
-      width(width_), 
+      width(width_),
       height(height_),
       bits(32),
-      descriptor(0 | (1 << 5))   
+      descriptor(0 | (1 << 5))
   {
     buffer.resize(buffer_.size());
     for(int i = 0; i < int(buffer.size())/4; ++i)
@@ -88,13 +88,13 @@ struct TGA
     in.read(reinterpret_cast<char*>(&width),           sizeof(width));
     in.read(reinterpret_cast<char*>(&height),          sizeof(height));
     in.read(reinterpret_cast<char*>(&bits),            sizeof(bits));
-    in.read(reinterpret_cast<char*>(&descriptor),      sizeof(descriptor));    
+    in.read(reinterpret_cast<char*>(&descriptor),      sizeof(descriptor));
 
     buffer.resize(width * height * bits/8);
     in.read(&*buffer.begin(), buffer.size());
   }
-   
-  char* get_data() 
+
+  char* get_data()
   {
     return &*buffer.begin();
   }

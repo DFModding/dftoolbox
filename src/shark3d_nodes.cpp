@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -44,7 +44,7 @@ int read_int(std::istream& in)
   do
     {
       c = in.get();
-      
+
       if (c == -1)
         throw std::runtime_error("shark3d_nodes: read_int(): Premature end of file");
 
@@ -58,7 +58,7 @@ int read_int(std::istream& in)
 float read_float(std::istream& in)
 {
   unsigned char byte[4];
-  
+
   byte[3] = in.get();
   byte[2] = in.get();
   byte[1] = in.get();
@@ -81,7 +81,7 @@ std::string read_string(std::istream& in)
   int num = read_int(in);
   {
     int idx = directory.size() - num;
-   
+
     if (directory.find(idx) != directory.end())
       {
         return directory[idx];
@@ -164,10 +164,10 @@ bool is_float(const std::string& str)
   for(int i = 0; i < int(str.size()); ++i)
     if (!isdigit(str[i]) && str[i] != '-' && str[i] != '+' && str[i] != 'e' && str[i] != '.')
       return false;
-  return true; 
+  return true;
 }
 
-Token::Token(Type type_, const std::string& v) 
+Token::Token(Type type_, const std::string& v)
   : type(type_), value(v)
 {}
 
@@ -175,7 +175,7 @@ int
 Token::get_int() const
 {
   assert(type == T_INT);
-  int v = 0; 
+  int v = 0;
   assert(from_string(value, v));
   return v;
 }
@@ -184,7 +184,7 @@ float
 Token::get_float() const
 {
   assert(type == T_FLOAT);
-  float v = 0; 
+  float v = 0;
   assert(from_string(value, v));
   return v;
 }
@@ -202,7 +202,7 @@ Token::get_string() const
 
 std::vector<Token> tokenize(std::istream& in)
 {
-  std::vector<Token> tokens; 
+  std::vector<Token> tokens;
 
   while(true)
     {
@@ -211,7 +211,7 @@ std::vector<Token> tokenize(std::istream& in)
       if (!in)
         {
           tokens.push_back(Token(Token::T_EOF, str));
-          break;          
+          break;
         }
 
       if (is_ident(str))
@@ -247,11 +247,11 @@ std::vector<Token> tokenize(std::istream& in)
         {
           tokens.push_back(Token(Token::T_NULL, str));
         }
-      else 
+      else
         {
           std::ostringstream out;
           out << "Error: Unknown token '" << str << "'";
-          throw std::runtime_error(out.str());          
+          throw std::runtime_error(out.str());
         }
     }
   return tokens;
@@ -297,7 +297,7 @@ SectionNode* parse(const std::vector<Token>& tokens, int& cur)
             section->add(ident, node);
           }
           break;
-      
+
         case Token::T_INT:
           {
             IntNode* node = new IntNode();
@@ -344,7 +344,7 @@ SectionNode* parse(const std::vector<Token>& tokens, int& cur)
           str << "Error: Unexpected token, wanted value got " << tokens[cur].type << "'" << tokens[cur].value << "'";
           throw std::runtime_error(str.str());
         }
-    }  
+    }
 
   return section;
 }
@@ -354,7 +354,7 @@ SectionNode* parse(const std::vector<Token>& tokens, int& cur)
 void write_int(std::ostream& out, int iv)
 {
   unsigned int v = *reinterpret_cast<unsigned int*>(&iv);
-  do { 
+  do {
     if ((v & 0x7f) >= v)
       out.put((v & 0x7f));
     else
@@ -397,17 +397,17 @@ void write_string(std::ostream& out, const std::string& str, bool use_dir = true
 }
 
 
-IntNode::IntNode() 
+IntNode::IntNode()
 {
 }
 
 IntNode::IntNode(int i)
 {
-  ints.push_back(i); 
+  ints.push_back(i);
 }
 
 void
-IntNode::write_text(std::ostream& out, const std::string& prefix) 
+IntNode::write_text(std::ostream& out, const std::string& prefix)
 {
   for(std::vector<int>::iterator i = ints.begin(); i != ints.end(); ++i)
     out << *i << " ";
@@ -417,7 +417,7 @@ void
 IntNode::write_binary(std::ostream& out)
 {
   assert(ints.size() > 0);
-  if (ints.size() == 1) 
+  if (ints.size() == 1)
     {
       out.put(0x1);
       write_int(out, ints[0]);
@@ -432,30 +432,30 @@ IntNode::write_binary(std::ostream& out)
 }
 
 
-FloatNode::FloatNode() 
+FloatNode::FloatNode()
 {
 }
 
 FloatNode::FloatNode(float f)
 {
-  floats.push_back(f); 
+  floats.push_back(f);
 }
 
 void
-FloatNode::write_text(std::ostream& out, const std::string& prefix) 
+FloatNode::write_text(std::ostream& out, const std::string& prefix)
 {
   for(std::vector<float>::iterator i = floats.begin(); i != floats.end(); ++i)
-    {  
+    {
       out.precision(26); // FIXME: not sure how much we need
       out << std::showpoint << *i << " ";
     }
 }
 
 void
-FloatNode::write_binary(std::ostream& out) 
+FloatNode::write_binary(std::ostream& out)
 {
   assert(floats.size() > 0);
-  if (floats.size() == 1) 
+  if (floats.size() == 1)
     {
       out.put(0x4);
       write_float(out, floats[0]);
@@ -469,17 +469,17 @@ FloatNode::write_binary(std::ostream& out)
     }
 }
 
-StringNode::StringNode() 
+StringNode::StringNode()
 {
 }
 
-StringNode::StringNode(const std::string& str) 
+StringNode::StringNode(const std::string& str)
 {
-  strings.push_back(str); 
+  strings.push_back(str);
 }
 
 void
-StringNode::write_text(std::ostream& out, const std::string& prefix) 
+StringNode::write_text(std::ostream& out, const std::string& prefix)
 {
   for(std::vector<std::string>::iterator i = strings.begin(); i != strings.end(); ++i)
     out << "\"" << *i << "\" ";
@@ -489,7 +489,7 @@ void
 StringNode::write_binary(std::ostream& out)
 {
   assert(strings.size() > 0);
-  if (strings.size() == 1) 
+  if (strings.size() == 1)
     {
       out.put(0x10);
       write_string(out, strings[0]);
@@ -516,24 +516,24 @@ NullNode::write_binary(std::ostream& out)
   out.put(0);
 }
 
-SectionNode::SectionNode() 
+SectionNode::SectionNode()
 {
 }
 
-SectionNode::~SectionNode() 
+SectionNode::~SectionNode()
 {
   for(Entries::iterator i = entries.begin(); i != entries.end(); ++i)
     delete i->node;
 }
 
 void
-SectionNode::add(const std::string& name_, Node* node_) 
+SectionNode::add(const std::string& name_, Node* node_)
 {
   entries.push_back(Entry(name_, node_));
 }
 
 void
-SectionNode::write_text(std::ostream& out, const std::string& prefix) 
+SectionNode::write_text(std::ostream& out, const std::string& prefix)
 {
   for(Entries::iterator i = entries.begin(); i != entries.end(); ++i)
     {
@@ -555,17 +555,17 @@ SectionNode::write_binary(std::ostream& out)
     }
 }
 
-SectionNodes::SectionNodes() 
+SectionNodes::SectionNodes()
 {
 }
 
-SectionNodes::SectionNodes(SectionNode* node) 
+SectionNodes::SectionNodes(SectionNode* node)
 {
-  sections.push_back(node); 
+  sections.push_back(node);
 }
 
 void
-SectionNodes::write_text(std::ostream& out, const std::string& prefix) 
+SectionNodes::write_text(std::ostream& out, const std::string& prefix)
 {
   for(std::vector<SectionNode*>::size_type i = 0; i < sections.size(); ++i)
     {
@@ -606,7 +606,7 @@ SectionNode::get_floats(const std::string& ident) const
           if (node)
             return node->floats;
         }
-    }  
+    }
 
   return std::vector<float>();
 }
@@ -676,7 +676,7 @@ SectionNode::get_ints(const std::string& ident) const
           if (node)
             return node->ints;
         }
-    }  
+    }
 
   return std::vector<int>();
 }
@@ -692,9 +692,9 @@ SectionNode::get_sections(const std::string& ident) const
           if (node)
             return node->sections;
         }
-    }  
+    }
 
-  return std::vector<SectionNode*>();  
+  return std::vector<SectionNode*>();
 }
 
 std::vector<std::string>
@@ -708,7 +708,7 @@ SectionNode::get_strings(const std::string& ident) const
           if (node)
             return node->strings;
         }
-    }  
+    }
   return std::vector<std::string>();
 }
 
@@ -721,7 +721,7 @@ SectionNode::has_subnode(const std::string& ident) const
         {
           return true;
         }
-    }  
+    }
   return false;
 }
 

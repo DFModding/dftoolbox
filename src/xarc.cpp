@@ -34,7 +34,7 @@ void xarc_list(std::istream& in)
       entry.size     = read_uint32(in);
       entry.version  = read_uint32(in);
 
-      std::cout << std::setw(40) << std::left  << entry.filename 
+      std::cout << std::setw(40) << std::left  << entry.filename
                 << std::setw(10) << std::right << entry.size
                 << std::setw(10) << std::right << entry.version
                 << std::endl;
@@ -51,7 +51,7 @@ void xarc_list(std::istream& in)
       filebuf.resize(entries[i].size);
       in.read(&*filebuf.begin(), filebuf.size());
       out.write(&*filebuf.begin(), filebuf.size());
-      
+
       out.close();
     }
 }

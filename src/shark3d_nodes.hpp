@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -48,7 +48,7 @@ bool is_float(const std::string& str);
 
 struct Token {
   enum Type { T_IDENT, T_STRING, T_INT, T_FLOAT, T_SECTION_START, T_SECTION_END, T_NULL, T_EOF };
-  
+
   Type type;
   std::string value;
 
@@ -64,8 +64,8 @@ SectionNode* parse(const std::vector<Token>& tokens, int& cur);
 } // namespace shark3d_text
 
 
-class Node   { 
-public: 
+class Node   {
+public:
   virtual ~Node() {}
   virtual void write_text(std::ostream& out, const std::string& prefix) = 0;
   virtual void write_binary(std::ostream& out) = 0;
@@ -73,7 +73,7 @@ public:
 
 class IntNode : public Node {
 public:
-  std::vector<int>  ints; 
+  std::vector<int>  ints;
 
   IntNode();
   IntNode(int i);
@@ -82,7 +82,7 @@ public:
   void write_binary(std::ostream& out);
 };
 
-class FloatNode : public Node { 
+class FloatNode : public Node {
 public:
   std::vector<float> floats;
 
@@ -93,7 +93,7 @@ public:
   void write_binary(std::ostream& out);
 };
 
-class StringNode : public Node { 
+class StringNode : public Node {
 public:
   std::vector<std::string> strings;
 
@@ -116,7 +116,7 @@ public:
     std::string name;
     Node* node;
 
-    Entry(const std::string& name_, Node* node_) 
+    Entry(const std::string& name_, Node* node_)
       : name(name_), node(node_)
     {}
   };
@@ -145,8 +145,8 @@ public:
 };
 
 class SectionNodes : public Node {
-public: 
-  std::vector<SectionNode*> sections; 
+public:
+  std::vector<SectionNode*> sections;
 
   SectionNodes();
   SectionNodes(SectionNode* node);
@@ -155,6 +155,6 @@ public:
   void write_binary(std::ostream& out);
 };
 
-#endif 
+#endif
 
 /* EOF */

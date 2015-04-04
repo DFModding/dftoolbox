@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -28,22 +28,22 @@
 #include "fx.h"
 #include <string>
 
-class SharkView : FXVerticalFrame 
+class SharkView : FXVerticalFrame
 {
   FXDECLARE(SharkView);
 private:
   FXToolBar*   toolbar;
   FXText*      text;
-  
+
 public:
   SharkView();
   SharkView(FXComposite* parent, FXComposite* toolbar_dock);
 
   void set_shark(const std::string& filename);
   void set_text(const std::string& text);
-  
-  long onCmdToggleWrap(FXObject*,FXSelector,void*); 
-  long onCmdSaveText(FXObject*,FXSelector,void*); 
+
+  long onCmdToggleWrap(FXObject*,FXSelector,void*);
+  long onCmdSaveText(FXObject*,FXSelector,void*);
   void show_toolbar(bool t) { if (t) toolbar->show(); else toolbar->hide(); }
 
   enum {

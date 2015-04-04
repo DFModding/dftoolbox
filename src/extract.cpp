@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -48,7 +48,7 @@ void guess(const std::string& pak_filename)
 void extract(const std::string& pak_filename, const std::string& pathname)
 {
   TLJPak pak(pak_filename);
-  
+
   if (0)
     {
       pak.print_file_table();
@@ -75,9 +75,9 @@ void extract(const std::string& pak_filename, const std::string& pathname)
       std::cout << "Extracting file to: data.dat" << std::endl;
       std::ofstream out("data.dat", std::ios::binary);
 
-      
+
       std::vector<char> buffer(pak.files[i].filesize);
-      
+
       in.seekg(pak.files[i].offset, std::ios::beg);
       in.read(reinterpret_cast<char*>(&*buffer.begin()),   buffer.size());
 
@@ -141,9 +141,9 @@ void extract(TLJPak& pak, std::istream& in, const std::string& outpath)
             snprintf(filename, 1024, "dat/%04d.dat", i);
 
           std::cout << prefix + path + "/" + filename << " " << pak.files[i].offset << " " << pak.files[i].filesize << std::endl;
-          
+
           std::ofstream out((prefix + path + "/" + filename).c_str(), std::ios::binary);
-          out.write(magic, 8);         
+          out.write(magic, 8);
           for(int j = 0; j < pak.files[i].filesize-8; ++j)
             out.put(in.get());
           out.close();
@@ -171,7 +171,7 @@ std::string directory_name_from_pak(const std::string& name)
   return name.substr(namestart, dotpos - namestart);
 }
 
-void inject(const std::string& pak_filename, 
+void inject(const std::string& pak_filename,
             const std::string& fileindex, const std::string& file, const std::string& outfile)
 {
   std::vector<char> filebuf;
@@ -181,7 +181,7 @@ void inject(const std::string& pak_filename,
       throw std::runtime_error("Error: Couldn't open " + file);
     }
   TLJPak pak(pak_filename);
-  
+
   int fileindex_idx = pak.lookup(fileindex);
 
   if (fileindex_idx == -1)
@@ -211,7 +211,7 @@ filter_names(std::vector<std::string>& lst)
   return ret;
 }
 
-void 
+void
 check_directory(const std::string& pak_filename, const std::vector<std::string>& directory)
 {
   std::map<int, std::string> entry2name;
@@ -237,7 +237,7 @@ check_directory(const std::string& pak_filename, const std::vector<std::string>&
             }
         }
     }
- 
+
   // Scan all file entries
   for(int i = 0; i < int(pak.files.size()); ++i)
     {
@@ -254,7 +254,7 @@ check_directory(const std::string& pak_filename, const std::vector<std::string>&
                 {
                   std::vector<std::string> ret = pak.guess(i);
                   ret = filter_names(ret);
-              
+
                   if (ret.size() == 0)
                     {
                       std::cout << i << " ### unknown" << std::endl;
@@ -274,7 +274,7 @@ check_directory(const std::string& pak_filename, const std::vector<std::string>&
     }
 }
 
-void 
+void
 extract_directory(const std::string& pak_filename, const std::string& dir_filename, bool guess = true)
 {
   std::map<int, std::string> entry2name;
@@ -293,7 +293,7 @@ extract_directory(const std::string& pak_filename, const std::string& dir_filena
           }
       }
   in.close();
- 
+
   for(int i = 0; i < int(pak.files.size()); ++i)
     {
       if (pak.files[i].is_file())
@@ -329,7 +329,7 @@ extract_directory(const std::string& pak_filename, const std::string& dir_filena
 
 int main(int argc, char** argv)
 {
-  try 
+  try
     {
       if (argc == 1)
         {
@@ -364,14 +364,14 @@ int main(int argc, char** argv)
             {
               std::cout << "Usage: extract --guess PAK NUM" << std::endl;
               std::cout << "Usage: extract --guess PAK ALL" << std::endl;
-            }                    
+            }
         }
       else if (strcmp(argv[1], "--check") == 0)
         {
           if (argc >= 3)
             {
               std::vector<std::string> directory;
-              
+
               if (0)
                 {
                   file_readlines("script.index", directory);
@@ -389,7 +389,7 @@ int main(int argc, char** argv)
                     {
                       file_readlines(argv[i], directory);
                     }
-              
+
                   check_directory(argv[2], directory);
                 }
             }
@@ -467,18 +467,18 @@ int main(int argc, char** argv)
               else
                 {
                   TLJPak pak(argv[i]);
-      
+
                   std::string outfile = directory_name_from_pak(tolowercase(argv[i]));
                   if (0)
                     {
                       std::cout << "Filename:      " << argv[i] << std::endl;
                       std::cout << "Outfile:       " << outfile << std::endl;
                     }
-                    
+
                   char default_directory[] = "df-directory.txt";
                   std::cout << "Using default directory: " << default_directory << std::endl;
                   extract_directory(argv[i], get_exe_path() + default_directory);
-                     
+
                   //extract(pak, in, outfile);
 
                   in.close();
@@ -486,7 +486,7 @@ int main(int argc, char** argv)
             }
         }
     }
-  catch(std::exception& err) 
+  catch(std::exception& err)
     {
       std::cout << "Error: " << err.what() << std::endl;
     }

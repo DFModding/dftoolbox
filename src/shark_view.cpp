@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -71,7 +71,7 @@ void
 SharkView::set_shark(const std::string& filename)
 {
   std::ifstream in(filename.c_str(), std::ios::binary);
-  if (!in) 
+  if (!in)
     {
       throw std::runtime_error("Error: Couldn't open " + filename);
     }
@@ -79,7 +79,7 @@ SharkView::set_shark(const std::string& filename)
     {
       Shark3D* shark = Shark3D::parse_binary(in);
       in.close();
-   
+
       std::ostringstream str;
       shark->write_text(str);
       text->setText(str.str().c_str(), str.str().size());
@@ -122,7 +122,7 @@ SharkView::onCmdSaveText(FXObject*,FXSelector,void*)
       out << text->getText().text();
       out.close();
     }
-  
+
   return 1;
 }
 

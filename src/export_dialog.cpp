@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -30,8 +30,8 @@
 
 FXDEFMAP(ExportDialog) ExportDialogMap[] = {
   FXMAPFUNC(SEL_COMMAND,       ExportDialog::ID_EXPORT,        ExportDialog::onCmdExport),
-  FXMAPFUNC(SEL_COMMAND,       ExportDialog::ID_CANCEL,        ExportDialog::onCmdCancel),  
-  FXMAPFUNC(SEL_COMMAND,       ExportDialog::ID_BROWSE,        ExportDialog::onCmdBrowse),  
+  FXMAPFUNC(SEL_COMMAND,       ExportDialog::ID_CANCEL,        ExportDialog::onCmdCancel),
+  FXMAPFUNC(SEL_COMMAND,       ExportDialog::ID_BROWSE,        ExportDialog::onCmdBrowse),
 };
 
 // Object implementation
@@ -48,12 +48,12 @@ ExportDialog::ExportDialog(DFToolBoxWindow* parent_)
                                               0,0,0,0, 0,0,0,0);
 
   FXMatrix* matrix = new FXMatrix(vbox, 2, MATRIX_BY_COLUMNS|LAYOUT_FILL_X);
-  
+
   new FXLabel(matrix, "Selection:");
   filename = new FXText(matrix, NULL, 0, LAYOUT_FILL_COLUMN|LAYOUT_FILL_X|FRAME_SUNKEN|LAYOUT_CENTER_Y);
   filename->setEditable(FALSE);
   new FXLabel(matrix, "Export to:");
-  
+
   {
     FXHorizontalFrame* hbox = new FXHorizontalFrame(matrix, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN, 0,0,0,0, 0,0,0,0);
     pathname = new FXTextField(hbox,0, NULL, 0, TEXTFIELD_ENTER_ONLY|LAYOUT_FILL_X|FRAME_SUNKEN|LAYOUT_CENTER_Y);
@@ -64,7 +64,7 @@ ExportDialog::ExportDialog(DFToolBoxWindow* parent_)
     FXHorizontalFrame* hbox = new FXHorizontalFrame(vbox, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN, 0,0,0,0, 0,0,0,0);
     new FXLabel(hbox, "Convert Images to: ");
     FXListBox* typebox = new FXListBox(hbox, NULL,0, LAYOUT_CENTER_Y|FRAME_SUNKEN);
-  
+
     typebox->appendItem("Native");
     typebox->appendItem("Targa (.tga)");
     typebox->setNumVisible(std::min(typebox->getNumItems(), 20));
@@ -74,7 +74,7 @@ ExportDialog::ExportDialog(DFToolBoxWindow* parent_)
     FXHorizontalFrame* hbox = new FXHorizontalFrame(vbox, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN, 0,0,0,0, 0,0,0,0);
     new FXLabel(hbox, "Convert Shark3D to: ");
     FXListBox* typebox = new FXListBox(hbox, NULL,0, LAYOUT_CENTER_Y|FRAME_SUNKEN);
-  
+
     typebox->appendItem("Text");
     typebox->appendItem("Native");
     typebox->setNumVisible(std::min(typebox->getNumItems(), 20));
@@ -125,19 +125,19 @@ ExportDialog::set_file_entries(const std::vector<DreamfallFileEntry*>& selection
   filename->setVisibleRows(std::min(filename->getNumRows(), 20));
 }
 
-long 
+long
 ExportDialog::onCmdExport(FXObject*,FXSelector,void*)
 {
   hide(); // FIXME: is there a 'destroy'?
 
-  parent->export_files(entries, pathname->getText().text(), 
+  parent->export_files(entries, pathname->getText().text(),
                        preserve_path->getCheck(), fix_extension->getCheck(),
                        true);
 
-  return 1;  
+  return 1;
 }
 
-long 
+long
 ExportDialog::onCmdCancel(FXObject*,FXSelector,void*)
 {
   hide(); // FIXME: is there a 'destroy'?

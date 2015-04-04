@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -38,7 +38,7 @@ FXIMPLEMENT(ProgressDialog, FXDialogBox, ProgressDialogMap, ARRAYNUMBER(Progress
 // FIXME: move this somewhere less global
 FXGUISignal* sig;
 
-ProgressDialog::ProgressDialog() 
+ProgressDialog::ProgressDialog()
 {
 }
 
@@ -49,10 +49,10 @@ ProgressDialog::ProgressDialog(FXApp* app, const FXString& title)
 {
   sig = new FXGUISignal(getApp(), this, ProgressDialog::ID_THREAD_UPDATE);
 
-  vbox = new FXVerticalFrame(this, LAYOUT_FILL_X|LAYOUT_FILL_Y, 
+  vbox = new FXVerticalFrame(this, LAYOUT_FILL_X|LAYOUT_FILL_Y,
                              0, 0, 0, 0,
                              0, 0, 0, 0);
-  
+
   FXPacker* frame  = new FXPacker(vbox, LAYOUT_FILL_Y|LAYOUT_FILL_X|FRAME_SUNKEN, 0, 0, 0, 0,   0, 0, 0, 0);
   log              = new FXText(frame, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN|FRAME_THICK);
   log->setVisibleRows(25);
@@ -64,17 +64,17 @@ ProgressDialog::ProgressDialog(FXApp* app, const FXString& title)
   progress.resize(3);
 
   label[2]    = new FXLabel(matrix, "Subtask:", NULL, LAYOUT_RIGHT);
-  progress[2] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 
+  progress[2] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN,
                                   0, 0, 300, 20);
 
   label[1]    = new FXLabel(matrix, "Task:", NULL, LAYOUT_RIGHT);
-  progress[1] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 
+  progress[1] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN,
                                   0, 0, 300, 20);
 
   label[0]    = new FXLabel(matrix, "Total:", NULL, LAYOUT_RIGHT);
-  progress[0] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN, 
+  progress[0] = new FXProgressBar(matrix, NULL, 0, PROGRESSBAR_NORMAL|LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_FILL_COLUMN,
                                   0, 0, 300, 20);
-  
+
   ok_button        = new FXButton(vbox, "Close", NULL, this, ID_HIDE, ICON_ABOVE_TEXT|FRAME_RAISED|LAYOUT_RIGHT|LAYOUT_FIX_WIDTH, 0, 0, 80, 0);
   ok_button->disable();
 }
@@ -108,7 +108,7 @@ ProgressDialog::relayout(int bars)
           label[i]->hide();
         }
     }
-  vbox->recalc(); 
+  vbox->recalc();
 }
 
 void
@@ -129,17 +129,17 @@ ProgressDialog::onThreadUpdate(FXObject*, FXSelector, void* data)
       progress[i]->setProgress(l->get_collected_task_status());
       i += 1;
     }
-  
+
   log->appendText(logger->pop_log().c_str());
 
   //std::cout << log->getYPosition() << " "  << log->getContentHeight()  << std::endl;
   log->makePositionVisible(log->getLength());
-  
+
   if (logger->is_done())
     {
       ok_button->enable();
-      
-      // Kill thread 
+
+      // Kill thread
       if (thread){
         thread->join();
         delete thread;

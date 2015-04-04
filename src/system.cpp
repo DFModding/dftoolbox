@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -97,14 +97,14 @@ open_directory(const std::string& pathname)
   TCHAR           szDir[MAX_PATH+1];
   WIN32_FIND_DATA FileData;
 
-  std::vector<DirectoryEntry> directory;  
-  
+  std::vector<DirectoryEntry> directory;
+
   // What is this good for?!
   sprintf(szDir, "%s\\*", pathname.c_str());
 
   hList = FindFirstFile(szDir, &FileData);
   if (hList == INVALID_HANDLE_VALUE)
-    { 
+    {
       throw std::runtime_error("open_directory(): Couldn't open " + pathname);
     }
   else
@@ -117,13 +117,13 @@ open_directory(const std::string& pathname)
             {
               if (strcmp(FileData.cFileName, ".")  != 0 &&
                   strcmp(FileData.cFileName, "..") != 0)
-                directory.push_back(DirectoryEntry(DirectoryEntry::T_DIRECTORY, FileData.cFileName, fullname + "/"));            
+                directory.push_back(DirectoryEntry(DirectoryEntry::T_DIRECTORY, FileData.cFileName, fullname + "/"));
             }
           else
             {
               directory.push_back(DirectoryEntry(DirectoryEntry::T_FILE, FileData.cFileName, fullname));
             }
-            
+
           if (!FindNextFile(hList, &FileData))
             {
               if (GetLastError() == ERROR_NO_MORE_FILES)
@@ -138,14 +138,14 @@ open_directory(const std::string& pathname)
       return directory;
     }
 }
-#else 
+#else
 std::vector<DirectoryEntry>
 open_directory(const std::string& pathname)
 {
   std::vector<DirectoryEntry> directory;
 
   DIR* dir = opendir(pathname.c_str());
-  
+
   if (!dir)
     throw std::runtime_error("Couldn't open " + pathname);
 
@@ -156,7 +156,7 @@ open_directory(const std::string& pathname)
           strcmp(dp->d_name, ".")  != 0)
         {
           struct stat buf;
-          
+
           std::string fullname = pathname + dp->d_name;
           if (stat(fullname.c_str(), &buf) == 0)
             {
@@ -173,9 +173,9 @@ open_directory(const std::string& pathname)
 
   return directory;
 }
-#endif 
+#endif
 
-Directory 
+Directory
 open_directory(const std::string& pathname, const std::string& suffix)
 {
   Directory res;
@@ -210,13 +210,13 @@ void file_copy(const std::string& from, const std::string& to)
   std::ifstream in(from.c_str(), std::ios::binary);
   if (!in)
     throw std::runtime_error("Couldn't open " + from);
-  
+
   std::ofstream out(to.c_str(), std::ios::binary);
   if (!out)
     throw std::runtime_error("Couldn't open " + to);
 
   char buffer[4096];
-  
+
   while(in)
     {
       int read = in.read(buffer, 4096).gcount();
@@ -266,7 +266,7 @@ std::string read_string(std::istream& in, int len)
     {
       buf += in.get();
     }
-  return buf; 
+  return buf;
 }
 
 std::vector<char> read_bytes(std::istream& in, int len)

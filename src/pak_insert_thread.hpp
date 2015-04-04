@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -42,7 +42,7 @@ struct InsertRequest
 
   /** Where to insert the given file */
   std::string location;
-  
+
   /** The pak files to modify (can be multiple since some pak contain
       duplicate data */
   std::vector<std::string> paks;
@@ -67,7 +67,7 @@ private:
   ProgressLogger* mlogger;
 public:
   PakInsertThread(FXApp* app_, ProgressDialog* progress_dialog_,
-                  const std::vector<InsertRequest>& inserts_, 
+                  const std::vector<InsertRequest>& inserts_,
                   ProgressLogger* logger_);
 
   virtual ~PakInsertThread() {}

@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -45,7 +45,7 @@ DialogView::DialogView(FXComposite* parent, FXComposite* dock,  DFToolBoxWindow*
   toolbar = new FXToolBar(dock, LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y);
 
   // FIXME: add text wrap buttons
-  new FXButton(toolbar, "\tSave text\tSave text", Icon::save_file, 
+  new FXButton(toolbar, "\tSave text\tSave text", Icon::save_file,
                this, ID_SAVE_TEXT, BUTTON_TOOLBAR|FRAME_RAISED);
 
   langbox = new FXListBox(toolbar, this, ID_LANGUAGE_SWITCH, LAYOUT_CENTER_Y);
@@ -64,13 +64,13 @@ DialogView::set_dialog(const std::string& filename)
 {
   dialogs.clear();
   read_dialogs(filename, dialogs);
-  
+
   langbox->clearItems();
   int c = 0;
   langbox->appendItem("All languages");
   for(Dialogs::iterator i = dialogs.begin(); i != dialogs.end(); ++i)
     {
-      langbox->appendItem((i->lang_code + " - " + i->language).c_str(), NULL, 
+      langbox->appendItem((i->lang_code + " - " + i->language).c_str(), NULL,
                           reinterpret_cast<void*>(c));
       c += 1;
     }
@@ -86,7 +86,7 @@ DialogView::set_language(int id)
   if (id >= 1 && id < int(dialogs.size()+1))
     {
       id -= 1;
-      
+
       std::ostringstream str;
       for(unsigned int i = 0; i < dialogs[id].entries.size(); ++i)
         {
@@ -111,7 +111,7 @@ DialogView::set_language(int id)
       for(unsigned int i = 0; i < dialogs[0].entries.size(); ++i)
         {
           str << i << ")" << std::endl;
-          
+
           for(unsigned int j = 0; j < dialogs.size(); ++j)
             {
               str << std::endl;
@@ -168,7 +168,7 @@ DialogView::onCmdHyperlink(FXObject*,FXSelector,void* data)
   FXint end   = text->wordEnd(pos);
 
   text->setDelimiters(delim);
-  
+
   FXString link;
   text->extractText(link, start, end - start);
 
@@ -176,7 +176,7 @@ DialogView::onCmdHyperlink(FXObject*,FXSelector,void* data)
     {
       FXint dialog_id;
       FXint lang_code;
-      
+
       if (link.scan("[[dialog:%d:%d]]", &lang_code, &dialog_id) == 2)
         {
           std::cout << "Dialog2: " << dialog_id << " " << lang_code << std::endl;
@@ -219,7 +219,7 @@ DialogView::onCmdSaveText(FXObject*,FXSelector,void*)
       out << text->getText().text();
       out.close();
     }
-  
+
   return 1;
 }
 

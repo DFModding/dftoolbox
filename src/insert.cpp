@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -40,7 +40,7 @@ std::string cutdir(const std::string& pathname)
   std::string::size_type i = pathname.find_first_of('/');
   if (i != std::string::npos)
     {
-      return pathname.substr(i+1); 
+      return pathname.substr(i+1);
     }
   else
     {
@@ -55,7 +55,7 @@ struct InsertRequest
 
   /** Where to insert the given file */
   std::string location;
-  
+
   /** The pak files to modify (can be multiple since some pak contain
       duplicate data */
   std::vector<std::string> paks;
@@ -82,7 +82,7 @@ int main(int argc, char** argv)
       std::cout << *i << "\n  -> " << cutdir(cutprefix(modpath, *i)) << std::endl;
       inserts.push_back(InsertRequest(*i, cutdir(cutprefix(modpath, *i))));
     }
-  
+
   std::cout << "Pak Directory: " << config.dreamfall_path + "bin/res/" << std::endl;
   Directory pak_directory = open_directory(config.dreamfall_path + "bin/res/", ".pak");
   typedef std::map<std::string, std::vector<InsertRequest> > PakList;
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
               paks[i->fullname].push_back(*j);
             }
         }
-    }  
+    }
   std::cout << std::endl;
 
   for(std::vector<InsertRequest>::iterator i = inserts.begin(); i != inserts.end(); ++i)

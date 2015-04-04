@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -45,13 +45,13 @@ std::string tolowercase(const std::string& str)
 bool file_readlines(const std::string& filename, std::vector<std::string>& lines)
 {
   std::ifstream in(filename.c_str());
-  
+
   if (!in)
     {
       return false;
     }
   else
-    {  
+    {
       std::string line;
 
       while (std::getline(in, line))
@@ -61,7 +61,7 @@ bool file_readlines(const std::string& filename, std::vector<std::string>& lines
               lines.push_back(line);
             }
         }
-      
+
       in.close();
 
       return true;
@@ -77,7 +77,7 @@ bool file_readbytes(const std::string& filename, std::vector<char>& bytes)
       return false;
     }
   else
-    {  
+    {
       // Get filesize
       in.seekg(0, std::ios::end);
       int size = in.tellg();
@@ -88,7 +88,7 @@ bool file_readbytes(const std::string& filename, std::vector<char>& bytes)
       in.seekg(0, std::ios::beg);
       in.read(reinterpret_cast<char*>(&*(bytes.begin() + current_size)), size);
       in.close();
-  
+
       return true;
     }
 }
@@ -104,7 +104,7 @@ bool splitpath(const std::string& filename, std::string& pathpart, std::string& 
     //std::cout << i << filename << std::endl;
     i = filename.find_last_of('/', i);
   } while(i == filename.size());
-  
+
   if (i != std::string::npos)
     {
       pathpart = filename.substr(0, i);

@@ -11,10 +11,10 @@ void cir_list(std::istream& in)
   uint32_t version = read_uint32(in);
 
   uint32_t count1 = read_uint32(in);
-  
+
   std::cout << "version: " << version << std::endl;
   std::cout << "count1:  " << count1 << std::endl;
-  
+
   std::cout << read_float(in) << std::endl;
   std::cout << read_float(in) << std::endl;
   std::cout << read_float(in) << std::endl;
@@ -37,7 +37,7 @@ void cir_list(std::istream& in)
       std::cout << read_float(in) << std::endl;
       std::cout << read_float(in) << std::endl;
     }
-  
+
   std::cout << "\nSome: " << read_uint32(in) << std::endl;
   uint32_t countn;
   std::cout << "\nSome: " << (countn  = read_uint32(in)) << std::endl;
@@ -50,7 +50,7 @@ void cir_list(std::istream& in)
       //std::cout << std::endl;
 
     }
-      
+
   len = read_uint32(in);
   std::cout << '"' << read_string(in, len) << '"' << std::endl;
   std::cout << read_uint32(in) << std::endl;
@@ -62,7 +62,7 @@ void cir_list(std::istream& in)
     std::cout << read_float(in) << std::endl;
   std::cout << "INT: " << read_uint32(in) << std::endl;
   std::cout << "INT: " << read_uint32(in) << std::endl;
-  
+
   for(uint32_t i = 0; i < c-1; ++i)
     {
       std::cout << std::endl;

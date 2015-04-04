@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -28,7 +28,7 @@
 #include "icons.hpp"
 
 namespace Icon {
- 
+
 FXIcon* folder_open;
 FXIcon* folder_closed;
 FXIcon* unknown_document;
@@ -101,7 +101,7 @@ FXIcon* load_icon(FXApp* app, const std::string& filename)
     }
 }
 
-void init(FXApp* app) 
+void init(FXApp* app)
 {
   folder_open      = load_icon(app, "icons/folder_open.gif");
   folder_closed    = load_icon(app, "icons/folder_closed.gif");
@@ -109,7 +109,7 @@ void init(FXApp* app)
 
   search_forward  = load_icon(app, "icons/search_forward.gif");
   search_backward = load_icon(app, "icons/search_backward.gif");
-  
+
   new_file    = load_icon(app, "icons/new_file.gif");
   load_file   = load_icon(app, "icons/load_file.gif");
   save_file   = load_icon(app, "icons/save_file.gif");
@@ -156,7 +156,7 @@ void init(FXApp* app)
   dreamfall = load_icon(app, "icons/dreamfall.gif");
 }
 
-void deinit() 
+void deinit()
 {
   delete dftoolbox;
   delete dftoolbox_mini;

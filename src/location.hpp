@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -91,7 +91,7 @@ struct Conversation
   std::vector<Choice> choices;
 };
 
-/** 
+/**
  * Parses a data/generated/locations/{}.cdr file and gives out
  *  conversations and speech
  */
@@ -106,7 +106,7 @@ private:
 
 public:
   Location(const std::string& filename);
-  
+
   void parse(const std::string& filename);
   void parse_root(SectionNode* );
   void parse_actor_param(SectionNode* );

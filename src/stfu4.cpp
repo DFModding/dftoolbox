@@ -13,7 +13,7 @@ void stuf4(const std::string& filename)
   uint32_t num1    = read_uint32(in); // always: 1143118388
   uint32_t num2    = read_uint32(in); // always: 0
   uint32_t num3    = read_uint32(in); // always: 1
-  uint32_t width   = read_uint32(in); 
+  uint32_t width   = read_uint32(in);
   uint32_t height  = read_uint32(in);
   uint32_t mipmaps = read_uint32(in);// variable, never larger then 12
   uint32_t num5    = read_uint32(in); // 0 - 4
@@ -29,7 +29,7 @@ void stuf4(const std::string& filename)
 
   if (num6 != 2*(width*height) + (width*height)/8)
     {
-      std::cout << "ERROR: Nummer6: " << num6 << " vs " 
+      std::cout << "ERROR: Nummer6: " << num6 << " vs "
                 << 2*(width*height) + (width*height)/8 << std::endl;
     }
 
@@ -52,7 +52,7 @@ void stuf4(const std::string& filename)
   std::cout << "num9 " << num9 << std::endl;
 
   std::ofstream out("data.dat", std::ios::binary);
-  
+
   if (1)
     out << "P6\n"
         << "# CREATOR: The GIMP's PNM Filter Version 1.0\n"

@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -60,7 +60,7 @@ public:
     group_insert_requests(inserts, paks);
 
     check_errors(inserts);
-    
+
     do_backup(paks);
     install_paks(paks);
 
@@ -96,7 +96,7 @@ public:
     sig.signal();
   }
 
-  void group_insert_requests(std::vector<InsertRequest>& inserts, PakList& paks) 
+  void group_insert_requests(std::vector<InsertRequest>& inserts, PakList& paks)
   {
     // Group InsertRequests according to .pak
     log << "Pak Directory: " << dreamfall_path << "bin/res/" << std::endl;
@@ -156,7 +156,7 @@ public:
               {
                 throw std::runtime_error(strerror(errno));
               }
-            
+
             backup_done = true;
           }
 

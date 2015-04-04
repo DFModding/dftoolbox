@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -46,18 +46,18 @@ DirectoryView::DirectoryView(FXComposite* parent, FXComposite* dock, DFToolBoxWi
 {
   toolbar = new FXToolBar(dock, LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|PACK_UNIFORM_WIDTH|PACK_UNIFORM_HEIGHT|FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y);
 
-  iconlist = new FXIconList(this, this, ID_ICON_DOUBLECLICKED, 
+  iconlist = new FXIconList(this, this, ID_ICON_DOUBLECLICKED,
                             LAYOUT_FILL_X|LAYOUT_FILL_Y|ICONLIST_DETAILED|ICONLIST_EXTENDEDSELECT|ICONLIST_COLUMNS|ICONLIST_AUTOSIZE);
   iconlist->appendHeader("Name",NULL, 300);
   iconlist->appendHeader("Type",NULL, 100);
   iconlist->appendHeader("Size",NULL, 60);
   iconlist->appendHeader("Pak", NULL, 150);
 
-  new FXButton(toolbar, "\tShow Icons", Icon::icons_list, 
+  new FXButton(toolbar, "\tShow Icons", Icon::icons_list,
                this, ID_ICONLIST_BIG_ICONS, BUTTON_TOOLBAR|FRAME_RAISED);
-  new FXButton(toolbar, "\tShow Thumbnail View", Icon::icons_large, 
+  new FXButton(toolbar, "\tShow Thumbnail View", Icon::icons_large,
                this, ID_ICONLIST_MINI_ICONS, BUTTON_TOOLBAR|FRAME_RAISED);
-  new FXButton(toolbar, "\tShow Detail List", Icon::icons_detail, 
+  new FXButton(toolbar, "\tShow Detail List", Icon::icons_detail,
                this, ID_ICONLIST_DETAILED, BUTTON_TOOLBAR|FRAME_RAISED);
 }
 
@@ -72,7 +72,7 @@ FXint iconlist_sorter(const FXIconItem* a, const FXIconItem* b)
     return (lhs->get_type() > rhs->get_type());
 }
 
-void 
+void
 DirectoryView::change_directory(FXTreeItem* item)
 {
   iconlist->clearItems();
@@ -80,7 +80,7 @@ DirectoryView::change_directory(FXTreeItem* item)
   for(FXTreeItem* it = item->getFirst(); it != NULL; it = it->getNext())
     {
       DreamfallFileEntry* entry = static_cast<DreamfallFileEntry*>(it->getData());
-    
+
       FXIcon* big;
       FXIcon* small;
       int     size;
@@ -95,7 +95,7 @@ DirectoryView::change_directory(FXTreeItem* item)
           size  = it->getNumChildren();
           typestr = "Directory";
           break;
-              
+
         case DreamfallFileEntry::PAK_FILE_ENTRY:
           big   = (entry->get_pak().type == FILETYPE_SHARK3D)?Icon::large_file:Icon::large_shark;
           small = Icon::unknown_document;
@@ -113,7 +113,7 @@ DirectoryView::change_directory(FXTreeItem* item)
           break;
         }
 
-      iconlist->appendItem(FXString().format("%s\t%s\t%dKB\t%s", 
+      iconlist->appendItem(FXString().format("%s\t%s\t%dKB\t%s",
                                              entry->get_label().c_str(),
                                              typestr,
                                              size/1024,

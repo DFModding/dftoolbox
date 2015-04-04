@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -77,8 +77,8 @@ protected:
   ImageView*     imageview;
   SharkView*     sharkview;
   SoundView*     soundview;
-  DialogView*    dialogview;  
-  DirectoryView* directoryview;  
+  DialogView*    dialogview;
+  DirectoryView* directoryview;
   FXText*        error_log;
 
   FXVerticalFrame* group1;
@@ -88,7 +88,7 @@ protected:
   FXGIFIcon         *big_folder_closed;
 
   FXImage*       image;
-  FXButton*      parent_button; 
+  FXButton*      parent_button;
 
   FXMenuTitle* bookmark_title;
   ProgressDialog* progress_dialog;
@@ -118,7 +118,7 @@ public:
   void init();
 
   void export_files(const std::vector<DreamfallFileEntry*>& selection,
-                    const std::string& outpath, 
+                    const std::string& outpath,
                     bool preserve_path, bool fix_extension, bool shark_as_text);
 
   void show_switcher(int i);
@@ -137,7 +137,7 @@ public:
   long onCmdGotoParentDir(FXObject* sender, FXSelector, void* data);
   long onCmdScanForMP3(FXObject* sender, FXSelector, void* data);
   long onCmdBuildTree(FXObject* sender, FXSelector, void* data);
-  
+
   /** Find the tree item matching url */
   FXTreeItem* find(FXTreeItem* root, const std::string& url);
 
@@ -154,7 +154,7 @@ public:
     SWITCHER_DIALOGVIEW
   };
 
-  enum { 
+  enum {
     ID_SAVE = FXMainWindow::ID_LAST,
     ID_OPEN,
     ID_ABOUT,

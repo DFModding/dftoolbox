@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -33,7 +33,7 @@ struct RGB
 
   RGB() : r(0), g(0), b(0) {}
 
-  RGB(unsigned short color) 
+  RGB(unsigned short color)
     : r((color & 0x1F) << 3),
       g(((color & 0x7E0) >> 5) << 2),
       b(((color & 0xF800) >> 11) << 3)

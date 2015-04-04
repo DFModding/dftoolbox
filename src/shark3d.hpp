@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -46,11 +46,11 @@ public:
   SectionNode* parse_section(std::istream& in);
 
   static Shark3D* parse_binary(std::istream& in);
-  static Shark3D* parse_text  (std::istream& in);  
+  static Shark3D* parse_text  (std::istream& in);
 
   void write_text(std::ostream& out);
   void write_binary(std::ostream& out);
-  
+
   SectionNode::Entries::iterator find(const std::string& ident) const;
   int           get_int(const std::string& ident, int def) const;
   std::string   get_string(const std::string& ident, const std::string& def) const;

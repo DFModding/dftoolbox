@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -31,9 +31,9 @@
 
 #include "system.hpp"
 
-/* 
+/*
    File Layout:
-   
+
    offset
    text_count
    data: width 20 bytes each
@@ -41,9 +41,9 @@
    followed by unknown
    followed by something with width 76
    followed by something with width 28
-   
-   some data seems to be the alphabet, some other data seems to be skeleton structure 
-   
+
+   some data seems to be the alphabet, some other data seems to be skeleton structure
+
    0002.dat might contain the scene 3d model!
 */
 //tower_square.bun
@@ -75,7 +75,7 @@ bool is_one_or_zero(float f)
     return false;
 }
 /*
-  block sizes used: 
+  block sizes used:
   8 block: 12
   5315 block: 20
   20 block: 24
@@ -130,7 +130,7 @@ public:
     int channel[16];
     int extra;
   };
-  
+
   // Offset where the data starts after the strings
   int data_offset;
   int files_offset;
@@ -172,20 +172,20 @@ public:
       {
         int length = read_int32(in);
         int size   = read_int32(in);
-          
+
         Chunk chunk;
 
         chunk.size   = size;
         chunk.length = length;
         chunk.offset = in.tellg();
-          
+
         chunks.push_back(chunk);
 
         // skip chunk data
         in.seekg(size, std::ios::cur);
 
         //std::cout << "Chunk: " << chunk.length << " " << chunk.size << " " << chunk.offset << std::endl;
-      }   
+      }
   }
 
   void read_mesh(std::istream& in, int j)
@@ -193,14 +193,14 @@ public:
     in.seekg(mesh_pos[j], std::ios::beg);
 
     int mesh_posName = read_int32(in) + files_offset;
-    
+
     Mesh mesh;
 
     mesh.rescale      = read_float(in); // 1.0f/read_float(in);
 
     mesh.pos_center = read_vector(in);
     mesh.pos_bound  = read_vector(in);
-                
+
     // 0 Junk
     for(int i = 0; i < 6; ++i)
       assert(read_int32(in) == 0);
@@ -208,14 +208,14 @@ public:
     int num_bones  = read_int32(in);
     int bone_names_pos = read_int32(in) + files_offset;
     int bone_data_pos  = read_int32(in) + files_offset;
-                
+
     int num_textures = read_int32(in);
     int textures_pos = read_int32(in) + files_offset;
 
     // 0 Junk
     for(int i = 0; i < 2; ++i)
       assert(read_int32(in) == 0);
-    
+
     int num_cf = read_int32(in);
     int posCF[num_cf];
     for (int k = 0; k < num_cf; ++k)
@@ -247,12 +247,12 @@ public:
           }
         std::cout << std::endl;
       }
-                
+
     std::cout << "\n------------------------------\n"
               << "Meshname:     " << mesh.name << "\n"
-              << "VectorCenter: " 
+              << "VectorCenter: "
               << mesh.pos_center.x << " " << mesh.pos_center.y << " " << mesh.pos_center.z << std::endl
-              << "VectorBound: " 
+              << "VectorBound: "
               << mesh.pos_bound.x << " " << mesh.pos_bound.y << " " << mesh.pos_bound.z << std::endl
               << "Rescale:      " << mesh.rescale << "\n\n"
               << "numbones:     " << num_bones << "\n"
@@ -266,14 +266,14 @@ public:
 
     if (num_textures > 0)
       assert(static_cast<int>(in.tellg()) == textures_pos);
-    
+
     for(int i = 0; i < num_textures; ++i)
       {
         mesh.textures.push_back(read_int32(in));
         std::cout << "Textures: " << mesh.textures.back() << std::endl;
       }
 
-            
+
     // skip over cf junk
     for(int i = 0; i < 18*4; ++i)
       in.get();
@@ -289,7 +289,7 @@ public:
     int vxPos  = read_int32(in);
     int val5_3 = read_int32(in);
     int val5_4 = read_int32(in);
-                
+
     int  numIdx = read_int32(in);
     int  posIdx = read_int32(in) + files_offset;
 
@@ -359,7 +359,7 @@ public:
     std::cout << "posTa3a: " << posTa3a << std::endl;
     std::cout << "posTa3b: " << posTa3b << std::endl;
     std::cout << "posTa3c: " << posTa3c << std::endl;
-                
+
     std::cout << "posAfter2: " << posAfter2 << std::endl;
     std::cout << "numTa4: " << numTa4 << std::endl;
     std::cout << "posTa4: " << posTa4 << std::endl;
@@ -375,10 +375,10 @@ public:
       }
     std::cout << std::endl;
 
-                
+
     int  numIdxBonus = read_int32(in);
     long posIdxBonus = read_int32(in) + files_offset;
-                
+
     std::cout << "numIdxBonus: " << numIdxBonus << std::endl;
     std::cout << "posIdxBonus: " << posIdxBonus << std::endl;
 
@@ -414,8 +414,8 @@ public:
     read_bytes(in, numTa2 * 2);
     if (posSth != 0)
       read_bytes(in, numTa2 * 2);
-                
-    read_bytes(in, numTaX1 * 4);                        
+
+    read_bytes(in, numTaX1 * 4);
     read_bytes(in, numTaX2 * 4);
     read_bytes(in, numTaX3 * 4);
 
@@ -433,23 +433,23 @@ public:
     read_bytes(in, numTa3 * 4);
 
     read_bytes(in, numTa4 * 4);
-                    
+
     // ...
-              
+
 
     if ((vxPos & 0xff) != 0)
       return;
-                
+
     if (vxPos == 0 || stream_formats[formatIndex].size == 0)
       return;
-                
+
 
     int curIdx = 0; // FIXME: WRONG!
     if (chunks[curIdx].size / chunks[curIdx].length != numVertices)
       std::cout << "len mismatch: " << numVertices << " " << chunks[curIdx].size/chunks[curIdx].length << std::endl;
-                            
+
     in.seekg(chunks[curIdx].offset, std::ios::beg);
-                
+
     std::vector<int> vertices;
     //= new uint[chunks[curIdx].size() * numVertices/4];
     for (int y = 0; y < chunks[curIdx].size * numVertices/4; y++)
@@ -479,9 +479,9 @@ public:
       }
 
     for (int j = 0; j < numMeshes; ++j)
-      { 
+      {
         read_mesh(in, j);
-      } 
+      }
   }
 
   void read_files(std::istream& in)
@@ -501,7 +501,7 @@ public:
     for (int k = 0; k < numStreamFormats; k++)
       {
         StreamFormat format;
-        
+
         format.size = read_int32(in) / 4;
         for (int i = 0; i < 16; i++)
           format.channel[i] = read_int32(in);
@@ -512,7 +512,7 @@ public:
         std::cout << "StreamFormat: " << format.size << " " << format.extra << std::endl;
       }
 
-    std::cout << "Begin of FileData: " << in.tellg() << std::endl;    
+    std::cout << "Begin of FileData: " << in.tellg() << std::endl;
 
     for (int e = 0; e < numFiles; e++)
       {
@@ -527,7 +527,7 @@ public:
     in.seekg(0, std::ios::beg);
 
     data_offset = read_int32(in);
-    
+
     read_textures(in);
     read_chunks(in);
 
@@ -540,7 +540,7 @@ public:
 
     read_files(in);
   }
-}; 
+};
 
 int main(int argc, char** argv)
 {

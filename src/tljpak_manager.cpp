@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -47,13 +47,13 @@ TLJPakManager::add_directory(const std::string& pakdirectory, ProgressLogger& lo
   for(std::vector<DirectoryEntry>::iterator i = directory.begin();
       i != directory.end(); ++i)
     {
-      if (i->name != "resource.pak") 
+      if (i->name != "resource.pak")
 	 {
            logger.println("Reading: " + i->fullname);
            logger.sync();
 
            paks[i->name] = new TLJPak(i->fullname);
-	 }       
+	 }
 
       logger.increment_status();
       logger.sync();
@@ -66,7 +66,7 @@ TLJPak*
 TLJPakManager::get(const std::string& name)
 {
   Paks::iterator i = paks.find(name);
-  if (i != paks.end()) 
+  if (i != paks.end())
     return i->second;
   else
     return 0;
@@ -83,12 +83,12 @@ TLJPakManager::extract(const std::string& location, const std::string& outfile)
           i->second->extract(at, outfile);
           return true;
         }
-    }  
+    }
   return false;
 }
 
 bool
-TLJPakManager::extract_by_language(const std::string& lang_code, 
+TLJPakManager::extract_by_language(const std::string& lang_code,
                                    const std::string& location, const std::string& outfile)
 {
   return extract(location, outfile);
@@ -107,7 +107,7 @@ TLJPakManager::extract(const PakFileEntry& entry, const std::string& outfile)
               i->second->extract(at, outfile);
               return true;
             }
-        }  
+        }
       return false;
     }
   else
@@ -121,7 +121,7 @@ TLJPakManager::extract(const PakFileEntry& entry, const std::string& outfile)
               i->second->extract(at, outfile);
               return true;
             }
-          else 
+          else
             {
               return false;
             }
@@ -144,8 +144,8 @@ TLJPakManager::get_type(const std::string& pathname)
         {
           return type;
         }
-    }  
-  return FILETYPE_INVALID;  
+    }
+  return FILETYPE_INVALID;
 }
 
 void
@@ -161,12 +161,12 @@ void
 TLJPakManager::scan_paks(ProgressLogger& logger)
 {
   create_dir(get_exe_path() + "/filetables");
-  
+
   // Generate filetables for all paks
   logger.set_task_size(paks.size());
   logger.set_task_status(0);
   logger.sync();
-  
+
   for(Paks::iterator i = paks.begin(); i != paks.end(); ++i)
     {
       std::string pathpart, filepart;
@@ -174,7 +174,7 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
       std::string filetablecache = get_exe_path() + "filetables/" + filepart;
 
       std::ifstream in(filetablecache.c_str());
-      
+
       if (in)
         {
           logger.println("reading cache " + i->second->filename);
@@ -199,7 +199,7 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
               out.close();
             }
         }
-      
+
       logger.increment_status();
       logger.sync();
     }
@@ -209,7 +209,7 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
 }
 
 TLJPakManager::Files
-TLJPakManager::get_files() 
+TLJPakManager::get_files()
 {
   Files files;
 
@@ -218,7 +218,7 @@ TLJPakManager::get_files()
       for(unsigned int j = 0; j < i->second->files.size(); ++j)
         {
           PakFileEntry* entry = new PakFileEntry();
-              
+
           splitpath(i->second->files[j].pathname, entry->fullname, entry->filename);
           //std::cout << i->second->files[j].pathname << std::endl;
 
@@ -247,7 +247,7 @@ TLJPakManager::get_files(const std::string& pak)
       for(unsigned int j = 0; j < i->second->files.size(); ++j)
         {
           PakFileEntry* entry = new PakFileEntry();
-              
+
           splitpath(i->second->files[j].pathname, entry->fullname, entry->filename);
 
           entry->fullname += "/" + entry->filename;

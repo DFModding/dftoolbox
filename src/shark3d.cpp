@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -39,11 +39,11 @@ Shark3D::~Shark3D()
   delete section;
 }
 
-Shark3D* 
+Shark3D*
 Shark3D::parse_binary(std::istream& in)
 {
   Shark3D* shark3d = new Shark3D();
-  
+
   shark3d->magic   = shark3d_binary::read_string_basic(in);
   shark3d->version = shark3d_binary::read_string_basic(in);
 
@@ -54,12 +54,12 @@ Shark3D::parse_binary(std::istream& in)
   else
     {
       shark3d->section = shark3d->parse_section(in);
-      
+
       return shark3d;
     }
 }
 
-SectionNode* 
+SectionNode*
 Shark3D::parse_section(std::istream& in)
 {
   using namespace shark3d_binary;
@@ -79,7 +79,7 @@ Shark3D::parse_section(std::istream& in)
         case 0x1: // int
           section->add(name, new IntNode(read_int(in)));
           break;
-          
+
         case 0x2: // int array
           {
             IntNode* int_node = new IntNode();
@@ -132,7 +132,7 @@ Shark3D::parse_section(std::istream& in)
           }
           break;
 
-        default: 
+        default:
           {
             std::ostringstream str;
             str << "Error: Unrecognized code: 0x" << std::hex << int(code) << " at 0x" << in.tellg();
@@ -144,7 +144,7 @@ Shark3D::parse_section(std::istream& in)
   return section;
 }
 
-Shark3D* 
+Shark3D*
 Shark3D::parse_text(std::istream& in)
 {
   const std::vector<shark3d_text::Token>& tokens = shark3d_text::tokenize(in);
@@ -188,7 +188,7 @@ Shark3D::find(const std::string& ident) const
         {
           return i;
         }
-    }  
+    }
   return section->entries.end();
 }
 
@@ -230,7 +230,7 @@ Shark3D::get_sections(const std::string& ident) const
       if (sectionnode && sectionnode->sections.size() != 0)
         return sectionnode;
     }
-  
+
   return 0;
 }
 

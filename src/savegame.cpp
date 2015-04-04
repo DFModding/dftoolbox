@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -43,9 +43,9 @@ Savegame::parse(const std::string& filename)
   else
     {
       Shark3D* shark = Shark3D::parse_binary(in);
-     
+
       parse_root(shark->section);
- 
+
       in.close();
     }
 }
@@ -58,7 +58,7 @@ Savegame::parse_root(SectionNode* node)
   for(std::vector<SectionNode*>::const_iterator i = sections.begin();
       i != sections.end(); ++i)
     {
-      std::string type = (*i)->get_string("name"); 
+      std::string type = (*i)->get_string("name");
       if (type == "conversationlog")
         {
           parse_conversationlog((*i)->get_section("data"));
@@ -78,7 +78,7 @@ void
 Savegame::parse_conversationlog(SectionNode* node)
 {
   const std::vector<SectionNode*>& sections = node->get_sections("entries");
-  
+
   for(std::vector<SectionNode*>::const_iterator i = sections.begin();
       i != sections.end(); ++i)
     {
@@ -88,7 +88,7 @@ Savegame::parse_conversationlog(SectionNode* node)
       //// convert weirdo ids into ids that can be locked up in Dialog
       //for(int i = 1; i < int(entry.list.size()); ++i)
       //entry.list[i] = entry.list[i-1] + entry.list[i];
-      
+
       conversation_log.entries.push_back(entry);
     }
 }
@@ -97,7 +97,7 @@ void
 Savegame::parse_messagelog(SectionNode* node)
 {
   const std::vector<SectionNode*>& sections = node->get_sections("entries");
-  
+
   for(std::vector<SectionNode*>::const_iterator i = sections.begin();
       i != sections.end(); ++i)
     {
@@ -115,18 +115,18 @@ void
 Savegame::parse_journal(SectionNode* node)
 {
   const std::vector<SectionNode*>& entries = node->get_sections("entries");
-  
+
   for(std::vector<SectionNode*>::const_iterator i = entries.begin();
       i != entries.end(); ++i)
     {
-      Journal::Entry entry; 
+      Journal::Entry entry;
 
       entry.id    = (*i)->get_int("id");
       entry.read  = (*i)->get_int("read");
       entry.array = (*i)->get_ints("array");
 
       journal.entries.push_back(entry);
-    }  
+    }
 }
 
 /* EOF */

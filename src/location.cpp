@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -43,9 +43,9 @@ Location::parse(const std::string& filename)
   else
     {
       Shark3D* shark = Shark3D::parse_binary(in);
-     
+
       parse_root(shark->section);
- 
+
       in.close();
     }
 }
@@ -58,7 +58,7 @@ Location::parse_root(SectionNode* root)
 
 void
 Location::parse_actor_param(SectionNode* node)
-{ 
+{
   if (!node) return;
 
   node->get_string("scope");
@@ -80,7 +80,7 @@ Location::parse_children(SectionNode* node)
       if (type == "mod_engobj_funcom.speech")
         {
           parse_speech((*i)->get_section("param"));
-        } 
+        }
       else if (type == "mod_engobj_funcom.conversation")
         {
           parse_conversation((*i)->get_section("param"));
@@ -96,15 +96,15 @@ void
 Location::parse_speech(SectionNode* node)
 { // we get the first node of the param subsection
   Speech speech;
-  
+
   speech.id         = node->get_int("id");
   speech.dispatcher = node->get_string("dispatcher");
 
   // goto subtiles subnode
   node = node->get_section("subtitles");
-  
+
   speech.actor_id    = node->get_int("actor_id");
-  speech.actor_name  = node->get_int("actor_name"); 
+  speech.actor_name  = node->get_int("actor_name");
   speech.text        = node->get_int("text");
   speech.wavefile    = node->get_string("wavefile");
   speech.subtiles    = node->get_int("subtitles");
@@ -123,7 +123,7 @@ Location::parse_conversation(SectionNode* node)
 
   conversation.id = node->get_int("id");
   std::vector<SectionNode*> choices = node->get_sections("choices");
-  for(std::vector<SectionNode*>::const_iterator i = choices.begin(); 
+  for(std::vector<SectionNode*>::const_iterator i = choices.begin();
       i != choices.end(); ++i)
     {
       Conversation::Choice choice;
@@ -134,16 +134,16 @@ Location::parse_conversation(SectionNode* node)
       choice.preview         = (*i)->get_int("preview");
 
       std::vector<SectionNode*> actions_nodes = (*i)->get_sections("actions");
-      
+
       for(std::vector<SectionNode*>::iterator ai = actions_nodes.begin();
           ai != actions_nodes.end(); ++ai)
         {
           Conversation::Choice::Action action;
-          
+
           action.action_enabled  = (*ai)->get_int("action_enabled");
           action.goto_choicelist = (*ai)->get_int("goto_choicelist");
           action.firstline      = (*ai)->get_int("firstline");
-          
+
           std::vector<SectionNode*> cutscene_nodes = (*ai)->get_sections("cutscene");
           for(std::vector<SectionNode*>::iterator ci = cutscene_nodes.begin();
               ci != cutscene_nodes.end(); ++ci)
@@ -157,7 +157,7 @@ Location::parse_conversation(SectionNode* node)
                   cai != cutscene_action_nodes.end(); ++cai)
                 {
                   Conversation::Choice::Action::Cutscene::Action cutscene_action;
-              
+
                   if ((*cai)->has_subnode("speech"))
                     {
                       cutscene_action.speech = (*cai)->get_int("speech");

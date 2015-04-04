@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
             TGA tga(in_tga);
             in_tga.close();
 
-            // Write 
+            // Write
             if (config.use_stdout)
               {
                 shark3d->write_binary(std::cout);
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
                   std::ofstream out(outfile.c_str());
                   Shark3D::parse_binary(in)->write_text(out);
                 }
-                
+
                 {
                   // Extract screenshot
                   in.seekg(-(256*256*4), std::ios::end);

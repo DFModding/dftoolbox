@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -53,14 +53,14 @@ ModListEntry::ModListEntry() {}
 ModListEntry::ModListEntry(FXComposite* parent,
                            FXIcon* icon,
                            std::string        directory_,
-                           const FXString& title_string, 
-                           const FXString& short_description, 
+                           const FXString& title_string,
+                           const FXString& short_description,
                            const FXString& long_description)
   : FXHorizontalFrame(parent, FRAME_NONE|LAYOUT_FILL_X|FRAME_LINE),
     directory(directory_ + "dreamfall/")
 {
   this->setBackColor(FXRGB(255,255,255));
-  FXLabel* label = new FXLabel(this, "", icon?icon:kian_icon, FRAME_NONE|LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT, 
+  FXLabel* label = new FXLabel(this, "", icon?icon:kian_icon, FRAME_NONE|LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,
                                0, 0, 48, 48);
   label->setBackColor(FXRGB(255,255,255));
 
@@ -74,12 +74,12 @@ ModListEntry::ModListEntry(FXComposite* parent,
   //title->setStyled(TRUE);
   //title->setTextStyle(title->getTextStyle() | TEXT_WORDWRAP);
   //title->appendStyledText(title_string, FXText::STYLE_BOLD);//|FXText::STYLE_UNDERLINE);
-    
+
   FXText* text = new FXText(description, NULL, 0, LAYOUT_FILL_X);
   text->setStyled(TRUE);
   text->setTextStyle(text->getTextStyle() | TEXT_WORDWRAP);
   text->setVisibleRows(text->getNumRows());
-    
+
   text->setEditable(FALSE);
   text->appendStyledText(short_description); //, FXText::STYLE_UNDERLINE);
 
@@ -93,13 +93,13 @@ ModListEntry::ModListEntry(FXComposite* parent,
   longtext->setVisibleRows(longtext->getNumRows());
   longtext->hide();
 
-  selectbutton = 
+  selectbutton =
     new FXToggleButton(this, "", "", cancel_icon, ok_icon, NULL, 0, FRAME_NONE|LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,
                        0, 0, 48, 48);
   selectbutton->setBackColor(FXRGB(255,255,255));
 }
 
-std::string 
+std::string
 ModListEntry::get_directory() const {
   return directory;
 }
@@ -123,14 +123,14 @@ ModListEntry::onCmdToggleLongDesc(FXObject*,FXSelector,void*)
 
   return 1;
 }
-  
+
 void
 ModListEntry::setState(FXbool s)
 {
   return selectbutton->setState(s);
 }
-  
-FXbool 
+
+FXbool
 ModListEntry::getState () const
 {
   return selectbutton->getState();
@@ -176,18 +176,18 @@ DFModActivatorWindow::DFModActivatorWindow(FXApp* a)
   new FXMenuCommand(helpmenu,"About", NULL, this, ID_ABOUT);
   new FXMenuTitle(menubar,"Help",NULL,helpmenu);
 
-  modlist = new FXVerticalFrame(modlistscroll, FRAME_SUNKEN| FRAME_THICK|LAYOUT_FILL_X|LAYOUT_FILL_Y, 
-                                0, 0, 0, 0, 
+  modlist = new FXVerticalFrame(modlistscroll, FRAME_SUNKEN| FRAME_THICK|LAYOUT_FILL_X|LAYOUT_FILL_Y,
+                                0, 0, 0, 0,
                                 DEFAULT_SPACING, DEFAULT_SPACING, DEFAULT_SPACING, DEFAULT_SPACING, DEFAULT_SPACING, 12);
   modlist->setBackColor(FXRGB(255,255,255));
 
-  selectall_button  = new FXButton(buttonbar, "Select none", 
+  selectall_button  = new FXButton(buttonbar, "Select none",
                                    NULL, this, ID_SELECT_NONE, ICON_ABOVE_TEXT|FRAME_RAISED);
-  selectnone_button = new FXButton(buttonbar, "Select all", 
+  selectnone_button = new FXButton(buttonbar, "Select all",
                                    NULL, this, ID_SELECT_ALL, ICON_ABOVE_TEXT|FRAME_RAISED);
-  install_button    = new FXButton(buttonbar, "Install", 
+  install_button    = new FXButton(buttonbar, "Install",
                                    NULL, this, ID_INSTALL, ICON_ABOVE_TEXT|FRAME_RAISED|LAYOUT_RIGHT|BUTTON_DEFAULT);
-  uninstall_button    = new FXButton(buttonbar, "Uninstall", 
+  uninstall_button    = new FXButton(buttonbar, "Uninstall",
                                    NULL, this, ID_UNINSTALL, ICON_ABOVE_TEXT|FRAME_RAISED|LAYOUT_RIGHT|BUTTON_DEFAULT);
 
   // Search for mods
@@ -251,7 +251,7 @@ DFModActivatorWindow::scan_mod_directory()
                   icon = new FXGIFIcon(getApp(), &*icon_data.begin());
                 }
 
-              entries.push_back(new ModListEntry(modlist, icon, 
+              entries.push_back(new ModListEntry(modlist, icon,
                                                  i->fullname,
                                                  title.c_str(), short_desc.c_str(), long_desc.c_str()));
 
@@ -292,9 +292,9 @@ DFModActivatorWindow::set_dreamfall_path(const std::string& path)
   out.close();
 }
 
-long 
+long
 DFModActivatorWindow::onCmdUninstall(FXObject* obj, FXSelector sel, void* data)
-{  
+{
   // FIXME: Insert real uninstall code here
 
   FXMessageBox::information(this, MBOX_OK, "Uninstall complete",
@@ -302,12 +302,12 @@ DFModActivatorWindow::onCmdUninstall(FXObject* obj, FXSelector sel, void* data)
   return 1;
 }
 
-long 
-DFModActivatorWindow::onCmdInstall(FXObject* obj, FXSelector sel, void* data) 
+long
+DFModActivatorWindow::onCmdInstall(FXObject* obj, FXSelector sel, void* data)
 {
   if (dreamfall_path.empty())
     get_dreamfall_path();
-    
+
   if (!dreamfall_path.empty())
     {
       std::vector<InsertRequest> inserts;
@@ -353,7 +353,7 @@ DFModActivatorWindow::get_dreamfall_path()
     if (!file_exists((open.getDirectory() + "/bin/res/").text()))
       {
         FXMessageBox::error(this, MBOX_OK, "Dreamfall Path Error",
-                            "The given directory isn't the Dreamfall directory:\n%s", 
+                            "The given directory isn't the Dreamfall directory:\n%s",
                             open.getDirectory().text());
         return false;
       }
@@ -407,7 +407,7 @@ int main(int argc,char** argv)
 
   cancel_icon = new FXGIFIcon(&application, cancelicon_data);
   kian_icon   = new FXGIFIcon(&application, kianicon_data);
-  
+
   std::vector<char> icon_data;
   if (file_readbytes(get_exe_path() + "icons/enabled.gif", icon_data))
     ok_icon = new FXGIFIcon(&application, &*icon_data.begin());
@@ -416,7 +416,7 @@ int main(int argc,char** argv)
   cancel_icon->create();
   kian_icon->create();
 
-  title_font = new FXFont(&application, "helvetica", 10, FXFont::Bold, FXFont::Straight, 
+  title_font = new FXFont(&application, "helvetica", 10, FXFont::Bold, FXFont::Straight,
                           FONTENCODING_DEFAULT, FXFont::NonExpanded,FXFont::Scalable);
 
   FXMainWindow* main = new DFModActivatorWindow(&application);

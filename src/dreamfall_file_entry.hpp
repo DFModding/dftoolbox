@@ -15,7 +15,7 @@
 **  but WITHOUT ANY WARRANTY; without even the implied warranty of
 **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 **  GNU General Public License for more details.
-** 
+**
 **  You should have received a copy of the GNU General Public License
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -31,7 +31,7 @@
 
 class DreamfallFileEntry;
 
-struct SaveFileEntry 
+struct SaveFileEntry
 {
   enum Type { IMAGE_DATA, SHARK3D_DATA, TEXT_DATA, MESSAGELOG_DATA, JOURNAL_DATA };
 
@@ -83,9 +83,9 @@ class DirectoryFileEntry
 public:
   std::string name;
   std::string fullname;
-  std::vector<DreamfallFileEntry*> children; 
+  std::vector<DreamfallFileEntry*> children;
   DreamfallFileEntry* parent;
-  
+
   DirectoryFileEntry() :parent(0) {}
 };
 
@@ -93,15 +93,15 @@ class DreamfallFileEntry
 {
 public:
   enum Type {
-    UNKNOWN_FILE_ENTRY, 
-    DIRECTORY_FILE_ENTRY, 
-    SAVE_FILE_ENTRY, 
+    UNKNOWN_FILE_ENTRY,
+    DIRECTORY_FILE_ENTRY,
+    SAVE_FILE_ENTRY,
     PAK_FILE_ENTRY
   };
 
 private:
   Type type;
-  
+
   PakFileEntry       pak;
   SaveFileEntry      save;
   DirectoryFileEntry dir;
