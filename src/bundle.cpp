@@ -217,7 +217,7 @@ public:
       assert(read_int32(in) == 0);
 
     int num_cf = read_int32(in);
-    int posCF[num_cf];
+    int posCF[num_cf] __attribute__((unused));
     for (int k = 0; k < num_cf; ++k)
       {
         posCF[k] = read_int32(in) + files_offset;
@@ -390,7 +390,7 @@ public:
     std::cout << "numLinx: " << numLinx << std::endl;
     return; // after this: buggy
 
-    long posLinx[numLinx];
+    long posLinx[numLinx] __attribute__((unused));
     for (int l = 0; l < numLinx; l++)
       {
         posLinx[l] = read_int32(in);
@@ -419,11 +419,11 @@ public:
     read_bytes(in, numTaX2 * 4);
     read_bytes(in, numTaX3 * 4);
 
-    int stageVx[numTa3];
+    int stageVx[numTa3] __attribute__((unused));
     for (int i = 0; i < numTa3; i++)
       stageVx[i] = read_int32(in);
 
-    int stageIdx[numTa3];
+    int stageIdx[numTa3] __attribute__((unused));
     for (int i = 0; i < numTa3; i++)
       stageIdx[i] = read_int32(in);
 
