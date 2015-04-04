@@ -22,6 +22,7 @@
 **  02111-1307, USA.
 */
 
+#include <stdint.h>
 #include <sstream>
 #include "dialog_view.hpp"
 #include "dftoolbox.hpp"
@@ -131,7 +132,7 @@ DialogView::set_language(int id)
 long
 DialogView::onCmdLanguageSwitch(FXObject*,FXSelector,void* data)
 {
-  int lang_id = reinterpret_cast<int>(data);
+  int lang_id = reinterpret_cast<intptr_t>(data);
   set_language(lang_id);
   return 1;
 }

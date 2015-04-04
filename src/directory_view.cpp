@@ -22,6 +22,7 @@
 **  02111-1307, USA.
 */
 
+#include <stdint.h>
 #include <iostream>
 #include "icons.hpp"
 #include "dreamfall_file_entry.hpp"
@@ -151,7 +152,7 @@ DirectoryView::onCmdIconListDetailed (FXObject*, FXSelector,void*)
 long
 DirectoryView::onIconDblClick(FXObject* sender, FXSelector, void* data)
 {
-  FXint index      = reinterpret_cast<FXint>(data);
+  FXint index      = reinterpret_cast<intptr_t>(data);
   FXIconList* lst  = static_cast<FXIconList*>(sender);
   FXIconItem* item = lst->getItem(index);
 
