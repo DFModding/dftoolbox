@@ -4,7 +4,7 @@
 ** | |) | _|  | |/ _ \/ _ \ | _ \/ _ \ \ /
 ** |___/|_|   |_|\___/\___/_|___/\___/_\_\
 **
-**  DFToolBox - Copyright (C) 2006 Ingo Ruhnke <grumbel@gmx.de>
+**  DFToolBox - Copyright (C) 2006 Ingo Ruhnke <grumbel@gmail.com>
 **
 **  This program is free software; you can redistribute it and/or
 **  modify it under the terms of the GNU General Public License
@@ -347,7 +347,7 @@ int main(int argc, char** argv)
                     << "named dreamfall-extractor/{filename}/, located in the same\n"
                     << "directory where the dreamfall-extractor.exe is located\n"
                     << "\n"
-                    << "For questions and comments mail Ingo Ruhnke <grumbel@gmx.de>\n"
+                    << "For questions and comments mail Ingo Ruhnke <grumbel@gmail.com>\n"
                     << "or join IRC, server irc.rizon.net, channel #Ragnar\n"
                     << "\n"
                     << "Full source code is available on request.\n"

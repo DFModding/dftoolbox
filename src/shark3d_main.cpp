@@ -4,7 +4,7 @@
 ** | |) | _|  | |/ _ \/ _ \ | _ \/ _ \ \ /
 ** |___/|_|   |_|\___/\___/_|___/\___/_\_\
 **
-**  DFToolBox - Copyright (C) 2006 Ingo Ruhnke <grumbel@gmx.de>,
+**  DFToolBox - Copyright (C) 2006 Ingo Ruhnke <grumbel@gmail.com>,
 **                                 pinkunozou
 **
 **  This program is free software; you can redistribute it and/or
