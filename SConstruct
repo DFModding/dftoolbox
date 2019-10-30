@@ -16,30 +16,22 @@
 ##  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ##  GNU General Public License for more details.
-## 
+##
 ##  You should have received a copy of the GNU General Public License
 ##  along with this program; if not, write to the Free Software
 ##  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 ##  02111-1307, USA.
-##
 
-env = Environment(CCFLAGS = ['-O2', '-Wall', '-g', '-DDEBUG'])
+import os
 
-#fox_LIBS = ['FOX-1.6', 'Xext', 'X11', 'Xcursor', 'Xrandr', 'dl', 'pthread', 'rt',
-#            'jpeg', 'png', 'tiff', 'z', 'bz2', 'm', 'GLU', 'GL']
-
-fox_LIBS = ['FOX-1.6', 'Xext', 'X11', 'Xft', 'fontconfig', 'Xcursor', 'Xrandr', 'dl', 'pthread',
-            'rt', 'jpeg', 'png', 'tiff', 'z', 'bz2', 'm', 'cups', 'nsl', 'GLU', 'GL']
-fox_LIBPATH = [] # ['/home/ingo/projects/dftoolbox/libs/lib']
-fox_CPPPATH = ['/usr/include/fox-1.6'] # ['/home/ingo/projects/dftoolbox/libs/include/fox-1.6']
-fox_CXXFLAGS = []
-
-sdl_LIBS     = ['SDL_mixer', 'SDL']
-sdl_CPPATH   = []
-env['CCFLAGS']  += ['-DUSE_SDL']
+env = Environment(ENV = os.environ)
+env['CCFLAGS'] += ['-O2', '-Wall', '-g', '-DDEBUG']
 
 cross = False
 if cross: # Make this True for cross compiling
+    sdl_LIBS     = ['SDL_mixer', 'SDL']
+    sdl_CPPATH   = []
+    env['CCFLAGS']  += ['-DUSE_SDL']
     env['CXX']        = 'i586-mingw32msvc-g++'
     env['AS']         = 'i586-mingw32msvc-as'
     env['RANLIB']     = 'i586-mingw32msvc-ranlib'
@@ -53,6 +45,20 @@ if cross: # Make this True for cross compiling
     fox_CXXFLAGS = ['-mwindows', '-e', '_mainCRTStartup']
     sdl_LIBS     = ['winmm'] # ['mingw32', 'SDLmain', 'SDL_mixer', 'SDL']
     sdl_CPPATH   = [] # ['/home/ingo/projects/dftoolbox/libs-win32/include/']
+else:
+    env['CCFLAGS']  += ['-DUSE_SDL']
+
+    fox_env = Environment(ENV = os.environ)
+    fox_env.ParseConfig("pkg-config --cflags --libs fox")
+    fox_LIBS = fox_env['LIBS']
+    fox_LIBPATH = []
+    fox_CPPPATH = fox_env['CPPPATH']
+    fox_CXXFLAGS = fox_env['CXXFLAGS']
+
+    sdl_env = Environment(ENV = os.environ)
+    sdl_env.ParseConfig("pkg-config --cflags --libs sdl SDL_mixer")
+    sdl_LIBS = sdl_env['LIBS']
+    sdl_CPPATH = sdl_env['CPPPATH']
 
 env.StaticLibrary('dftoolbox', ['src/util.cpp',
                                 'src/system.cpp',
