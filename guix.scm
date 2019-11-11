@@ -22,7 +22,7 @@
              (guix gexp)
              (guix download)
              (guix git-download)
-             (guix licenses)
+             ((guix licenses) #:prefix license:)
              (guix packages)
              (gnu packages gcc)
              (gnu packages gl)
@@ -92,7 +92,7 @@
    (synopsis "")
    (description "")
    (home-page "http://fox-toolkit.org")
-   (license gpl2+)))
+   (license license:gpl2+)))
 
 (define-public dftoolbox
   (package
@@ -131,7 +131,7 @@ Currently supported features:
 @item convert text back to shark3d_snake files
 @end itemize")
    (home-page "https://gitlab.com/dftoolbox/dftoolbox")
-   (license gpl3+)))
+   (license license:gpl3+)))
 
 dftoolbox
 
