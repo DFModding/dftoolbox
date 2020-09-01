@@ -131,6 +131,12 @@ target_link_libraries(dftoolbox PRIVATE
   PkgConfig::FOX
   PkgConfig::SDL
   PkgConfig::SDL_MIXER)
+
 install_with_wrapper(dftoolbox)
+
+install(DIRECTORY icons DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+  PATTERN "*.gif")
+
+install(FILES df-directory.txt  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
 # EOF #
