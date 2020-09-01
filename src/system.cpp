@@ -32,6 +32,7 @@
 #  include <direct.h>
 #endif
 
+#include <assert.h>
 #include <string.h>
 #include <fstream>
 #include <stdexcept>
@@ -39,10 +40,113 @@
 #include "system.hpp"
 #include "util.hpp"
 
+std::string g_datadir = "./";
+std::string g_configdir = "./";
+
+void parse_args(int argc, char** argv)
+{
+  std::string config_home;
+  char* config_home_c = getenv("XDG_CONFIG_HOME");
+  if (config_home_c)
+  {
+    config_home = config_home_c;
+  }
+  else
+  {
+    char* home_c = getenv("HOME");
+    if (home_c)
+    {
+      config_home = std::string(home_c) + "/.config";
+    }
+    else
+    {
+      throw std::runtime_error("couldn't find XDG_CONFIG_HOME");
+    }
+  }
+
+  g_configdir = config_home + "/dftoolbox/";
+
+  for (int i = 1; i < argc; ++i)
+  {
+    if (strcmp(argv[i], "--datadir") == 0)
+    {
+      ++i;
+      if (i >= argc)
+      {
+        throw std::runtime_error("--datadir requires an argument");
+      }
+      else
+      {
+        g_datadir = argv[i];
+      }
+    }
+    else if (strcmp(argv[i], "--configdir") == 0)
+    {
+      ++i;
+      if (i >= argc)
+      {
+        throw std::runtime_error("--configdir requires an argument");
+      }
+      else
+      {
+        g_configdir = argv[i];
+      }
+    }
+    else
+    {
+      std::cout << "Usage: " << argv[0] << " [OPTION]...\n"
+                << "\n"
+                << "  --datadir PATH    Location for dftoolbox data files\n"
+                << "  --configdir PATH  Location for configuration files\n"
+                << std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  std::cout << "Directories:" << std::endl;
+  std::cout << "    data: " << get_data_path() << std::endl;
+  std::cout << "  config: " << get_config_path() << std::endl;
+  std::cout << "    temp: " << get_temp_path() << std::endl;
+}
+
+std::string get_temp_path()
+{
+  char* tmpdir_c = getenv("TMPDIR");
+  if (tmpdir_c) {
+    std::string tmpdir = tmpdir_c;
+    if (tmpdir.back() != '/') {
+      tmpdir = tmpdir + "/";
+    }
+    return tmpdir;
+  }
+  else
+  {
+    return "/tmp/";
+  }
+}
+
+std::string get_data_path()
+{
+#ifdef __linux__
+  return g_datadir;
+#else
+  return get_exe_path();
+#endif
+}
+
+std::string get_config_path()
+{
+#ifdef __linux__
+  return g_configdir;
+#else
+  return get_exe_path();
+#endif
+}
+
 std::string get_exe_path()
 {
 #ifdef __linux__
-  return "./";
+  assert(false && "not implemented");
 #else
   // Get path to executable:
   char szDllName[_MAX_PATH];

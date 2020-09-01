@@ -30,6 +30,10 @@
 #include <stdint.h>
 #include "util.hpp"
 
+void parse_args(int argc, char** argv);
+std::string get_data_path();
+std::string get_config_path();
+std::string get_temp_path();
 std::string get_exe_path();
 
 /** Same as create_dir(), but creates all missing directories in the
