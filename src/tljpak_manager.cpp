@@ -151,16 +151,16 @@ TLJPakManager::get_type(const std::string& pathname)
 void
 TLJPakManager::add_filelist(const std::string& filename)
 {
-  if (!file_readlines(get_exe_path() + "df-directory.txt", filelist))
+  if (!file_readlines(get_data_path() + "df-directory.txt", filelist))
     {
-      std::cout << "Ignoring: " << get_exe_path() << "df-directory.txt" << std::endl;
+      std::cout << "Ignoring: " << get_data_path() << "df-directory.txt" << std::endl;
     }
 }
 
 void
 TLJPakManager::scan_paks(ProgressLogger& logger)
 {
-  create_dir(get_exe_path() + "/filetables");
+  create_dir(get_temp_path() + "/filetables");
 
   // Generate filetables for all paks
   logger.set_task_size(paks.size());
@@ -171,7 +171,7 @@ TLJPakManager::scan_paks(ProgressLogger& logger)
     {
       std::string pathpart, filepart;
       splitpath(i->second->filename, pathpart, filepart);
-      std::string filetablecache = get_exe_path() + "filetables/" + filepart;
+      std::string filetablecache = get_temp_path() + "filetables/" + filepart;
 
       std::ifstream in(filetablecache.c_str());
 

@@ -214,7 +214,7 @@ DFModActivatorWindow::onCmdAbout(FXObject*,FXSelector,void*)
 void
 DFModActivatorWindow::scan_mod_directory()
 {
-  Directory mod_directory = open_directory(get_exe_path() + "mods/");
+  Directory mod_directory = open_directory(get_data_path() + "mods/");
   for(Directory::iterator i = mod_directory.begin(); i != mod_directory.end(); ++i)
     {
       if (i->type == DirectoryEntry::T_DIRECTORY)
@@ -287,7 +287,7 @@ void
 DFModActivatorWindow::set_dreamfall_path(const std::string& path)
 {
   dreamfall_path = path + "/";
-  std::ofstream out((get_exe_path() + "dreamfall_path.txt").c_str());
+  std::ofstream out((get_config_path() + "dreamfall_path.txt").c_str());
   out << dreamfall_path << std::endl;
   out.close();
 }
@@ -385,7 +385,7 @@ FXIMPLEMENT(DFModActivatorWindow, FXMainWindow, DFModActivatorWindowMap, ARRAYNU
 
 int main(int argc,char** argv)
 {
-  std::ifstream in((get_exe_path() + "dreamfall_path.txt").c_str());
+  std::ifstream in((get_config_path() + "dreamfall_path.txt").c_str());
   if (in)
     {
       std::getline(in, dreamfall_path);
@@ -409,7 +409,7 @@ int main(int argc,char** argv)
   kian_icon   = new FXGIFIcon(&application, kianicon_data);
 
   std::vector<char> icon_data;
-  if (file_readbytes(get_exe_path() + "icons/enabled.gif", icon_data))
+  if (file_readbytes(get_data_path() + "icons/enabled.gif", icon_data))
     ok_icon = new FXGIFIcon(&application, &*icon_data.begin());
 
   ok_icon->create();

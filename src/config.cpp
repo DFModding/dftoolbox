@@ -53,7 +53,7 @@ HKEY_USERS
   */
 #endif
 
-  std::string filename = get_exe_path() + "dftoolbox.ini";
+  std::string filename = get_config_path() + "dftoolbox.ini";
   std::ifstream in(filename.c_str());
   if (!in)
     {

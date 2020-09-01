@@ -54,7 +54,7 @@ void write_po2(const Dialog& dialog, const Dialog& dialog_en)
       offset2entry[dialog.entries[i].offset].push_back(i);
     }
 
-  std::string filename = get_exe_path() + "dreamfall-" + dialog.lang_code + ".po";
+  std::string filename = get_temp_path() + "dreamfall-" + dialog.lang_code + ".po";
   std::ofstream out(filename.c_str(), std::ios::binary);
   out << "# Dreamfall Dialog Extractor V0.0\n"
       << "msgid \"\"\n"
@@ -111,7 +111,7 @@ void write_po(const Dialog& dialog, const Dialog& dialog_en)
       assert(dialog_en.entries.size() == dialog.entries.size());
     }
 
-  std::string filename = get_exe_path() + "dreamfall-" + dialog.lang_code + ".po";
+  std::string filename = get_temp_path() + "dreamfall-" + dialog.lang_code + ".po";
   std::ofstream out(filename.c_str(), std::ios::binary);
   out << "# Dreamfall Dialog Extractor V0.0\n"
       << "msgid \"\"\n"

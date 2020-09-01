@@ -90,7 +90,7 @@ void extract(const std::string& pak_filename, const std::string& pathname)
 void extract(TLJPak& pak, std::istream& in, const std::string& outpath)
 {
   std::string path = outpath;
-  std::string prefix = get_exe_path() + "dreamfall-extractor/";
+  std::string prefix = get_temp_path() + "dreamfall-extractor/";
 
   create_dir(prefix);
   create_dir(prefix + path);
@@ -302,7 +302,7 @@ extract_directory(const std::string& pak_filename, const std::string& dir_filena
           if (j != entry2name.end())
             {
               std::cout << "Extracting (" << std::setw(3) << (100*(i+1))/pak.files.size() << "%): " << j->second << std::endl;
-              pak.extract(i, get_exe_path() + "dreamfall/" + j->second);
+              pak.extract(i, get_temp_path() + "dreamfall/" + j->second);
             }
           else
             {
@@ -311,7 +311,7 @@ extract_directory(const std::string& pak_filename, const std::string& dir_filena
                   std::vector<std::string> guesses = pak.guess(i);
                   assert(guesses.size() > 0);
                   std::cout << "Extracting (" << std::setw(3) << (100*(i+1))/pak.files.size() << "%): " << guesses.front() << std::endl;
-                  pak.extract(i, get_exe_path() + "dreamfall/" + guesses.front());
+                  pak.extract(i, get_temp_path() + "dreamfall/" + guesses.front());
                 }
               else
                 {
@@ -426,7 +426,7 @@ int main(int argc, char** argv)
             {
               char default_directory[] = "df-directory.txt";
               std::cout << "Using default directory: " << default_directory << std::endl;
-              extract_directory(argv[2], get_exe_path() + default_directory);
+              extract_directory(argv[2], get_temp_path() + default_directory);
             }
           else
             {
@@ -477,7 +477,7 @@ int main(int argc, char** argv)
 
                   char default_directory[] = "df-directory.txt";
                   std::cout << "Using default directory: " << default_directory << std::endl;
-                  extract_directory(argv[i], get_exe_path() + default_directory);
+                  extract_directory(argv[i], get_temp_path() + default_directory);
 
                   //extract(pak, in, outfile);
 

@@ -93,7 +93,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   big_folder_closed = new FXGIFIcon(getApp(), bigfolder);
   big_folder_closed->create();
 
-  load_bookmarks(get_exe_path() + "/bookmarks.txt");
+  load_bookmarks(get_config_path() + "/bookmarks.txt");
 
   menubar = new FXMenuBar(this,LAYOUT_SIDE_TOP|LAYOUT_FILL_X|FRAME_RAISED);
 
@@ -212,7 +212,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   progress_dialog = new ProgressDialog(getApp(), "Reading pak data, this may take a while");
 
   // Look for dreamfall_path
-  std::ifstream in((get_exe_path() + "dreamfall_path.txt").c_str());
+  std::ifstream in((get_config_path() + "dreamfall_path.txt").c_str());
   if (in)
     {
       std::getline(in, dreamfall_path);
@@ -366,7 +366,7 @@ public:
     logger.println("Reading filelist");
     logger.sync();
 
-    data_manager.add_filelist(get_exe_path() + "df-directory.txt");
+    data_manager.add_filelist(get_data_path() + "df-directory.txt");
 
     logger.println("Scanning paks... done");
     logger.sync();
@@ -642,7 +642,7 @@ DFToolBoxWindow::onCmdDreamfallPath(FXObject*,FXSelector,void*)
 
   if (!new_dreamfall_path.empty())
     {
-      std::ofstream out((get_exe_path() + "dreamfall_path.txt").c_str());
+      std::ofstream out((get_config_path() + "dreamfall_path.txt").c_str());
       out << new_dreamfall_path << std::endl;
       out.close();
 
@@ -753,8 +753,8 @@ DFToolBoxWindow::play_dialog(int id, const std::string& lang)
   Speech speech = data_manager.get_speech_by_id(id);
 
   // add a extract that takes a lang code
-  data_manager.extract_by_language(lang, speech.wavefile, get_exe_path() + "tmp.mp3");
-  soundview->set_music(get_exe_path() + "tmp.mp3", ""); //dialogs[lang].get_by_id(id));
+  data_manager.extract_by_language(lang, speech.wavefile, get_temp_path() + "tmp.mp3");
+  soundview->set_music(get_temp_path() + "tmp.mp3", ""); //dialogs[lang].get_by_id(id));
 }
 
 unsigned int
@@ -894,25 +894,25 @@ DFToolBoxWindow::display(FXTreeItem* item)
           {
           case FILETYPE_SHARK3D:
             {
-              if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
+              if (data_manager.extract(entry->get_pak(), get_temp_path() + "tmp.dat"))
                 {
-                  sharkview->set_shark(get_exe_path() + "tmp.dat");
+                  sharkview->set_shark(get_temp_path() + "tmp.dat");
                   show_switcher(SWITCHER_SHARKVIEW);
                 }
             }
             break;
 
           case FILETYPE_WAV:
-            if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.wav"))
+            if (data_manager.extract(entry->get_pak(), get_temp_path() + "tmp.wav"))
               {
-                soundview->set_music(get_exe_path() + "tmp.wav", "Wave File");
+                soundview->set_music(get_temp_path() + "tmp.wav", "Wave File");
                 show_switcher(SWITCHER_SOUNDVIEW);
               }
             break;
 
           case FILETYPE_MP3:
             {
-              if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.mp3"))
+              if (data_manager.extract(entry->get_pak(), get_temp_path() + "tmp.mp3"))
                 {
                   try {
                     Speech speech = data_manager.get_speech_by_mp3(entry->get_pak().fullname);
@@ -937,10 +937,10 @@ DFToolBoxWindow::display(FXTreeItem* item)
                           }
                       }
 
-                    soundview->set_music(get_exe_path() + "tmp.mp3", str.str());
+                    soundview->set_music(get_temp_path() + "tmp.mp3", str.str());
 
                   } catch(...) {
-                    soundview->set_music(get_exe_path() + "tmp.mp3",
+                    soundview->set_music(get_temp_path() + "tmp.mp3",
                                          "<nothing found>\n\n"
                                          "If you want to see the dialog in text form displayed here, click \"File->Scan for Dialogs\".");
                   }
@@ -951,9 +951,9 @@ DFToolBoxWindow::display(FXTreeItem* item)
             break;
 
           case FILETYPE_LOCALISATION:
-            if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
+            if (data_manager.extract(entry->get_pak(), get_temp_path() + "tmp.dat"))
               {
-                dialogview->set_dialog(get_exe_path() + "tmp.dat");
+                dialogview->set_dialog(get_temp_path() + "tmp.dat");
                 show_switcher(SWITCHER_DIALOGVIEW);
               }
             break;
@@ -961,9 +961,9 @@ DFToolBoxWindow::display(FXTreeItem* item)
           case FILETYPE_DDS:
             {
               try {
-                if (data_manager.extract(entry->get_pak(), get_exe_path() + "tmp.dat"))
+                if (data_manager.extract(entry->get_pak(), get_temp_path() + "tmp.dat"))
                   {
-                    imageview->set_image(get_exe_path() + "tmp.dat");
+                    imageview->set_image(get_temp_path() + "tmp.dat");
                     show_switcher(SWITCHER_IMAGEVIEW);
                   }
               } catch (std::exception& err) {
@@ -1039,7 +1039,7 @@ DFToolBoxWindow::onCmdAddBookmark(FXObject*, FXSelector, void* data)
           bookmarkmenu->create();
         }
 
-      save_bookmarks(get_exe_path() + "/bookmarks.txt");
+      save_bookmarks(get_config_path() + "/bookmarks.txt");
     }
   return 1;
 }
@@ -1198,11 +1198,11 @@ DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
 
               if ((*i)->get_pak().type == FILETYPE_SHARK3D && shark_as_text)
                 {
-                  data_manager.extract((*i)->get_pak(), get_exe_path() + "/tmp.shark");
-                  std::ifstream in((get_exe_path() + "/tmp.shark").c_str(), std::ios::binary);
+                  data_manager.extract((*i)->get_pak(), get_temp_path() + "/tmp.shark");
+                  std::ifstream in((get_temp_path() + "/tmp.shark").c_str(), std::ios::binary);
                   if (!in)
                     {
-                      throw std::runtime_error("Error: Couldn't open " + (get_exe_path() + "/tmp.shark"));
+                      throw std::runtime_error("Error: Couldn't open " + (get_temp_path() + "/tmp.shark"));
                     }
                   else
                     {
@@ -1273,6 +1273,8 @@ DFToolBoxWindow::onCmdScanForMP3(FXObject* sender, FXSelector, void* data)
 int main(int argc,char** argv)
 {
   try {
+    parse_args(argc, argv);
+
 #ifdef USE_SDL
     std::cout << "Initing SDL audio" << std::endl;
     // start SDL with audio support
@@ -1294,8 +1296,8 @@ int main(int argc,char** argv)
     atexit(Mix_CloseAudio);
     atexit(SDL_Quit);
 #elif not __linux__
-    freopen((get_exe_path() + "/stdout.txt").c_str(), "w", stdout);
-    freopen((get_exe_path() + "/stderr.txt").c_str(), "w", stderr);
+    freopen((get_temp_path() + "/stdout.txt").c_str(), "w", stdout);
+    freopen((get_temp_path() + "/stderr.txt").c_str(), "w", stderr);
 #endif
 
     FXApp application("DFToolBox", "Grumbel");

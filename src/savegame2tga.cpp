@@ -83,7 +83,7 @@ int main(int argc, char** argv)
               }
             else
               {
-                std::string outfile = get_exe_path() + "saves/" + file_basename(argv[2])  + ".sav";
+                std::string outfile = get_temp_path() + "saves/" + file_basename(argv[2])  + ".sav";
                 std::cout << "Building save and writing to " << outfile << std::endl;
                 std::ofstream out(outfile.c_str(), std::ios::binary);
                 shark3d->write_binary(out);
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
       }
     else
       {
-        create_dir(get_exe_path() + "saves/");
+        create_dir(get_temp_path() + "saves/");
 
         for(int i = 1; i < argc; ++i)
           {
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
             else
               {
                 {
-                  std::string outfile = get_exe_path() + "saves/" + file_basename(argv[i])  + ".txt";
+                  std::string outfile = get_temp_path() + "saves/" + file_basename(argv[i])  + ".txt";
                   std::cout << "Writing data to: " << outfile << std::endl;
                   std::ofstream out(outfile.c_str());
                   Shark3D::parse_binary(in)->write_text(out);
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
                   in.read(&*buffer.begin(), 256*256*4);
                   in.close();
 
-                  std::string outfile = get_exe_path() + "saves/" + file_basename(argv[i])  + ".tga";
+                  std::string outfile = get_temp_path() + "saves/" + file_basename(argv[i])  + ".tga";
                   std::cout << "Writing screenshot to: " << outfile << std::endl;
                   std::ofstream out(outfile.c_str(), std::ios::binary);
                   TGA tga(256,256, buffer);

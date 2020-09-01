@@ -86,7 +86,7 @@ FXIcon* dreamfall;
 FXIcon* load_icon(FXApp* app, const std::string& filename)
 {
   std::vector<char> data;
-  if (file_readbytes(get_exe_path() + "/" + filename, data))
+  if (file_readbytes(get_data_path() + "/" + filename, data))
     {
       FXIcon* icon = new FXGIFIcon(app, &*data.begin());
       icon->create();

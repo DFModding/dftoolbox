@@ -96,7 +96,7 @@ SoundView::set_music(const std::string& filename, const std::string& desc)
       issue_msi_command("stop sound1");
       issue_msi_command("close sound1");
 
-      std::string copy_file = get_exe_path() + "/tmp_sound.dat";
+      std::string copy_file = get_temp_path() + "/tmp_sound.dat";
       file_copy(filename, copy_file);
 
       if (has_suffix(filename, ".wav"))

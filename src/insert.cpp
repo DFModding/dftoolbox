@@ -71,7 +71,7 @@ int main(int argc, char** argv)
   try {
   Config config;
 
-  std::string modpath = get_exe_path() + "dreamfall-mods/";
+  std::string modpath = get_data_path() + "dreamfall-mods/";
 
   std::vector<std::string> lst;
   find_files(modpath, lst);

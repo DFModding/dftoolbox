@@ -57,7 +57,7 @@ ExportDialog::ExportDialog(DFToolBoxWindow* parent_)
   {
     FXHorizontalFrame* hbox = new FXHorizontalFrame(matrix, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN, 0,0,0,0, 0,0,0,0);
     pathname = new FXTextField(hbox,0, NULL, 0, TEXTFIELD_ENTER_ONLY|LAYOUT_FILL_X|FRAME_SUNKEN|LAYOUT_CENTER_Y);
-    pathname->setText(get_exe_path().c_str());
+    pathname->setText(get_temp_path().c_str());
     new FXButton(hbox, "Browse", Icon::folder_open, this, ID_BROWSE);
   }
   {
