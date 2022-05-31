@@ -33,7 +33,7 @@
 #include "progress_logger.hpp"
 #include "pak_insert_thread.hpp"
 
-#define STR(x) static_cast<std::ostringstream&>(std::ostringstream() << x).str()
+#define STR(x) static_cast<std::ostringstream const&>(std::ostringstream() << x).str()
 
 extern std::string dreamfall_path;
 extern FXGUISignal* sig;
