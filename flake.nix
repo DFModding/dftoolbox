@@ -10,23 +10,27 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-       in rec {
-         packages = flake-utils.lib.flattenTree rec {
+       in {
+         packages = rec {
+           default = dftoolbox;
+
            dftoolbox = pkgs.stdenv.mkDerivation {
              name = "dftoolbox";
              src = nixpkgs.lib.cleanSource ./.;
              cmakeFlags = [];
-             nativeBuildInputs = [
-               pkgs.cmake
-               pkgs.pkgconfig
+
+             nativeBuildInputs = with pkgs; [
+               cmake
+               pkgconfig
              ];
-             buildInputs = [
-               pkgs.fox_1_6
-               pkgs.SDL
-               pkgs.SDL_mixer
+
+             buildInputs = with pkgs; [
+               fox_1_6
+               SDL
+               SDL_mixer
              ];
            };
         };
-        defaultPackage = packages.dftoolbox;
-      });
+       }
+    );
 }
