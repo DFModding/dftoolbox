@@ -2,7 +2,7 @@
   description = "Inspect data files of the game Dreamfall";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -15,9 +15,10 @@
            default = dftoolbox;
 
            dftoolbox = pkgs.stdenv.mkDerivation {
-             name = "dftoolbox";
-             src = nixpkgs.lib.cleanSource ./.;
-             cmakeFlags = [];
+             pname = "dftoolbox";
+             version = "0.0.0";
+
+             src = ./.;
 
              nativeBuildInputs = with pkgs; [
                cmake
