@@ -108,6 +108,7 @@ target_link_libraries(dftool-cir libdftoolbox)
 
 add_executable(dfmodtool
   "src/dfmodactivator.cpp"
+  "src/dfmodactivator.hpp"
   "src/pak_insert_thread.cpp"
   "src/icons.cpp"
   "src/progress_dialog.cpp"
@@ -116,9 +117,28 @@ add_executable(dfmodtool
   )
 target_link_libraries(dfmodtool PRIVATE
   libdftoolbox
-  Qt6::Widgets
-  PkgConfig::FOX)
+  Qt6::Widgets)
 
+install(TARGETS
+  dftool-dialog
+  dftool-extract
+  dftool-bundle
+  dftool-dialog-fix
+  dftool-savegame2tga
+  dftool-insert
+  dftool-ddstool
+  dftool-shark3d
+  dftool-stfu4
+  dftool-xarc
+  dftool-xmg
+  dftool-xrc
+  dftool-cir
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+# FIXME: temporary, the dftoolbox GUI is ported to Qt6 step by step
+# and gets built again once the port is complete
+set(DFTOOLBOX_QT_PORT_DONE OFF)
+if(DFTOOLBOX_QT_PORT_DONE)
 add_executable(dftoolbox
   "src/dftoolbox.cpp"
   "src/shark_view.cpp"
@@ -140,32 +160,14 @@ target_link_libraries(dftoolbox PRIVATE
   PkgConfig::FOX
   PkgConfig::SDL
   PkgConfig::SDL_MIXER)
-
-install(TARGETS
-  dftool-dialog
-  dftool-extract
-  dftool-bundle
-  dftool-dialog-fix
-  dftool-savegame2tga
-  dftool-insert
-  dftool-ddstool
-  dftool-shark3d
-  dftool-stfu4
-  dftool-xarc
-  dftool-xmg
-  dftool-xrc
-  dftool-cir
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
 install_with_wrapper(dftoolbox)
+endif()
 install_with_wrapper(dfmodtool)
 
 # Shared runtime data of dftoolbox and dfmodtool: icons (PNG and the
 # GIFs of the mods), the mods dfmodtool lists and the known filenames
 install(DIRECTORY icons DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
   PATTERN "*.xcf" EXCLUDE)
-install(DIRECTORY mods DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
-
 install(DIRECTORY mods DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
 install(FILES df-directory.txt  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
