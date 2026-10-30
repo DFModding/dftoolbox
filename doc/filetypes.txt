@@ -1,54 +1,157 @@
-Bundels
-=======
+File types in the Dreamfall .pak archives
+=========================================
 
-.bun - texture filenames, vertex data and index data of all the models of a location, see bundle-format.txt
+File counts are from a scan of all 103,223 files in the 88 .paks of
+the PC version. Files that exist in several paks are counted each
+time. Everything has a filename now, but some of them are damaged, see
+"Damaged filenames". dftoolbox detects the type by the file content
+where it can, the extension says little: a .png is usually not a PNG.
 
-Shark3D Snake Binary
-====================
-.cdr - shark3d_snake_binary, used in 'data/scripts/' and 'data/interactiontables/'
-.sgr - shark3d_snake_binary, used for shaders, contained in directory 'art/shaders/prog/...'
-.sdr - shark3d_snake_binary, used for shaders, contained in directory 'art/locations/.../shader'
-.skr - shark3d_snake_binary, shark3d_std_bone_skel_runtime, see bundle-format.txt
-.sir - shark3d_snake_binary, node hierarchy of a model, format shark3d_std_inst_3x0, see bundle-format.txt
-.svr - shark3d_snake_binary, shark3d_runtime_model_pvs, seldomly used
-.ikr - shark3d_snake_binary, tlj2_ikr_0
-.rgr - shark3d_snake_binary, funcom_bone_rig_runtime
-.spr - shark3d_snake_binary, paths, see bundle-format.txt
 
-Lip Sync Data:
+Understood
+==========
+
+The whole file can be read, and for those marked as "written" also
+produced again.
+
+Containers:
+
+.pak (88)        - archive with all the game data, read and written
+.bun (70)        - texture filenames, vertex and index data of all the
+                   models of a location, see bundle-format.txt. A few
+                   header fields are unlabelled, nothing that gets drawn
+                   depends on them
+
+Shark3D snake binary, magic "shark3d_snake_binary", decompiled to text
+and compiled back. The format describes itself, so reading these needs
+no knowledge of the content. What the game does with each field is only
+as clear as its name:
+
+.cdr (18,293)    - scripts in data/scripts/, data/interactiontables/ and
+                   data/generated/, some in data/config/
+.sgr (1,976)     - shaders, in art/shaders/prog/...
+.sdr (841)       - shaders of a location, in art/locations/.../shader
+.sir (1,563)     - node hierarchy of a model, shark3d_std_inst_3x0, see
+                   bundle-format.txt
+.skr (362)       - skeleton, shark3d_std_bone_skel_runtime, see
+                   bundle-format.txt
+.spr (315)       - keyframed paths of objects, see bundle-format.txt
+.ikr (235)       - tlj2_ikr_0, inverse kinematics
+.rgr (150)       - funcom_bone_rig_runtime, bone rig
+.smr (90)        - model, shark3d_std_model_runtime_3x2x1. Nearly all
+                   .smr only exist as entries in the .bun files, the
+                   ones that are real files are GUI models and models in
+                   laidback.pak, the 3D preview doesn't show those
+.svr (4)         - shark3d_runtime_model_pvs, visibility data
+.str (2)         - only anim_well.str and anim_planks.str
+
+Multimedia:
+
+.mp3 (23,108)    - standard MP3
+.wav (4,880)     - standard RIFF WAV
+.png .tga .dds   - DirectX DDS textures (10,859), not real .pngs or .tgas
+.scr (3,509)     - plain text D3D shader assembly. 314 of them begin with
+                   an empty line and show up as unknown, as get_type()
+                   only looks at the first bytes
+
+Other:
+
+localization.dat (3) - all the game text, in data/generated/config/universe,
+                   converted to and from .po
+.bpr (8,966)     - tljbone2, animation, see bundle-format.txt, played by
+                   the 3D preview
+.bpr (63)        - tljbone0, older variant of the same, also played
+.dat (300)       - font metrics in art/gui/font/ (all checked):
+                     char[128]  name of the font
+                     i32        font size
+                     i32        number of pages, the _0.tga, _1.tga, ...
+                                textures next to the .dat
+                     i32        glyph count
+                     glyph[]    60 bytes each, sorted by character code:
+                                i32 code, 8 x i32 metrics, 4 x f32 texture
+                                coordinates, 2 x i32, probably the page
+                   The files have space for 256 glyphs, or for 3,192 in
+                   the large ones. Which metric is which is not worked
+                   out, so the game text can't be laid out from this yet
+
+
+Partly understood
+=================
+
+.png .tga (2,569) - STFU4, nearly all normal maps. The layout is known and
+                   they are exported to PNG, but Y of the normal goes
+                   through a table measured from the files, see
+                   stfu-format.txt
+.bpr (904)       - Shark3D snake binary, tlj2_bone_anim_0001, in
+                   data/generated/. Can be decompiled, it holds groups of
+                   channels (fade, switch and anim indices). What it does
+                   exactly is unknown, these are not played
+.bpr (2)         - tljbone1, not played
+.graph (47)      - navigation mesh of a location, in
+                   art/locations/pathfinder/. The layout is known, all 43
+                   different files parse to the last byte:
+                     u16        polygon count
+                     polygon[]:
+                       u16      unknown
+                       u8       vertex count
+                       vec3[]   vertices, 12 bytes each
+                       u8       link count
+                       link[]   two u16, not polygon numbers as the values
+                                exceed the polygon count
+                   That links join polygons is a guess. Nothing reads these
+art/lights/*.dat (70) - baked light of a location, the layout fits all
+                   70 files, the meaning is a guess. 40 byte records:
+                     u32        point count
+                     u32        cell count
+                     point[]    vec3 position, 8 bytes that are zero, then
+                                20 bytes that look like five colours
+                     cell[]     u32 u32, then 8 x u32
+                   In 198,933 cells the first two values are 1, 1 and
+                   all eight values are valid point numbers, so those
+                   look like boxes with a point in each corner. The
+                   239,888 other cells have 0 as the second value and
+                   two values set, possibly the nodes of a tree. Nothing
+                   reads these
+
+
+Not understood
 ==============
-.lip - used in sound/voice-over/, each .mp3 has a .lip file 
 
-TLJ Bone
-========
-.bpr - tljbone, see bundle-format.txt
+.lip (22,818)    - lip sync, one for each voice line next to its .mp3,
+                   in sound/voice-over/. Seemingly 4 byte records, likely
+                   visemes or timing. Neither DreamView nor
+                   DreamfallTLJViewer read them
+.ikr_data (1,152) - starts with a version-like 3, 2 files with 4, followed
+                   by floats in what look like fixed size records.
+                   Probably IK targets, .rgr and .ikr tell which bones and
+                   animations they belong to
 
-Shader Scripts:
-===============
-.scr
 
-Multimedia Data:
-================
-.mp3 - Standard MP3 files
-.wav - Standard Wav files
-.png - DirectX texture files (ie. not real .pngs), can also be STFU4 file (?)
-.tga - DirectX texture files (ie. not real .tgas)
-.dds - DirectX texture files
+Damaged filenames
+=================
 
-Unknown:
-========
+The directory of a .pak only allows to find a name by searching for
+it, so names that are missing from df-directory.txt have to be pieced
+together from what is left in the directory and end up with some
+letters wrong or missing. 72 extensions are visibly damaged that way:
 
-.dat - binary data for the lights, used in art/lights/
-.ikr_data - random binary data, most likly connected to .ikr
-.skr_data
-.smr - references to those files are found, but the files themself not, they are the entries in the .bun files
+  chawang2png, .sypng, .s-partment_fridge4png  are DDS (26)
+  .s_r .ssr .sfr .2kr ._dr                     are Shark3D (10)
+  .op3 .qp3 .sp3 .up3 .wp3 .yp3                are MP3 (18)
+  .nip .pip .rip .tip .vip .xip                are .lip (18)
 
-Missdetections?:
-================
-qty
-orq
-psx
-jsr
-dta
+The 36 MP3 and .lip files are all in vox_de, vox_en and vox_no. They
+are the only ones of the 1,919 files with no detected type that are
+not covered by the .ikr_data, .scr, .dat and .graph entries above.
+
+
+The old "Missdetections?" list
+==============================
+
+qty, orq, psx, jsr and dta can be dropped: no file in the .paks and no
+line in df-directory.txt has one of those extensions, and neither has
+.skr_data, which used to be listed as unknown. As the code doesn't
+mention them either they are most likely damaged names like the ones
+above, that a better filename list has since replaced.
 
 # EOF #

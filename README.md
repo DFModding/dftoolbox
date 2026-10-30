@@ -120,7 +120,7 @@ the PC version, about 350 of those have no known filename.
 | `.pak` | 88 | Read and write, some filenames can't be recovered |
 | Shark3D binary (`.cdr .sgr .sdr .sir .skr .ikr .rgr .spr .str .svr`) | ~25,000 | Decompile and compile, the content is self-describing |
 | `.bun` | 70 | Geometry, textures and stages are decoded and shown in the 3D preview |
-| DDS textures, often named `.png` or `.tga` | ~9,850 | Decoded |
+| DDS textures, often named `.png` or `.tga` | ~10,900 | Decoded |
 | `.scr` | 3,509 | Plain text D3D shader assembly |
 | `.mp3`, `.wav` | ~28,000 | Standard formats, can be played |
 | `localization.dat` | 1 | Converts to and from `.po` |
@@ -150,22 +150,31 @@ shader and hasn't been seen in the data directly.
 
 ### Unknown
 
-- `.lip` (22,817 files): one for each voice line, seemingly 4 byte
+- `.lip` (22,818 files): one for each voice line, seemingly 4 byte
   records, likely visemes or timing. Neither DreamView nor
   DreamfallTLJViewer read these.
 - `.ikr_data` (1,152 files): starts with a version-like `3`, followed
   by floats in what look like fixed size records. Probably IK targets,
   `.rgr` and `.ikr` tell which bones and animations they belong to.
-- `art/lights/*.dat`: two counts followed by floats, probably baked
-  light data. Decoding those could also help with the dark locations.
+
+### Layout known, meaning partly guessed
+
+- `art/lights/*.dat` (70 files): points with a position and what look
+  like colours, and cells with eight corners that use those points,
+  probably baked light. Decoding those could also help with the dark
+  locations.
+- `.graph` (47 files): navigation meshes in `art/locations/pathfinder/`,
+  polygons with their vertices and links.
+- `art/gui/font/*.dat` (300 files): glyph metrics and texture
+  coordinates of the fonts.
+
+Details are in `doc/filetypes.txt`.
 
 ### Not examined yet
 
-- about 300 of the 373 `.dat` files start with the text `art/`, so
-  they aren't the light format
 - 904 `.bpr` files are Shark3D instead of `tljbone`, these and two
   `tljbone1` files are not played
-- 85 `.smr` files in Shark3D format
+- 90 `.smr` files in Shark3D format
   (`shark3d_std_model_runtime_3x2x1`) that look like GUI models, the
   3D preview can't show those
 
