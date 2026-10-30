@@ -50,7 +50,6 @@ option(WERROR "Turn warnings into errors" OFF)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(SDL REQUIRED sdl IMPORTED_TARGET)
 pkg_search_module(SDL_MIXER REQUIRED SDL_mixer IMPORTED_TARGET)
-pkg_search_module(FOX REQUIRED fox IMPORTED_TARGET)
 find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets)
 
 add_library(libdftoolbox STATIC

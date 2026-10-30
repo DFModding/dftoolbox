@@ -27,7 +27,6 @@
              ];
 
              buildInputs = with pkgs; [
-               fox_1_6
                qt6.qtbase
                SDL
                SDL_mixer
