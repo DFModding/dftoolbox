@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
-# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-License-Identifier: GPL-3.0-or-later
 {
   description = "Inspect data files of the game Dreamfall";
 
@@ -51,7 +51,7 @@
           meta = {
             description = "Inspect and modify the data files of the game Dreamfall";
             homepage = "https://gitlab.com/DFModding/dftoolbox";
-            license = lib.licenses.gpl2Plus;
+            license = lib.licenses.gpl3Plus;
             mainProgram = "dftoolbox";
           };
         };

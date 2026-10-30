@@ -213,6 +213,14 @@ or the pak extraction thread in the Dreamfall forum:
 
 or use the IRC server `irc.rizon.net`, channel `#ragnar`
 
+License
+-------
+
+GPL-3.0-or-later, see `COPYING`. Earlier versions were GPL-2.0-or-later.
+The mods in `mods/` are by skribb and are not covered by this, see
+`LICENSES/LicenseRef-Dreamfall-Mods.txt`. They are packaged anyway to
+keep them available.
+
 Building
 --------
 

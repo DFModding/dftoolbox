@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
-# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Windows build (mingw-w64 cross, win64 only: Qt 6 has no 32-bit
 # Windows support).
@@ -167,7 +167,7 @@ let
     Settings: %APPDATA%\dftoolbox\config\
     Portable mode: create a file portable.txt next to dftoolbox.exe.
 
-    Licence: GPL-2.0-or-later (COPYING.txt).
+    Licence: GPL-3.0-or-later (COPYING.txt).
     Source: https://gitlab.com/DFModding/dftoolbox
     EOR
     sed -i 's/^    //; s/$/\r/' $out/README.txt
