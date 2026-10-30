@@ -4,6 +4,9 @@ DFToolBox
 - relicensed from GPL-2.0-or-later to GPL-3.0-or-later
 - Windows builds are back, as a 64-bit zip from `nix build`
 - sounds are played with Qt Multimedia, SDL is no longer needed
+- dialog text of voice files is available right after loading, "Scan for
+  Dialogs" is gone
+- the sound view shows position and duration and can seek
 - dftool-insert looks for dreamfall-mods/ in the user data directory
   first, see the README
 - Windows: configuration moved to %APPDATA%\dftoolbox\config\, the old
