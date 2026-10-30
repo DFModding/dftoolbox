@@ -31,7 +31,10 @@ to dreamfall/ in the same directory as the extract.exe.
 
 This tool will allow you to insert files into Dreamfall, for that
 there exists a directory dreamfall-mods/ into which you should place
-you modifications. The insert tool will, once started, scan that
+you modifications, in `$XDG_DATA_HOME/dftoolbox/` on Linux and
+`%LOCALAPPDATA%\dftoolbox\data\` on Windows. A dreamfall-mods/ in the
+current directory, or next to the .exe on Windows, is still used if
+that one is missing. The insert tool will, once started, scan that
 directory for files and insert them into the .paks of Dreamfall. The
 .paks will be automatically backed up to .pak.orig, so you can rename
 them back if you want to get rid of you modifications.
@@ -210,3 +213,36 @@ or the pak extraction thread in the Dreamfall forum:
 
 or use the IRC server `irc.rizon.net`, channel `#ragnar`
 
+Building
+--------
+
+    nix build                        # Linux
+    nix build .#dftoolbox-win64      # Windows, unpacked
+    nix build .#dftoolbox-win64-zip  # Windows, zipped
+    nix flake check                  # everything, plus the packaging checks
+
+The first Windows build compiles Qt, which takes a while. `nix develop`
+provides `dftoolbox-build`, `dftoolbox-run` and `dftoolbox-run-gdb`.
+
+Packaging
+---------
+
+Builds, directories and command line options follow gamepkgstd. As
+DFToolBox is a tool rather than a game, these rules are deviated from
+or skipped:
+
+| Rules | Why |
+|---|---|
+| KEY-*, OPT-5, OPT-8, STACK-3, STACK-4, STACK-5 | Gamepad, game keys, game settings and the 640x480 minimum are about games, the keyboard shortcuts are Qt's |
+| OPT-3 `--fullscreen`, `--windowed`, `--geometry`, `--mute`, `--state-dir` | No fullscreen mode, sound only plays on request, no state: savegames are the game's own |
+| STACK-2, INT-3, INT-9, SDL3-* | Qt instead of SDL, as STACK-6 asks for: Qt Multimedia plays the sounds, `setDesktopFileName()` sets the window IDs |
+| DIR-1, INT-7 man section, categories | The man page is in section 1, and the .desktop file is not in `Game`, since this is not a game |
+| FLAKE-1 `dftoolbox-win32` | Qt 6 has no 32-bit Windows support |
+| FLAKE-14 | The project is hosted on GitLab and Radicle, not GitHub. `nix flake check` compiles Qt, which also doesn't fit shared CI runners |
+| Android, PortMaster, web | Not targets |
+
+The DIR-3 search means that a checkout has to be told where its data
+is, `dftoolbox-run` does that, by hand it is `--data-dir .`.
+`--datadir`, `--configdir` and `--cachedir` still work. Windows moved
+from `%APPDATA%\dftoolbox\` to its `config\` subdirectory, existing files
+in the old location are still read.

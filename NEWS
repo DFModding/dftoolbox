@@ -1,6 +1,16 @@
 DFToolBox
 ~~~~~~~~~
 
+- Windows builds are back, as a 64-bit zip from `nix build`
+- sounds are played with Qt Multimedia, SDL is no longer needed
+- dftool-insert looks for dreamfall-mods/ in the user data directory
+  first, see the README
+- Windows: configuration moved to %APPDATA%\dftoolbox\config\, the old
+  location is still read
+- new options --version, --portable, --no-save, --show-paths and
+  --user-data-dir, --datadir, --configdir and --cachedir became
+  --data-dir, --config-dir and --cache-dir
+- a startup report goes to stderr
 - bookmark loading/saving
 - fixed mp3 and wav playback, now using Windows functions instead of
   SDL

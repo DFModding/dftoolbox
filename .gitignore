@@ -2,3 +2,5 @@
 *.o
 /.sconsign.dblite
 /result
+/build
+__pycache__

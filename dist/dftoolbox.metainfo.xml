@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+     SPDX-License-Identifier: CC0-1.0 -->
+<component type="desktop-application">
+  <id>dftoolbox</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <name>DFToolBox</name>
+  <summary>Inspect and modify the data files of the game Dreamfall</summary>
+  <description>
+    <p>
+      DFToolBox browses the .pak files of the game Dreamfall and shows
+      what is in them: textures, dialog, scripts, sounds and the 3D
+      models and locations.
+    </p>
+    <p>
+      It needs a copy of the game. Command line tools to extract,
+      convert and replace the game's files are included.
+    </p>
+  </description>
+  <developer id="org.grumbel">
+    <name>Ingo Ruhnke</name>
+  </developer>
+  <launchable type="desktop-id">dftoolbox.desktop</launchable>
+  <url type="homepage">https://gitlab.com/DFModding/dftoolbox</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://gitlab.com/DFModding/dftoolbox/-/raw/master/dist/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </recommends>
+  <releases>
+    <release version="0.1.0" date="2026-10-30"/>
+  </releases>
+</component>

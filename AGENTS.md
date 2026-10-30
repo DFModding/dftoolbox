@@ -7,13 +7,17 @@ DFToolBox provides C++ tools for inspecting and modifying Dreamfall game data. `
 ## Build, Test, and Development Commands
 
 - `nix build` builds the default package using the dependencies defined in `flake.nix`.
-- `cmake -S . -B build` configures an out-of-source build. Install CMake 3.15+, pkg-config, Qt 6.2+ (Widgets), SDL 1.2, and SDL_mixer first; pkg-config must resolve `sdl` and `SDL_mixer`, and CMake must find `Qt6`. `nix develop` provides all of them.
+- `nix build .#dftoolbox-win64` cross-builds the Windows version, `.#dftoolbox-win64-zip` zips it. The first build compiles Qt and takes a while.
+- `nix flake check` builds everything and runs the packaging checks.
+- `cmake -S . -B build` configures an out-of-source build. Install CMake 3.15+ and Qt 6.2+ (Widgets, OpenGL, OpenGLWidgets, Multimedia) first; `nix develop` provides them, along with `dftoolbox-build`, `dftoolbox-run` and `dftoolbox-run-gdb`.
 - `cmake --build build -j` builds the libraries, GUI applications, and command-line tools.
-- `./build/dftoolbox --datadir .` launches the GUI with repository assets; run from the repository root.
+- `./build/dftoolbox --data-dir .` launches the GUI with repository assets; run from the repository root.
 - `./build/dftool-shark3d path/to/file.sdr > /tmp/file.txt` exercises Shark3D decompilation.
 - `./build/dftool-model check path/to/res` reads every mesh of every bundle; `location` does the same for scenes.
 
 `SConstruct` and `Makefile` are legacy build paths. Prefer CMake for new build changes.
+
+The version is only written in `VERSION`. Packaging, directories and command line options follow gamepkgstd, see "Packaging" in `README.md` for what does not apply. Platform-specific code stays in `src/system.cpp`.
 
 ## Coding Style & Naming Conventions
 
@@ -21,7 +25,7 @@ Match surrounding C++ code: two-space indentation, braces on separate lines, and
 
 ## Testing Guidelines
 
-No automated test framework or coverage threshold is configured. Build affected targets and manually exercise changed behavior on disposable game-data copies. For converter changes, check decompilation and recompilation, including malformed inputs; preserve the trailing `$` in Shark3D text. Record commands, input characteristics, and results in the pull request. Never commit proprietary game archives or extracted assets.
+`ctest --test-dir build` runs the few unit tests, there is no coverage threshold. Build affected targets and manually exercise changed behavior on disposable game-data copies. For converter changes, check decompilation and recompilation, including malformed inputs; preserve the trailing `$` in Shark3D text. Record commands, input characteristics, and results in the pull request. Never commit proprietary game archives or extracted assets.
 
 ## Related Projects
 

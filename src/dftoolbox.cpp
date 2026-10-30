@@ -22,12 +22,8 @@
 **  02111-1307, USA.
 */
 
-#ifdef USE_SDL
-#include <SDL/SDL.h>
-#include <SDL/SDL_mixer.h>
-#endif
-
 #include <map>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
@@ -70,6 +66,7 @@
 #include "directory_view.hpp"
 #include "shark_view.hpp"
 #include "sound_view.hpp"
+#include "startup_report.hpp"
 #include "image_view.hpp"
 #include "model_view.hpp"
 #include "progress_dialog.hpp"
@@ -209,7 +206,7 @@ DFToolBoxWindow::DFToolBoxWindow()
   setWindowIcon(Icon::dftoolbox);
   resize(800, 600);
 
-  load_bookmarks(get_config_path() + "/bookmarks.txt");
+  load_bookmarks(get_config_file("bookmarks.txt"));
 
   // Shows the status tips of the toolbar buttons, "Ready." is what it
   // shows while there is no tip
@@ -375,7 +372,7 @@ DFToolBoxWindow::DFToolBoxWindow()
   progress_dialog = new ProgressDialog(this, "Reading pak data, this may take a while");
 
   // Look for dreamfall_path
-  std::ifstream in((get_config_path() + "dreamfall_path.txt").c_str());
+  std::ifstream in(get_config_file("dreamfall_path.txt").c_str());
   if (in)
     {
       std::getline(in, dreamfall_path);
@@ -771,16 +768,13 @@ DFToolBoxWindow::on_dreamfall_path()
 void
 DFToolBoxWindow::save_dreamfall_path()
 {
-  std::string filename = get_config_path() + "dreamfall_path.txt";
-  std::ofstream out(filename.c_str());
-  if (!out)
+  try
     {
-      std::cout << "Error: couldn't write " << filename << std::endl;
+      file_write_atomic(get_config_path() + "dreamfall_path.txt", dreamfall_path + "\n");
     }
-  else
+  catch(std::exception& err)
     {
-      out << dreamfall_path << std::endl;
-      out.close();
+      QMessageBox::warning(this, "Error", err.what());
     }
 }
 
@@ -1178,7 +1172,7 @@ DFToolBoxWindow::on_add_bookmark()
           add_bookmark_action(bookmarks.back());
         }
 
-      save_bookmarks(get_config_path() + "/bookmarks.txt");
+      save_bookmarks(get_config_path() + "bookmarks.txt");
     }
 }
 
@@ -1222,23 +1216,24 @@ DFToolBoxWindow::load_bookmarks(const std::string& filename)
 void
 DFToolBoxWindow::save_bookmarks(const std::string& filename)
 {
-  std::ofstream out(filename.c_str());
-  if (!out)
+  std::ostringstream out;
+  out << "bookmarks" << std::endl;
+  for(std::vector<Bookmark*>::iterator i = bookmarks.begin(); i != bookmarks.end(); ++i)
     {
-      std::cout << "DFToolBoxWindow::save_bookmarks: Couldn't write file: " << filename << std::endl;
+      out << "{" << std::endl;
+      out << "    label \"" << (*i)->label << "\"" << std::endl;
+      out << "    url   \"" << (*i)->url   << "\"" << std::endl;
+      out << "}" << std::endl;
     }
-  else
+  out << "\n$" << std::endl;
+
+  try
     {
-      out << "bookmarks" << std::endl;
-      for(std::vector<Bookmark*>::iterator i = bookmarks.begin(); i != bookmarks.end(); ++i)
-        {
-          out << "{" << std::endl;
-          out << "    label \"" << (*i)->label << "\"" << std::endl;
-          out << "    url   \"" << (*i)->url   << "\"" << std::endl;
-          out << "}" << std::endl;
-        }
-      out << "\n$" << std::endl;
-      out.close();
+      file_write_atomic(filename, out.str());
+    }
+  catch(std::exception& err)
+    {
+      QMessageBox::warning(this, "Error", err.what());
     }
 }
 
@@ -1388,36 +1383,17 @@ DFToolBoxWindow::on_scan_for_mp3()
 int main(int argc,char** argv)
 {
   try {
-    parse_args(argc, argv);
-
-#ifdef USE_SDL
-    std::cout << "Initing SDL audio" << std::endl;
-    // start SDL with audio support
-    if(SDL_Init(SDL_INIT_AUDIO)==-1)
-      {
-        printf("SDL_Init: %s\n", SDL_GetError());
-        exit(1);
-      }
-
-    std::cout << "Initing SDL mixer" << std::endl;
-    // open 44.1KHz, signed 16bit, system byte order,
-    //      stereo audio, using 1024 byte chunks
-    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024)==-1)
-      {
-        printf("Mix_OpenAudio: %s\n", Mix_GetError());
-        exit(2);
-      }
-
-    atexit(Mix_CloseAudio);
-    atexit(SDL_Quit);
-#elif not __linux__
-    freopen((get_temp_path() + "/stdout.txt").c_str(), "w", stdout);
-    freopen((get_temp_path() + "/stderr.txt").c_str(), "w", stderr);
-#endif
+    attach_parent_console();
+    parse_args(argc, argv, "dftoolbox");
 
     QApplication application(argc, argv);
-    application.setApplicationName("DFToolBox");
+    application.setApplicationName("dftoolbox");
+    application.setApplicationDisplayName("DFToolBox");
+    application.setApplicationVersion(QString::fromStdString(get_version()));
+    application.setDesktopFileName("dftoolbox");
     application.setOrganizationName("Grumbel");
+
+    print_startup_report("dftoolbox");
 
     Icon::init();
 
@@ -1426,9 +1402,9 @@ int main(int argc,char** argv)
 
     return application.exec();
   } catch(std::exception& err) {
-    std::cout << "Fatal Error: " << err.what() << std::endl;
+    std::cerr << "Fatal Error: " << err.what() << std::endl;
+    return EXIT_FAILURE;
   }
-  return 0;
 }
 
 /* EOF */

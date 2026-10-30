@@ -31,6 +31,7 @@
 
 #include "config.hpp"
 #include "shark3d.hpp"
+#include "system.hpp"
 
 int main(int argc, char** argv)
 {
@@ -53,6 +54,7 @@ int main(int argc, char** argv)
           {
             Shark3D* doc = Shark3D::parse_text(in);
 
+            set_binary_stdout();
             doc->write_binary(std::cout);
 
             delete doc;
@@ -65,7 +67,7 @@ int main(int argc, char** argv)
             if (argc > 2)
               std::cout << "# " << argv[i] << std::endl;
 
-            std::ifstream in(argv[i]);
+            std::ifstream in(argv[i], std::ios::binary);
 
             if(!in)
               {

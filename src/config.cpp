@@ -87,7 +87,7 @@ Config::Config()
   use_stdout     = true;
   dreamfall_path = find_dreamfall_path();
 
-  std::string filename = get_config_path() + "dftoolbox.ini";
+  std::string filename = get_config_file("dftoolbox.ini");
   std::ifstream in(filename.c_str());
   if (!in)
     {

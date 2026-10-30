@@ -31,6 +31,7 @@
 #else
 #  include <windows.h>
 #  include <direct.h>
+#  include <fcntl.h>
 #  include <io.h>
 #  include <sys/types.h>
 #  include <sys/stat.h>
@@ -39,6 +40,7 @@
 #endif
 
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <fstream>
@@ -47,10 +49,13 @@
 #include "system.hpp"
 #include "util.hpp"
 
-// Empty means "use the platform default", see the get_*_path() functions
+// Empty means "use the platform default", see the resolve_*() functions
 std::string g_datadir;
 std::string g_configdir;
 std::string g_cachedir;
+std::string g_user_datadir;
+bool g_portable = false;
+bool g_no_save  = false;
 
 namespace {
 
@@ -78,18 +83,98 @@ std::string get_env(const char* name, bool absolute_only = false)
   return value;
 }
 
-/** Returns $XDG_*_HOME or $HOME/\a fallback, empty if neither is available */
-std::string get_xdg_dir(const char* xdg_var, const char* fallback)
+/** A directory and what picked it, for --show-paths */
+struct ResolvedPath
+{
+  std::string path;
+  std::string origin;
+};
+
+bool is_portable()
+{
+  return g_portable || file_exists(get_exe_path() + "portable.txt");
+}
+
+#ifndef _WIN32
+/** Returns $XDG_*_HOME or $HOME/\a fallback, throws if neither is
+    available since relative paths are never ok here */
+ResolvedPath resolve_xdg(const char* xdg_var, const char* fallback)
 {
   std::string dir = get_env(xdg_var, true);
   if (!dir.empty())
-    return with_slash(dir);
+    return { with_slash(dir) + "dftoolbox/", xdg_var };
 
-  std::string home = get_env("HOME");
-  if (!home.empty())
-    return with_slash(home) + fallback;
+  std::string home = get_env("HOME", true);
+  if (home.empty())
+    throw std::runtime_error(std::string("Neither $") + xdg_var + " nor $HOME is usable");
 
-  return std::string();
+  return { with_slash(home) + fallback + "dftoolbox/", "default" };
+}
+#else
+/** Returns %\a var%/dftoolbox/\a category/, throws if it isn't set */
+ResolvedPath resolve_known_folder(const char* var, const char* category)
+{
+  std::string dir = get_env(var);
+  if (dir.empty())
+    throw std::runtime_error(std::string("%") + var + "% is not set");
+
+  return { with_slash(dir) + "dftoolbox/" + category + "/", "default" };
+}
+#endif
+
+ResolvedPath resolve_data_path()
+{
+  if (!g_datadir.empty())
+    return { g_datadir, "option" };
+
+#ifdef _WIN32
+  return { get_exe_path() + "data/", "executable" };
+#else
+  std::string relative = get_exe_path() + "../share/dftoolbox/";
+  if (file_exists(relative + "df-directory.txt"))
+    return { relative, "executable" };
+
+  return { DFTOOLBOX_INSTALL_DATADIR "/", "compiled-in" };
+#endif
+}
+
+ResolvedPath resolve_config_path()
+{
+  if (!g_configdir.empty())
+    return { g_configdir, "option" };
+  if (is_portable())
+    return { get_exe_path() + "userdata/config/", "portable" };
+#ifdef _WIN32
+  return resolve_known_folder("APPDATA", "config");
+#else
+  return resolve_xdg("XDG_CONFIG_HOME", ".config/");
+#endif
+}
+
+ResolvedPath resolve_cache_path()
+{
+  if (!g_cachedir.empty())
+    return { g_cachedir, "option" };
+  if (is_portable())
+    return { get_exe_path() + "userdata/cache/", "portable" };
+#ifdef _WIN32
+  return resolve_known_folder("LOCALAPPDATA", "cache");
+#else
+  return resolve_xdg("XDG_CACHE_HOME", ".cache/");
+#endif
+}
+
+ResolvedPath resolve_user_data_path()
+{
+  if (!g_user_datadir.empty())
+    return { g_user_datadir, "option" };
+  if (is_portable())
+    return { get_exe_path() + "userdata/data/", "portable" };
+#ifdef _WIN32
+  return resolve_known_folder("LOCALAPPDATA", "data");
+#else
+  return resolve_xdg("XDG_DATA_HOME", ".local/share/");
+#endif
 }
 
 /** Creates \a path including all its parent directories */
@@ -104,67 +189,160 @@ void create_directories(const std::string& path)
             create_dir(dir);
         }
     }
+
+  if (!file_exists(path))
+    throw std::runtime_error("Couldn't create directory " + path);
+}
+
+/** Portable mode has nothing to fall back to, so it has to find out
+    early if the directory next to the executable can't be used */
+void check_writable(const std::string& path)
+{
+  std::string probe = path + ".dftoolbox-write-test";
+  std::ofstream out(probe.c_str());
+  if (!out)
+    throw std::runtime_error("Directory isn't writable: " + path);
+  out.close();
+  remove(probe.c_str());
+}
+
+std::string prepare_directory(const ResolvedPath& resolved)
+{
+  create_directories(resolved.path);
+  if (resolved.origin == "portable")
+    check_writable(resolved.path);
+  return resolved.path;
+}
+
+void print_usage(std::ostream& out, const std::string& program)
+{
+  out << "Usage: " << program << " [OPTION]...\n"
+      << "\n"
+      << "  -h, --help            Show this help and exit\n"
+      << "  -v, --version         Show the version and exit\n"
+      << "      --data-dir DIR    Location of the dftoolbox data files\n"
+      << "      --config-dir DIR  Location of the configuration files\n"
+      << "      --cache-dir DIR   Location of the cached pak file tables\n"
+      << "      --user-data-dir DIR  Location of mods installed by the user\n"
+      << "      --portable        Keep everything in userdata/ next to the executable\n"
+      << "      --no-save         Don't write any configuration in this run\n"
+      << "      --show-paths      Show the directories in use and exit\n";
+}
+
+[[noreturn]] void usage_error(const std::string& program, const std::string& message)
+{
+  std::cerr << program << ": " << message << "\n"
+            << "Try '" << program << " --help' for more information." << std::endl;
+  exit(EXIT_FAILURE);
 }
 
 } // namespace
 
-void parse_args(int argc, char** argv)
+void parse_args(int argc, char** argv, const std::string& program)
 {
+  bool show_paths = false;
+
   for (int i = 1; i < argc; ++i)
   {
-    if (strcmp(argv[i], "--datadir") == 0)
+    std::string arg = argv[i];
+
+    if (arg == "--")
     {
-      ++i;
-      if (i >= argc)
-      {
-        throw std::runtime_error("--datadir requires an argument");
-      }
-      else
-      {
-        g_datadir = with_slash(argv[i]);
-      }
+      if (i + 1 < argc)
+        usage_error(program, std::string("unexpected argument: ") + argv[i + 1]);
+      break;
     }
-    else if (strcmp(argv[i], "--configdir") == 0)
+
+    std::string value;
+    bool has_value = false;
+    std::string::size_type equal = arg.find('=');
+    if (arg.compare(0, 2, "--") == 0 && equal != std::string::npos)
     {
-      ++i;
-      if (i >= argc)
-      {
-        throw std::runtime_error("--configdir requires an argument");
-      }
-      else
-      {
-        g_configdir = with_slash(argv[i]);
-      }
+      value = arg.substr(equal + 1);
+      arg.resize(equal);
+      has_value = true;
     }
-    else if (strcmp(argv[i], "--cachedir") == 0)
+
+    auto directory_value = [&]() -> std::string
     {
-      ++i;
-      if (i >= argc)
+      if (!has_value)
       {
-        throw std::runtime_error("--cachedir requires an argument");
+        ++i;
+        if (i >= argc)
+          usage_error(program, arg + " requires an argument");
+        value = argv[i];
       }
-      else
-      {
-        g_cachedir = with_slash(argv[i]);
-      }
+      return with_slash(value);
+    };
+
+    if (arg == "-h" || arg == "--help")
+    {
+      print_usage(std::cout, program);
+      exit(EXIT_SUCCESS);
+    }
+    else if (arg == "-v" || arg == "--version")
+    {
+      std::cout << program << " " << get_version() << std::endl;
+      exit(EXIT_SUCCESS);
+    }
+    else if (arg == "--data-dir" || arg == "--datadir")
+    {
+      g_datadir = directory_value();
+    }
+    else if (arg == "--config-dir" || arg == "--configdir")
+    {
+      g_configdir = directory_value();
+    }
+    else if (arg == "--cache-dir" || arg == "--cachedir")
+    {
+      g_cachedir = directory_value();
+    }
+    else if (arg == "--user-data-dir")
+    {
+      g_user_datadir = directory_value();
+    }
+    else if (arg == "--portable")
+    {
+      g_portable = true;
+    }
+    else if (arg == "--no-save")
+    {
+      g_no_save = true;
+    }
+    else if (arg == "--show-paths")
+    {
+      show_paths = true;
     }
     else
     {
-      std::cout << "Usage: " << argv[0] << " [OPTION]...\n"
-                << "\n"
-                << "  --datadir PATH    Location for dftoolbox data files\n"
-                << "  --configdir PATH  Location for configuration files\n"
-                << "  --cachedir PATH   Location for cached pak file tables\n"
-                << std::endl;
-      exit(EXIT_FAILURE);
+      usage_error(program, "unknown option: " + arg);
     }
   }
 
-  std::cout << "Directories:" << std::endl;
-  std::cout << "    data: " << get_data_path() << std::endl;
-  std::cout << "  config: " << get_config_path() << std::endl;
-  std::cout << "   cache: " << get_cache_path() << std::endl;
-  std::cout << "    temp: " << get_temp_path() << std::endl;
+  if (show_paths)
+  {
+    print_paths(std::cout);
+    exit(EXIT_SUCCESS);
+  }
+}
+
+std::string get_version()
+{
+  return DFTOOLBOX_VERSION;
+}
+
+void print_paths(std::ostream& out)
+{
+  const struct { const char* name; ResolvedPath resolved; } paths[] = {
+    { "data",      resolve_data_path() },
+    { "config",    resolve_config_path() },
+    { "user data", resolve_user_data_path() },
+    { "cache",     resolve_cache_path() }
+  };
+
+  for (const auto& entry : paths)
+    out << entry.name << ": " << entry.resolved.path
+        << " (" << entry.resolved.origin << ")" << std::endl;
 }
 
 std::string get_temp_path()
@@ -180,7 +358,7 @@ std::string get_temp_path()
           tmpdir[i] = '/';
       return with_slash(tmpdir);
     }
-  return get_exe_path();
+  throw std::runtime_error("Couldn't find the directory for temporary files");
 #else
   std::string tmpdir = get_env("TMPDIR");
   if (!tmpdir.empty())
@@ -192,60 +370,40 @@ std::string get_temp_path()
 
 std::string get_data_path()
 {
-  if (!g_datadir.empty())
-    return g_datadir;
-
-#ifdef _WIN32
-  return get_exe_path();
-#else
-  return "./";
-#endif
+  return resolve_data_path().path;
 }
 
 std::string get_config_path()
 {
-  if (g_configdir.empty())
-    {
-#ifdef _WIN32
-      std::string appdata = get_env("APPDATA");
-      if (!appdata.empty())
-        g_configdir = with_slash(appdata) + "dftoolbox/";
-      else
-        g_configdir = get_exe_path();
-#else
-      std::string config_home = get_xdg_dir("XDG_CONFIG_HOME", ".config/");
-      if (!config_home.empty())
-        g_configdir = config_home + "dftoolbox/";
-      else
-        g_configdir = "./";
-#endif
-      create_directories(g_configdir);
-    }
+  return prepare_directory(resolve_config_path());
+}
 
-  return g_configdir;
+std::string get_config_file(const std::string& name)
+{
+  std::string filename = get_config_path() + name;
+
+#ifdef _WIN32
+  // Before the config/ subdirectory the files were in %APPDATA%/dftoolbox/
+  if (!file_exists(filename))
+    {
+      std::string appdata = get_env("APPDATA");
+      std::string legacy = with_slash(appdata) + "dftoolbox/" + name;
+      if (!appdata.empty() && file_exists(legacy))
+        return legacy;
+    }
+#endif
+
+  return filename;
 }
 
 std::string get_cache_path()
 {
-  if (g_cachedir.empty())
-    {
-#ifdef _WIN32
-      std::string localappdata = get_env("LOCALAPPDATA");
-      if (!localappdata.empty())
-        g_cachedir = with_slash(localappdata) + "dftoolbox/";
-      else
-        g_cachedir = get_temp_path() + "dftoolbox/";
-#else
-      std::string cache_home = get_xdg_dir("XDG_CACHE_HOME", ".cache/");
-      if (!cache_home.empty())
-        g_cachedir = cache_home + "dftoolbox/";
-      else
-        g_cachedir = get_temp_path() + "dftoolbox/";
-#endif
-      create_directories(g_cachedir);
-    }
+  return prepare_directory(resolve_cache_path());
+}
 
-  return g_cachedir;
+std::string get_user_data_path()
+{
+  return prepare_directory(resolve_user_data_path());
 }
 
 std::string get_exe_path()
@@ -257,7 +415,7 @@ std::string get_exe_path()
   char szDir[_MAX_DIR];
   char szFilename[_MAX_FNAME];
   char szExt[_MAX_EXT];
-  GetModuleFileName(0, szDllName, _MAX_PATH);
+  GetModuleFileNameA(0, szDllName, _MAX_PATH);
   _splitpath(szDllName, szDrive, szDir, szFilename, szExt);
 
   return std::string(szDrive) + std::string(szDir);
@@ -295,6 +453,25 @@ int create_dir(const std::string& path)
 #endif
 }
 
+void attach_parent_console()
+{
+#ifdef _WIN32
+  if (AttachConsole(ATTACH_PARENT_PROCESS))
+    {
+      freopen("CONOUT$", "w", stdout);
+      freopen("CONOUT$", "w", stderr);
+      std::ios::sync_with_stdio();
+    }
+#endif
+}
+
+void set_binary_stdout()
+{
+#ifdef _WIN32
+  _setmode(_fileno(stdout), _O_BINARY);
+#endif
+}
+
 void wait()
 {
 #ifdef _WIN32
@@ -310,15 +487,14 @@ std::vector<DirectoryEntry>
 open_directory(const std::string& pathname)
 {
   HANDLE          hList;
-  TCHAR           szDir[MAX_PATH+1];
-  WIN32_FIND_DATA FileData;
+  WIN32_FIND_DATAA FileData;
 
   std::vector<DirectoryEntry> directory;
 
-  // What is this good for?!
-  sprintf(szDir, "%s\\*", pathname.c_str());
+  // FindFirstFile() takes a pattern, not a directory
+  std::string pattern = pathname + "\\*";
 
-  hList = FindFirstFile(szDir, &FileData);
+  hList = FindFirstFileA(pattern.c_str(), &FileData);
   if (hList == INVALID_HANDLE_VALUE)
     {
       throw std::runtime_error("open_directory(): Couldn't open " + pathname);
@@ -340,14 +516,8 @@ open_directory(const std::string& pathname)
               directory.push_back(DirectoryEntry(DirectoryEntry::T_FILE, FileData.cFileName, fullname));
             }
 
-          if (!FindNextFile(hList, &FileData))
-            {
-              if (GetLastError() == ERROR_NO_MORE_FILES)
-                {
-                  break;
-                }
-            }
-
+          if (!FindNextFileA(hList, &FileData))
+            break;
         }
       FindClose(hList);
 
@@ -441,6 +611,33 @@ void file_copy(const std::string& from, const std::string& to)
 
   out.close();
   in.close();
+}
+
+void file_write_atomic(const std::string& filename, const std::string& content)
+{
+  if (g_no_save)
+    return;
+
+  std::string tmpname = filename + ".tmp";
+  std::ofstream out(tmpname.c_str(), std::ios::binary);
+  out.write(content.data(), content.size());
+  out.close();
+  if (!out)
+    {
+      remove(tmpname.c_str());
+      throw std::runtime_error("Couldn't write " + filename);
+    }
+
+#ifdef _WIN32
+  bool renamed = MoveFileExA(tmpname.c_str(), filename.c_str(), MOVEFILE_REPLACE_EXISTING);
+#else
+  bool renamed = rename(tmpname.c_str(), filename.c_str()) == 0;
+#endif
+  if (!renamed)
+    {
+      remove(tmpname.c_str());
+      throw std::runtime_error("Couldn't write " + filename);
+    }
 }
 
 bool file_exists(const std::string& pathname)

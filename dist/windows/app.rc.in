@@ -1,0 +1,32 @@
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include <winver.h>
+
+IDI_ICON1 ICON "@ICO_PATH@"
+
+1 24 "@MANIFEST_PATH@"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+PRODUCTVERSION @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "FileDescription", "@DISPLAY_NAME@"
+      VALUE "FileVersion", "@PROJECT_VERSION_FULL@"
+      VALUE "InternalName", "@TARGET@"
+      VALUE "OriginalFilename", "@TARGET@.exe"
+      VALUE "ProductName", "@DISPLAY_NAME@"
+      VALUE "ProductVersion", "@PROJECT_VERSION_FULL@"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0409, 1200
+  END
+END

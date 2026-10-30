@@ -46,6 +46,7 @@
 #include "icons.hpp"
 #include "util.hpp"
 #include "tljpak.hpp"
+#include "startup_report.hpp"
 #include "system.hpp"
 
 #include "pak_insert_thread.hpp"
@@ -310,9 +311,14 @@ void
 DFModActivatorWindow::set_dreamfall_path(const std::string& path)
 {
   dreamfall_path = path + "/";
-  std::ofstream out((get_config_path() + "dreamfall_path.txt").c_str());
-  out << dreamfall_path << std::endl;
-  out.close();
+  try
+    {
+      file_write_atomic(get_config_path() + "dreamfall_path.txt", dreamfall_path + "\n");
+    }
+  catch(std::exception& err)
+    {
+      QMessageBox::warning(this, "Error", err.what());
+    }
 }
 
 void
@@ -397,9 +403,10 @@ DFModActivatorWindow::on_dreamfall_path()
 int main(int argc,char** argv)
 {
   try {
-    parse_args(argc, argv);
+    attach_parent_console();
+    parse_args(argc, argv, "dfmodtool");
 
-    std::ifstream in((get_config_path() + "dreamfall_path.txt").c_str());
+    std::ifstream in(get_config_file("dreamfall_path.txt").c_str());
     if (in)
       {
         std::getline(in, dreamfall_path);
@@ -416,8 +423,12 @@ int main(int argc,char** argv)
       }
 
     QApplication application(argc, argv);
-    application.setApplicationName("DFModActivator V0.0");
+    application.setApplicationName("dfmodtool");
+    application.setApplicationDisplayName("DFModTool");
+    application.setApplicationVersion(QString::fromStdString(get_version()));
     application.setOrganizationName("Grumbel");
+
+    print_startup_report("dfmodtool");
 
     Icon::init();
 
@@ -426,9 +437,9 @@ int main(int argc,char** argv)
 
     return application.exec();
   } catch(std::exception& err) {
-    std::cout << "Fatal Error: " << err.what() << std::endl;
+    std::cerr << "Fatal Error: " << err.what() << std::endl;
+    return EXIT_FAILURE;
   }
-  return 0;
 }
 
 

@@ -25,24 +25,30 @@
 #ifndef HEADER_SOUND_VIEW_HPP
 #define HEADER_SOUND_VIEW_HPP
 
-#include <SDL/SDL_mixer.h>
 #include <string>
 
 #include <QWidget>
 
+class QAudioOutput;
+class QBuffer;
+class QMediaPlayer;
 class QPlainTextEdit;
 class QToolButton;
 
 class SoundView : public QWidget
 {
 private:
-  Mix_Music* music;
+  QMediaPlayer* player;
+  QAudioOutput* audio_output;
+  /** Holds the sound in memory: the file is a temporary that gets
+      replaced by the next selection, which Windows refuses while the
+      player has it open */
+  QBuffer* buffer;
   QToolButton* play_button;
   QPlainTextEdit* text;
 
 public:
   SoundView(QWidget* parent);
-  ~SoundView();
 
   void set_music(const std::string& filename, const std::string& desc);
 

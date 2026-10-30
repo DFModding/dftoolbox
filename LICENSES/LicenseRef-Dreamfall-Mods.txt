@@ -1,0 +1,5 @@
+The files in mods/ are not covered by the license of DFToolBox.
+
+They are mods for the game Dreamfall by skribb / Patrik Mondolfi, made
+from the game's own textures. Their license is unknown, and the rights
+to the original textures are held by the game's publisher.

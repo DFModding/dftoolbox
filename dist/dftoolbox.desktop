@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
+[Desktop Entry]
+Type=Application
+Name=DFToolBox
+GenericName=Game Data Viewer
+Comment=Inspect and modify the data files of the game Dreamfall
+Exec=dftoolbox
+Icon=dftoolbox
+Terminal=false
+Categories=Development;Utility;
+Keywords=dreamfall;pak;mod;shark3d;
+StartupWMClass=dftoolbox
+SingleMainWindow=true

@@ -26,7 +26,14 @@
 
 #include <iostream>
 
+#include <QAudioDevice>
+#include <QAudioFormat>
+#include <QAudioOutput>
+#include <QBuffer>
+#include <QFile>
 #include <QHBoxLayout>
+#include <QMediaDevices>
+#include <QMediaPlayer>
 #include <QPlainTextEdit>
 #include <QSlider>
 #include <QToolButton>
@@ -38,8 +45,33 @@
 // http://www.gamedev.net/reference/articles/article2053.asp
 SoundView::SoundView(QWidget* parent)
   : QWidget(parent),
-    music(nullptr)
+    player(new QMediaPlayer(this)),
+    audio_output(new QAudioOutput(this)),
+    buffer(new QBuffer(this))
 {
+  player->setAudioOutput(audio_output);
+  connect(player, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState state)
+          {
+            play_button->setChecked(state == QMediaPlayer::PlayingState);
+          });
+  connect(player, &QMediaPlayer::errorOccurred, this, [](QMediaPlayer::Error, const QString& message)
+          {
+            std::cerr << "warning: can't play sound: " << message.toStdString() << std::endl;
+          });
+
+  const QAudioDevice device = QMediaDevices::defaultAudioOutput();
+  if (device.isNull())
+    {
+      std::cerr << "warning: no audio output device, sounds can't be played" << std::endl;
+    }
+  else
+    {
+      const QAudioFormat format = device.preferredFormat();
+      std::cerr << "audio: " << device.description().toStdString()
+                << ", " << format.sampleRate() << " Hz"
+                << ", " << format.channelCount() << " channels" << std::endl;
+    }
+
   QVBoxLayout* vbox = new QVBoxLayout(this);
   vbox->setContentsMargins(0, 0, 0, 0);
 
@@ -74,49 +106,40 @@ SoundView::SoundView(QWidget* parent)
   vbox->addWidget(text, 1);
 }
 
-SoundView::~SoundView()
-{
-  if (music)
-    Mix_FreeMusic(music);
-}
-
 void
 SoundView::set_music(const std::string& filename, const std::string& desc)
 {
   text->setPlainText(QString::fromStdString(desc));
-  play_button->setChecked(true);
 
-  if (music)
-    Mix_FreeMusic(music);
+  player->setSource(QUrl());
+  buffer->close();
 
-  music = Mix_LoadMUS(filename.c_str());
-  if(!music) {
-    std::cout << "Mix_LoadMUS(\"" << filename << "\"): " <<  Mix_GetError() << std::endl;
-    return;
-  }
+  QFile file(QString::fromStdString(filename));
+  if (!file.open(QIODevice::ReadOnly))
+    {
+      std::cerr << "warning: can't play sound: couldn't open " << filename << std::endl;
+      return;
+    }
+  buffer->setData(file.readAll());
+  buffer->open(QIODevice::ReadOnly);
 
-  if(Mix_PlayMusic(music, 1)==-1) {
-    printf("Mix_PlayMusic: %s\n", Mix_GetError());
-  }
+  player->setSourceDevice(buffer, QUrl::fromLocalFile(file.fileName()));
+  player->play();
 }
 
 void
 SoundView::on_play()
 {
-  if (Mix_PausedMusic())
-    Mix_ResumeMusic();
-  else if (!Mix_PlayingMusic())
-    Mix_PlayMusic(music, 1);
+  if (player->playbackState() == QMediaPlayer::PlayingState)
+    player->pause();
   else
-    Mix_PauseMusic();
+    player->play();
 }
 
 void
 SoundView::on_stop()
 {
-  play_button->setChecked(false);
-
-  Mix_HaltMusic();
+  player->stop();
 }
 
 /* EOF */

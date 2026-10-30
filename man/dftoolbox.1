@@ -1,0 +1,59 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-2.0-or-later
+.Dd October 30, 2026
+.Dt DFTOOLBOX 1
+.Os
+.Sh NAME
+.Nm dftoolbox ,
+.Nm dfmodtool
+.Nd inspect and modify the data files of the game Dreamfall
+.Sh SYNOPSIS
+.Nm dftoolbox
+.Op Ar OPTION ...
+.Nm dfmodtool
+.Op Ar OPTION ...
+.Sh DESCRIPTION
+.Nm dftoolbox
+browses the .pak files of Dreamfall and shows the textures, dialog,
+scripts, sounds, models and locations in them.
+.Nm dfmodtool
+installs mods into the game.
+The
+.Sy dftool-*
+command line tools do the extraction and conversion, see the README.
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl h , Fl \-help
+Show the usage and exit.
+.It Fl v , Fl \-version
+Show the version and exit.
+.It Fl \-data\-dir Ar DIR
+Location of the data files of the program.
+.It Fl \-config\-dir Ar DIR
+Location of the configuration files.
+.It Fl \-cache\-dir Ar DIR
+Location of the cached pak file tables.
+.It Fl \-user\-data\-dir Ar DIR
+Location of mods installed by the user.
+.It Fl \-portable
+Keep the configuration, user data and cache in
+.Pa userdata/
+next to the executable.
+This is also enabled by a file
+.Pa portable.txt
+next to the executable.
+.It Fl \-no\-save
+Don't write any configuration in this run.
+.It Fl \-show\-paths
+Show the directories in use, where each came from, and exit.
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa $XDG_CONFIG_HOME/dftoolbox/
+Configuration: the path of the game and the bookmarks.
+.It Pa $XDG_CACHE_HOME/dftoolbox/
+Cached pak file tables, can be deleted at any time.
+.It Pa $XDG_DATA_HOME/dftoolbox/dreamfall-mods/
+Mods for
+.Sy dftool-insert .
+.El
