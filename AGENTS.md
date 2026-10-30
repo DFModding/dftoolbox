@@ -33,4 +33,6 @@ For 3D model extraction and format references, consult [DreamfallTLJViewer](http
 
 ## Commit & Pull Request Guidelines
 
+Commit whenever a change is ready, without asking first and without waiting for the end of the work. Small incremental commits are preferred over large ones. Pushing still needs to be asked for.
+
 Recent commits use short, imperative subjects such as “Fix code not compiling on newer GCC” and “Add Nix flake build files.” Follow that style and keep commits focused. Pull requests should explain the problem, resulting behavior, and validation performed. Link related issues when applicable and include screenshots for visible GUI changes. Mention any changes to configuration or archive compatibility.
