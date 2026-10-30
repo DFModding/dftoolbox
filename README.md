@@ -65,6 +65,18 @@ models, animations, localization, music, scripts, shaders, sound
 effects, textures and voice, the latter split by language. Files that
 only support other files, like `.lip`, are not listed there.
 
+### Exporting
+
+Right-click a file in the tree of the `dftoolbox` GUI to export it.
+"Export Original" writes the data as it is stored, "Export as PNG"
+converts textures (and the screenshot of a savegame), "Export as Text"
+converts Shark3D files, `localization.dat` and the parts of a
+savegame. Dreamfall calls textures `.png` although they are DDS files,
+so their original gets the name `foo.png.dds`.
+
+Right-clicking a directory or several files opens the export dialog
+instead, with either the original or the converted formats selected.
+
 ### 3D preview
 
 The `dftoolbox` GUI shows `.bun` and `.sir` files in an OpenGL 3.3

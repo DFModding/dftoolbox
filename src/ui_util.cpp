@@ -23,11 +23,15 @@
 #include "ui_util.hpp"
 
 #include <fstream>
+#include <stdexcept>
+#include <vector>
 
 #include <QAction>
 #include <QFileDialog>
 #include <QIcon>
 #include <QToolBar>
+
+#include "dds.hpp"
 
 QAction*
 add_tool_action(QToolBar* toolbar, const QIcon& icon,
@@ -52,6 +56,38 @@ save_text_file(QWidget* parent, const std::string& content)
   out << content;
   out.close();
   return true;
+}
+
+QImage
+read_dds_image(std::istream& in)
+{
+  DDS dds(in);
+
+  // DDS::get_data() is RGBA, one byte per channel; copy() so that the
+  // image doesn't depend on the lifetime of the DDS data
+  const std::vector<char>& data = dds.get_data();
+  if (data.size() < size_t(dds.width) * dds.height * 4)
+    throw std::runtime_error("DDS: not enough image data");
+
+  return QImage(reinterpret_cast<const uchar*>(data.data()), dds.width, dds.height,
+                dds.width * 4, QImage::Format_RGBA8888).copy();
+}
+
+QImage
+read_save_image(const std::string& filename)
+{
+  std::ifstream in(filename.c_str(), std::ios::binary);
+  if (!in)
+    throw std::runtime_error("Couldn't open: " + filename);
+
+  // Extract screenshot, the last 256*256 RGBA pixels of the file
+  std::vector<uchar> buffer(256*256*4);
+  in.seekg(-(256*256*4), std::ios::end);
+  in.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
+  if (!in)
+    throw std::runtime_error("Couldn't read screenshot from: " + filename);
+
+  return QImage(buffer.data(), 256, 256, 256*4, QImage::Format_RGBA8888).copy();
 }
 
 /* EOF */

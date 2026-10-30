@@ -20,7 +20,9 @@
 **  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <algorithm>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -31,6 +33,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>
+#include <QDir>
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QInputDialog>
@@ -41,6 +44,7 @@
 #include <QMessageBox>
 #include <QMetaObject>
 #include <QPlainTextEdit>
+#include <QProgressDialog>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
@@ -301,6 +305,9 @@ DFToolBoxWindow::DFToolBoxWindow()
             if (item != current_tree_item)
               on_dir_change(item);
           });
+  tree->setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(tree, &QTreeWidget::customContextMenuRequested, this,
+          [this](const QPoint& pos){ on_tree_context_menu(pos); });
   // there is no open/closed icon pair in QTreeWidget
   connect(tree, &QTreeWidget::itemExpanded, this, [](QTreeWidgetItem* item){
     if (entry_of(item)->is_dir())
@@ -697,11 +704,11 @@ DFToolBoxWindow::build_trees()
       append_item(this_save_item, dfentry4->get_label(), Icon::unknown_document, dfentry4);
       append_item(this_save_item, dfentry5->get_label(), Icon::unknown_document, dfentry5);
 
-      entry_of(save_item)->get_dir().children.push_back(dfentry1);
-      entry_of(save_item)->get_dir().children.push_back(dfentry2);
-      entry_of(save_item)->get_dir().children.push_back(dfentry3);
-      entry_of(save_item)->get_dir().children.push_back(dfentry4);
-      entry_of(save_item)->get_dir().children.push_back(dfentry5);
+      entry_of(this_save_item)->get_dir().children.push_back(dfentry1);
+      entry_of(this_save_item)->get_dir().children.push_back(dfentry2);
+      entry_of(this_save_item)->get_dir().children.push_back(dfentry3);
+      entry_of(this_save_item)->get_dir().children.push_back(dfentry4);
+      entry_of(this_save_item)->get_dir().children.push_back(dfentry5);
     }
 
 
@@ -810,11 +817,86 @@ DFToolBoxWindow::on_save()
     }
   else
     {
-      ExportDialog* exportdialog = new ExportDialog(this);
-
-      exportdialog->set_file_entries(selection);
-      exportdialog->show();
+      on_export_dialog(selection, false);
     }
+}
+
+void
+DFToolBoxWindow::on_export_file(DreamfallFileEntry* entry, ExportFormat format)
+{
+  const QString name = QString::fromStdString(entry->get_export_name(format));
+  const char* filter = "All Files (*)";
+  if (format == EXPORT_PNG)
+    filter = "PNG Images (*.png)";
+  else if (format == EXPORT_TEXT)
+    filter = "Text Files (*.txt)";
+
+  // the dialog asks about overwriting existing files itself
+  const QString file = QFileDialog::getSaveFileName(this, "Export " + name,
+                                                    QDir(last_export_dir).filePath(name), filter);
+  if (file.isEmpty())
+    return;
+
+  last_export_dir = QFileInfo(file).path();
+
+  try {
+    export_entry(*entry, format, file.toStdString());
+    statusBar()->showMessage("Exported " + file, 5000);
+  } catch(std::exception& err) {
+    QMessageBox::critical(this, "Export failed", QString::fromStdString(err.what()));
+  }
+}
+
+void
+DFToolBoxWindow::on_export_dialog(const std::vector<DreamfallFileEntry*>& selection, bool converted)
+{
+  ExportDialog* exportdialog = new ExportDialog(this);
+
+  exportdialog->set_file_entries(selection);
+  exportdialog->set_converted(converted);
+  exportdialog->show();
+}
+
+void
+DFToolBoxWindow::on_tree_context_menu(const QPoint& pos)
+{
+  if (!tree->itemAt(pos))
+    return;
+
+  std::vector<DreamfallFileEntry*> selection;
+  const QList<QTreeWidgetItem*> items = tree->selectedItems();
+  for(QTreeWidgetItem* item : items)
+    selection.push_back(entry_of(item));
+
+  if (selection.empty())
+    return;
+
+  QMenu menu;
+  if (selection.size() == 1 && !selection.front()->is_dir())
+    {
+      DreamfallFileEntry* entry = selection.front();
+      const std::vector<ExportFormat> formats = entry->get_export_formats();
+      for(ExportFormat format : formats)
+        {
+          const char* label = "Export Original...";
+          if (format == EXPORT_PNG)
+            label = "Export as PNG...";
+          else if (format == EXPORT_TEXT)
+            label = "Export as Text...";
+
+          menu.addAction(Icon::export_file, label, this,
+                         [this, entry, format]{ on_export_file(entry, format); });
+        }
+    }
+  else
+    {
+      menu.addAction(Icon::export_file, "Export Original Files...", this,
+                     [this, selection]{ on_export_dialog(selection, false); });
+      menu.addAction(Icon::export_file, "Export Converted Files...", this,
+                     [this, selection]{ on_export_dialog(selection, true); });
+    }
+
+  menu.exec(tree->viewport()->mapToGlobal(pos));
 }
 
 void
@@ -885,6 +967,95 @@ pad_with_ones(unsigned int num)
   return num;
 }
 
+std::string
+DFToolBoxWindow::get_save_text(const SaveFileEntry& entry)
+{
+  if (entry.type == SaveFileEntry::JOURNAL_DATA)
+    {
+      std::ostringstream str;
+
+      Savegame savegame(entry.fullname);
+      const std::vector<Journal::Entry>& entries = savegame.get_journal().entries;
+
+      for(std::vector<Journal::Entry>::const_iterator i = entries.begin();
+          i != entries.end(); ++i)
+        {
+          int last = 0;
+          for(int j = 0; j < int((*i).array.size()); ++j)
+            {
+              str << "ThisCombined: " << last+(*i).array[j] << "    "
+                  << "Last: " << last << "    "
+                  << "This: " << (*i).array[j] << std::endl;
+
+              last += (*i).array[j];
+              str << data_manager.get_dialog(0).get_by_cut_id(last)
+                  << std::endl
+                  << std::endl;
+            }
+        }
+
+      return str.str();
+    }
+  else if (entry.type == SaveFileEntry::MESSAGELOG_DATA)
+    {
+      Savegame savegame(entry.fullname);
+      const std::vector<MessageLog::Entry>& entries = savegame.get_message_log().entries;
+      std::ostringstream str;
+      for(std::vector<MessageLog::Entry>::const_iterator i = entries.begin();
+          i != entries.end(); ++i)
+        {
+          str << data_manager.get_dialog(0).get_by_id((*i).subj) << std::endl;
+          str << data_manager.get_dialog(0).get_by_id((*i).body) << std::endl << std::endl;
+          str << "read: " << (*i).read << std::endl;
+          str << "________________________________________________________\n\n";
+        }
+
+      return str.str();
+    }
+  else if (entry.type == SaveFileEntry::TEXT_DATA)
+    {
+      Savegame savegame(entry.fullname);
+      const std::vector<ConversationLog::Entry>& ints = savegame.get_conversation_log().entries;
+      std::ostringstream str;
+      for(int i = 0; i < int(ints.size()); ++i)
+        {
+          unsigned int last = 0;
+          for(int j = 0; j < int(ints[i].list.size()); ++j)
+            {
+              std::cout << j << "/" << ints[i].list.size() << std::endl;
+
+              unsigned int this_id = last + ints[i].list[j];
+
+              std::string text = data_manager.get_dialog(0).get_by_id(this_id);
+              if (text.empty())
+                {
+                  this_id = last + pad_with_ones(ints[i].list[j]);
+                  text = data_manager.get_dialog(0).get_by_id(this_id);
+                }
+
+              str << ints[i].list[j] << " " << this_id << " " << last << std::endl;
+              str << "  " << text << std::endl  << std::endl;
+
+              last = this_id;
+            }
+
+          str << "\n________________________________________________________\n\n";
+        }
+      return str.str();
+    }
+  else // SaveFileEntry::SHARK3D_DATA
+    {
+      std::ifstream in(entry.fullname.c_str(), std::ios::binary);
+      if (!in)
+        throw std::runtime_error("Couldn't open " + entry.fullname);
+
+      std::unique_ptr<Shark3D> shark(Shark3D::parse_binary(in));
+      std::ostringstream str;
+      shark->write_text(str);
+      return str.str();
+    }
+}
+
 void
 DFToolBoxWindow::display(QTreeWidgetItem* item)
 {
@@ -914,80 +1085,9 @@ DFToolBoxWindow::display(QTreeWidgetItem* item)
             imageview->set_save_image(entry->get_save().fullname);
             show_switcher(SWITCHER_IMAGEVIEW);
           }
-        else if (entry->get_save().type == SaveFileEntry::JOURNAL_DATA)
+        else if (entry->get_save().type != SaveFileEntry::SHARK3D_DATA)
           {
-            std::ostringstream str;
-
-            Savegame savegame(entry->get_save().fullname);
-            const std::vector<Journal::Entry>& entries = savegame.get_journal().entries;
-
-            for(std::vector<Journal::Entry>::const_iterator i = entries.begin();
-                i != entries.end(); ++i)
-              {
-                int last = 0;
-                for(int j = 0; j < int((*i).array.size()); ++j)
-                  {
-                    str << "ThisCombined: " << last+(*i).array[j] << "    "
-                        << "Last: " << last << "    "
-                        << "This: " << (*i).array[j] << std::endl;
-
-                    last += (*i).array[j];
-                    str << data_manager.get_dialog(0).get_by_cut_id(last)
-                        << std::endl
-                        << std::endl;
-                  }
-              }
-
-            sharkview->set_text(str.str());
-            show_switcher(SWITCHER_SHARKVIEW);
-          }
-        else if (entry->get_save().type == SaveFileEntry::MESSAGELOG_DATA)
-          {
-            Savegame savegame(entry->get_save().fullname);
-            const std::vector<MessageLog::Entry>& entries = savegame.get_message_log().entries;
-            std::ostringstream str;
-            for(std::vector<MessageLog::Entry>::const_iterator i = entries.begin();
-                i != entries.end(); ++i)
-              {
-                str << data_manager.get_dialog(0).get_by_id((*i).subj) << std::endl;
-                str << data_manager.get_dialog(0).get_by_id((*i).body) << std::endl << std::endl;
-                str << "read: " << (*i).read << std::endl;
-                str << "________________________________________________________\n\n";
-              }
-
-            sharkview->set_text(str.str());
-            show_switcher(SWITCHER_SHARKVIEW);
-          }
-        else if (entry->get_save().type == SaveFileEntry::TEXT_DATA)
-          {
-            Savegame savegame(entry->get_save().fullname);
-            const std::vector<ConversationLog::Entry>& ints = savegame.get_conversation_log().entries;
-            std::ostringstream str;
-            for(int i = 0; i < int(ints.size()); ++i)
-              {
-                unsigned int last = 0;
-                for(int j = 0; j < int(ints[i].list.size()); ++j)
-                  {
-                    std::cout << j << "/" << ints[i].list.size() << std::endl;
-
-                    unsigned int this_id = last + ints[i].list[j];
-
-                    std::string text = data_manager.get_dialog(0).get_by_id(this_id);
-                    if (text.empty())
-                      {
-                        this_id = last + pad_with_ones(ints[i].list[j]);
-                        text = data_manager.get_dialog(0).get_by_id(this_id);
-                      }
-
-                    str << ints[i].list[j] << " " << this_id << " " << last << std::endl;
-                    str << "  " << text << std::endl  << std::endl;
-
-                    last = this_id;
-                  }
-
-                str << "\n________________________________________________________\n\n";
-              }
-            sharkview->set_text(str.str());
+            sharkview->set_text(get_save_text(entry->get_save()));
             show_switcher(SWITCHER_SHARKVIEW);
           }
         else // SaveFileEntry::SHARK3D_DATA
@@ -1268,18 +1368,10 @@ void group_entries(const std::vector<DreamfallFileEntry*>& selection,
       i != selection.end();
       ++i)
     {
-      if ((*i)->is_pak())
-        {
-          out.insert(*i);
-        }
-      else if ((*i)->is_dir())
-        {
-          group_entries((*i)->get_dir().children, out);
-        }
+      if ((*i)->is_dir())
+        group_entries((*i)->get_dir().children, out);
       else
-        {
-          // ignoring saves for now
-        }
+        out.insert(*i);
     }
 }
 
@@ -1290,78 +1382,155 @@ DFToolBoxWindow::on_goto_parent_dir()
     display(current_tree_item->parent());
 }
 
+std::vector<char>
+DFToolBoxWindow::read_pak_file(const PakFileEntry& entry)
+{
+  std::vector<char> data;
+  if (!data_manager.read(entry.fullname, entry.pakfile, data))
+    throw std::runtime_error("Couldn't find " + entry.get_url());
+  return data;
+}
+
+QImage
+DFToolBoxWindow::get_export_image(DreamfallFileEntry& entry)
+{
+  if (entry.is_save())
+    return read_save_image(entry.get_save().fullname);
+
+  const std::vector<char> data = read_pak_file(entry.get_pak());
+  std::istringstream in(std::string(data.begin(), data.end()), std::ios::binary);
+  return read_dds_image(in);
+}
+
+std::string
+DFToolBoxWindow::get_export_text(DreamfallFileEntry& entry)
+{
+  if (entry.is_save())
+    return get_save_text(entry.get_save());
+
+  if (entry.get_pak().type == FILETYPE_LOCALISATION)
+    {
+      const std::string tmpfile = get_temp_path() + "tmp-export.dat";
+      if (!data_manager.extract(entry.get_pak(), tmpfile))
+        throw std::runtime_error("Couldn't find " + entry.get_url());
+
+      std::vector<Dialog> dialogs;
+      read_dialogs(tmpfile, dialogs);
+      return dialogs_to_text(dialogs);
+    }
+
+  const std::vector<char> data = read_pak_file(entry.get_pak());
+  std::istringstream in(std::string(data.begin(), data.end()), std::ios::binary);
+  std::unique_ptr<Shark3D> shark(Shark3D::parse_binary(in));
+
+  std::ostringstream str;
+  shark->write_text(str);
+  return str.str();
+}
+
+void
+DFToolBoxWindow::export_entry(DreamfallFileEntry& entry, ExportFormat format, const std::string& outfile)
+{
+  switch(format)
+    {
+    case EXPORT_ORIGINAL:
+      create_hierachy(outfile);
+      if (entry.is_save())
+        file_copy(entry.get_save().fullname, outfile);
+      else if (!data_manager.extract(entry.get_pak(), outfile))
+        throw std::runtime_error("Couldn't find " + entry.get_url());
+      break;
+
+    case EXPORT_PNG:
+      {
+        const QImage image = get_export_image(entry);
+        create_hierachy(outfile);
+        if (!image.save(QString::fromStdString(outfile), "PNG"))
+          throw std::runtime_error("Couldn't write " + outfile);
+      }
+      break;
+
+    case EXPORT_TEXT:
+      {
+        const std::string text = get_export_text(entry);
+        create_hierachy(outfile);
+        std::ofstream out(outfile.c_str(), std::ios::binary);
+        out << text;
+        out.close();
+        if (!out)
+          throw std::runtime_error("Couldn't write " + outfile);
+      }
+      break;
+    }
+}
+
 void
 DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
                               const std::string& outpath,
                               bool preserve_path,
                               bool fix_extension,
-                              bool shark_as_text)
+                              bool image_as_png,
+                              bool data_as_text)
 {
   std::set<DreamfallFileEntry*> entries;
   group_entries(selection, entries);
 
-  for(std::set<DreamfallFileEntry*>::iterator i = entries.begin(); i != entries.end(); ++i)
+  QProgressDialog progress("Exporting files...", "Cancel", 0, int(entries.size()), this);
+  progress.setWindowTitle("Export");
+  progress.setWindowModality(Qt::WindowModal);
+  progress.setMinimumDuration(500);
+
+  std::vector<std::string> errors;
+  int count = 0;
+  for(std::set<DreamfallFileEntry*>::iterator i = entries.begin();
+      i != entries.end() && !progress.wasCanceled(); ++i, ++count)
     {
-      if ((*i)->is_pak())
+      progress.setValue(count);
+
+      const std::vector<ExportFormat> formats = (*i)->get_export_formats();
+      auto supports = [&formats](ExportFormat format) {
+        return std::find(formats.begin(), formats.end(), format) != formats.end();
+      };
+
+      ExportFormat format = EXPORT_ORIGINAL;
+      if (image_as_png && supports(EXPORT_PNG))
+        format = EXPORT_PNG;
+      else if (data_as_text && supports(EXPORT_TEXT))
+        format = EXPORT_TEXT;
+
+      // PNG data never stays below the name it had as a DDS
+      const std::string filename = (fix_extension || format == EXPORT_PNG)
+        ? (*i)->get_export_name(format)
+        : (*i)->get_label();
+
+      std::string outfile = outpath + "/";
+      if (preserve_path)
         {
           std::string pathpart, filepart;
-          if (splitpath((*i)->get_pak().fullname, pathpart, filepart))
-            {
-              std::string outfile;
-              if (preserve_path)
-                {
-                  outfile = outpath + "/" + (*i)->get_pak().fullname;
-                  create_hierachy(outfile);
-                }
-              else
-                {
-                  outfile = outpath + "/" + (*i)->get_pak().filename;
-                }
-
-              if (fix_extension)
-                {
-                  if ((*i)->get_pak().type == FILETYPE_DDS)
-                    outfile += ".dds";
-                  else if ((*i)->get_pak().type == FILETYPE_SHARK3D && shark_as_text)
-                    outfile += ".txt";
-                }
-
-              if ((*i)->get_pak().type == FILETYPE_SHARK3D && shark_as_text)
-                {
-                  data_manager.extract((*i)->get_pak(), get_temp_path() + "/tmp.shark");
-                  std::ifstream in((get_temp_path() + "/tmp.shark").c_str(), std::ios::binary);
-                  if (!in)
-                    {
-                      throw std::runtime_error("Error: Couldn't open " + (get_temp_path() + "/tmp.shark"));
-                    }
-                  else
-                    {
-                      Shark3D* shark = Shark3D::parse_binary(in);
-                      in.close();
-
-                      std::ofstream out(outfile.c_str());
-                      if (!out)
-                        {
-                          std::cout << "export_files: Couldn't open " << outfile << std::endl;
-                        }
-                      else
-                        {
-                          shark->write_text(out);
-                          out.close();
-                        }
-                    }
-
-                }
-              else
-                {
-                  data_manager.extract((*i)->get_pak(), outfile);
-                }
-            }
+          if (splitpath((*i)->get_path(), pathpart, filepart))
+            outfile += pathpart + "/";
+          else if ((*i)->is_save())
+            outfile += (*i)->get_path();
         }
-      else
-        {
-          std::cout << "Error this shouldn't happen" << std::endl;
-        }
+      outfile += filename;
+
+      try {
+        export_entry(**i, format, outfile);
+      } catch(std::exception& err) {
+        errors.push_back((*i)->get_url() + ": " + err.what());
+      }
+    }
+  progress.setValue(int(entries.size()));
+
+  if (!errors.empty())
+    {
+      std::ostringstream str;
+      str << errors.size() << " of " << entries.size() << " files failed:\n";
+      for(size_t i = 0; i < std::min<size_t>(errors.size(), 10); ++i)
+        str << errors[i] << "\n";
+      if (errors.size() > 10)
+        str << "...";
+      throw std::runtime_error(str.str());
     }
 }
 

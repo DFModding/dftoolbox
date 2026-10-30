@@ -25,9 +25,18 @@
 
 #include <assert.h>
 #include <string>
+#include <vector>
 #include "tljpak.hpp"
 
 class DreamfallFileEntry;
+
+/** What a file gets written out as */
+enum ExportFormat {
+  /** The data as it is stored, for a savegame that is the whole .sav */
+  EXPORT_ORIGINAL,
+  EXPORT_PNG,
+  EXPORT_TEXT
+};
 
 struct SaveFileEntry
 {
@@ -134,6 +143,16 @@ public:
   PakFileEntry&        get_pak()  { assert(type == PAK_FILE_ENTRY);       return pak;  }
   DirectoryFileEntry&  get_dir()  { assert(type == DIRECTORY_FILE_ENTRY); return dir;  }
   std::string get_url() const;
+
+  /** The formats this entry can be exported to, EXPORT_ORIGINAL
+      first. Empty for directories. */
+  std::vector<ExportFormat> get_export_formats() const;
+
+  /** The filename for an export to \a format, Dreamfall stores
+      textures that really are DDS as .png, so the original of foo.png
+      is foo.png.dds and only its conversion is foo.png, the same goes
+      for STFU4 textures which have no conversion */
+  std::string get_export_name(ExportFormat format) const;
 
   // Function for placing the file entry in the tree
   std::string get_label() const;

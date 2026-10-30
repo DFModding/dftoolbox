@@ -45,11 +45,13 @@ class QComboBox;
 class QLineEdit;
 class QMenu;
 class QPlainTextEdit;
+class QPoint;
 class QSplitter;
 class QStackedWidget;
 class QToolBar;
 class QTreeWidget;
 class QTreeWidgetItem;
+class QImage;
 class SharkView;
 class SoundView;
 
@@ -105,6 +107,9 @@ protected:
 
   std::vector<Bookmark*> bookmarks;
 
+  /** Where the last single file got exported to */
+  QString last_export_dir;
+
 public:
   DFToolBoxWindow();
 
@@ -120,15 +125,25 @@ public:
   void init();
   void save_dreamfall_path();
 
+  /** Write \a entry to \a outfile, throws on errors */
+  void export_entry(DreamfallFileEntry& entry, ExportFormat format, const std::string& outfile);
+
+  /** Throws a summary of the files that failed after doing all the
+      others, \a image_as_png and \a data_as_text select the
+      conversions for the files that support them */
   void export_files(const std::vector<DreamfallFileEntry*>& selection,
                     const std::string& outpath,
-                    bool preserve_path, bool fix_extension, bool shark_as_text);
+                    bool preserve_path, bool fix_extension,
+                    bool image_as_png, bool data_as_text);
 
   void show_switcher(int i);
   void play_dialog(int i, const std::string& lang);
 
   void on_open();
   void on_save();
+  void on_export_file(DreamfallFileEntry* entry, ExportFormat format);
+  void on_export_dialog(const std::vector<DreamfallFileEntry*>& selection, bool converted);
+  void on_tree_context_menu(const QPoint& pos);
   void on_about();
   void on_bookmark(Bookmark* bookmark);
   void on_add_bookmark();
@@ -158,6 +173,14 @@ public:
 
 private:
   void add_bookmark_action(Bookmark* bookmark);
+
+  /** The text shown for the savegame part \a entry, for anything but
+      SaveFileEntry::IMAGE_DATA */
+  std::string get_save_text(const SaveFileEntry& entry);
+
+  std::vector<char> read_pak_file(const PakFileEntry& entry);
+  std::string get_export_text(DreamfallFileEntry& entry);
+  QImage get_export_image(DreamfallFileEntry& entry);
 
   DFToolBoxWindow(const DFToolBoxWindow&) = delete;
   DFToolBoxWindow& operator=(const DFToolBoxWindow&) = delete;

@@ -22,6 +22,19 @@
 
 #include "dreamfall_file_entry.hpp"
 
+#include "util.hpp"
+
+namespace {
+
+/** \a filename without its extension */
+std::string strip_extension(const std::string& filename)
+{
+  const std::string::size_type dot = filename.rfind('.');
+  return dot == std::string::npos ? filename : filename.substr(0, dot);
+}
+
+} // namespace
+
 std::string
 SaveFileEntry::get_url() const
 {
@@ -72,6 +85,65 @@ DreamfallFileEntry::get_url() const
     default:
       return "<unknown>";
     }
+}
+
+std::vector<ExportFormat>
+DreamfallFileEntry::get_export_formats() const
+{
+  std::vector<ExportFormat> formats;
+
+  switch(type)
+    {
+    case PAK_FILE_ENTRY:
+      formats.push_back(EXPORT_ORIGINAL);
+      if (pak.type == FILETYPE_DDS)
+        formats.push_back(EXPORT_PNG);
+      else if (pak.type == FILETYPE_SHARK3D || pak.type == FILETYPE_LOCALISATION)
+        formats.push_back(EXPORT_TEXT);
+      break;
+
+    case SAVE_FILE_ENTRY:
+      formats.push_back(EXPORT_ORIGINAL);
+      formats.push_back(save.type == SaveFileEntry::IMAGE_DATA ? EXPORT_PNG : EXPORT_TEXT);
+      break;
+
+    default:
+      break;
+    }
+
+  return formats;
+}
+
+std::string
+DreamfallFileEntry::get_export_name(ExportFormat format) const
+{
+  if (type == SAVE_FILE_ENTRY)
+    {
+      if (format == EXPORT_ORIGINAL)
+        return save.name;
+
+      return strip_extension(save.name) + "-" + get_label() +
+        (format == EXPORT_PNG ? ".png" : ".txt");
+    }
+
+  switch(format)
+    {
+    case EXPORT_PNG:
+      return strip_extension(pak.filename) + ".png";
+
+    case EXPORT_TEXT:
+      return pak.filename + ".txt";
+
+    case EXPORT_ORIGINAL:
+      break;
+    }
+
+  if (pak.type == FILETYPE_DDS && !has_suffix(tolowercase(pak.filename), ".dds"))
+    return pak.filename + ".dds";
+  else if (pak.type == FILETYPE_STFU4)
+    return pak.filename + ".stfu4";
+  else
+    return pak.filename;
 }
 
 std::string

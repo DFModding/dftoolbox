@@ -222,6 +222,30 @@ struct Dialog
   }
 };
 
+/** All \a dialogs as text, one block per dialog listing every language */
+inline std::string dialogs_to_text(const std::vector<Dialog>& dialogs)
+{
+  std::ostringstream str;
+  if (!dialogs.empty())
+    {
+      for(unsigned int i = 0; i < dialogs[0].entries.size(); ++i)
+        {
+          str << i << ")" << std::endl;
+
+          for(unsigned int j = 0; j < dialogs.size(); ++j)
+            {
+              str << std::endl;
+              str << dialogs[j].language << ": ";
+              str << "[[dialog:" << j << ":" << dialogs[j].entries[i].id << "]]";
+              str << std::endl;
+              str << &*dialogs[j].texts.begin() + dialogs[j].entries[i].offset << std::endl;
+            }
+          str << "___________________________________________________________________" << std::endl;
+        }
+    }
+  return str.str();
+}
+
 inline void read_dialogs(const std::string& filename, std::vector<Dialog>& dialogs)
 {
   // std::cout << "Processing: " << filename << std::endl;

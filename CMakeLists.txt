@@ -221,6 +221,11 @@ if(BUILD_TESTING)
   target_link_libraries(test-system libdftoolbox)
   add_test(NAME system COMMAND test-system)
 
+  add_executable(test-export-name "tests/test_export_name.cpp")
+  target_include_directories(test-export-name PRIVATE src)
+  target_link_libraries(test-export-name libdftoolbox)
+  add_test(NAME export-name COMMAND test-export-name)
+
   add_test(NAME dftoolbox-version COMMAND dftoolbox --version)
   string(REPLACE "+" "\\+" _version_regex "${PROJECT_VERSION_FULL}")
   set_tests_properties(dftoolbox-version PROPERTIES

@@ -32,6 +32,7 @@
 
 class DFToolBoxWindow;
 class QCheckBox;
+class QComboBox;
 class QLineEdit;
 class QPlainTextEdit;
 
@@ -43,6 +44,8 @@ private:
   QPlainTextEdit* filename;
   QLineEdit* pathname;
   QLineEdit* filter;
+  QComboBox* image_format;
+  QComboBox* data_format;
   QCheckBox* preserve_path;
   QCheckBox* fix_extension;
 
@@ -55,6 +58,9 @@ public:
   void set_filename(const std::string& filename);
   void set_file_entry(DreamfallFileEntry* entry);
   void set_file_entries(const std::vector<DreamfallFileEntry*>& selection);
+
+  /** Preselect either the conversions or the native formats */
+  void set_converted(bool converted);
 
   void on_export();
   void on_cancel();

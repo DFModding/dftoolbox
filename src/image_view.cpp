@@ -37,7 +37,6 @@
 #include <QVBoxLayout>
 
 #include "icons.hpp"
-#include "dds.hpp"
 #include "system.hpp"
 #include "ui_util.hpp"
 
@@ -85,17 +84,8 @@ ImageView::set_image(const std::string& filename)
   if (!in)
     throw std::runtime_error("Error: Couldn't open " + filename);
 
-  DDS dds(in);
-  std::cout << "DDS: " << dds.width << "x" << dds.height << std::endl;
-
-  // DDS::get_data() is RGBA, one byte per channel; copy() so that the
-  // image doesn't depend on the lifetime of the DDS data
-  const std::vector<char>& data = dds.get_data();
-  if (data.size() < size_t(dds.width) * dds.height * 4)
-    throw std::runtime_error("DDS: not enough image data");
-
-  image = QImage(reinterpret_cast<const uchar*>(data.data()), dds.width, dds.height,
-                 dds.width * 4, QImage::Format_RGBA8888).copy();
+  image = read_dds_image(in);
+  std::cout << "DDS: " << image.width() << "x" << image.height() << std::endl;
   in.close();
 
   imagelabel->setPixmap(QPixmap::fromImage(image));
@@ -116,25 +106,9 @@ ImageView::set_save_image(const std::string& filename)
 {
   cleanup();
 
-  std::ifstream in(filename.c_str(), std::ios::binary);
-  if (!in)
-    {
-      throw std::runtime_error("Couldn't open: " + filename);
-    }
-  else
-    {
-      // Extract screenshot, the last 256*256 RGBA pixels of the file
-      std::vector<uchar> buffer(256*256*4);
-      in.seekg(-(256*256*4), std::ios::end);
-      in.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
-      if (!in)
-        throw std::runtime_error("Couldn't read screenshot from: " + filename);
-      in.close();
-
-      image = QImage(buffer.data(), 256, 256, 256*4, QImage::Format_RGBA8888).copy();
-      imagelabel->setPixmap(QPixmap::fromImage(image));
-      imagelabel->adjustSize();
-    }
+  image = read_save_image(filename);
+  imagelabel->setPixmap(QPixmap::fromImage(image));
+  imagelabel->adjustSize();
 
   set_scale(scale);
 }

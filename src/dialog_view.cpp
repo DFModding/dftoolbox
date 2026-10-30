@@ -117,22 +117,7 @@ DialogView::set_language(int id)
     }
   else if (dialogs.size() >= 1)
     {
-      std::ostringstream str;
-      for(unsigned int i = 0; i < dialogs[0].entries.size(); ++i)
-        {
-          str << i << ")" << std::endl;
-
-          for(unsigned int j = 0; j < dialogs.size(); ++j)
-            {
-              str << std::endl;
-              str << dialogs[j].language << ": ";
-              str << "[[dialog:" << j << ":" << dialogs[j].entries[i].id << "]]";
-              str << std::endl;
-              str << &*dialogs[j].texts.begin() + dialogs[j].entries[i].offset << std::endl;
-            }
-          str << "___________________________________________________________________" << std::endl;
-        }
-      set_text(str.str());
+      set_text(dialogs_to_text(dialogs));
     }
 }
 

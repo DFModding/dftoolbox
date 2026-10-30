@@ -71,22 +71,22 @@ ExportDialog::ExportDialog(DFToolBoxWindow* parent_)
   {
     QHBoxLayout* hbox = new QHBoxLayout;
     hbox->addWidget(new QLabel("Convert Images to: "));
-    QComboBox* typebox = new QComboBox;
-    typebox->addItem("Native");
-    typebox->addItem("Targa (.tga)");
-    typebox->setEnabled(false);
-    hbox->addWidget(typebox);
+    image_format = new QComboBox;
+    image_format->addItem("Native");
+    image_format->addItem("PNG (.png)");
+    hbox->addWidget(image_format);
     hbox->addStretch(1);
     vbox->addLayout(hbox);
   }
   {
     QHBoxLayout* hbox = new QHBoxLayout;
-    hbox->addWidget(new QLabel("Convert Shark3D to: "));
-    QComboBox* typebox = new QComboBox;
-    typebox->addItem("Text");
-    typebox->addItem("Native");
-    typebox->setEnabled(false);
-    hbox->addWidget(typebox);
+    QLabel* label = new QLabel("Convert Data to: ");
+    label->setToolTip("Applies to Shark3D files, localization and savegames");
+    hbox->addWidget(label);
+    data_format = new QComboBox;
+    data_format->addItem("Text");
+    data_format->addItem("Native");
+    hbox->addWidget(data_format);
     hbox->addStretch(1);
     vbox->addLayout(hbox);
   }
@@ -105,6 +105,7 @@ ExportDialog::ExportDialog(DFToolBoxWindow* parent_)
   preserve_path = new QCheckBox("preserve directory structure on export");
   vbox->addWidget(preserve_path);
   fix_extension = new QCheckBox("append proper file extension where necessary (.png -> .png.dds)");
+  fix_extension->setChecked(true);
   vbox->addWidget(fix_extension);
 
   QHBoxLayout* buttonbar = new QHBoxLayout;
@@ -142,6 +143,10 @@ ExportDialog::set_file_entries(const std::vector<DreamfallFileEntry*>& selection
       lines << QString::fromStdString((*i)->get_url());
       entries.push_back(*i);
     }
+
+  // the same filename is used in many directories
+  preserve_path->setChecked(selection.size() > 1 || (!selection.empty() && selection.front()->is_dir()));
+
   filename->setPlainText(lines.join("\n"));
 
   // show up to 20 lines
@@ -153,6 +158,13 @@ ExportDialog::set_file_entries(const std::vector<DreamfallFileEntry*>& selection
 }
 
 void
+ExportDialog::set_converted(bool converted)
+{
+  image_format->setCurrentIndex(converted ? 1 : 0);
+  data_format->setCurrentIndex(converted ? 0 : 1);
+}
+
+void
 ExportDialog::on_export()
 {
   hide();
@@ -160,7 +172,7 @@ ExportDialog::on_export()
   try {
     parent->export_files(entries, pathname->text().toStdString(),
                          preserve_path->isChecked(), fix_extension->isChecked(),
-                         true);
+                         image_format->currentIndex() == 1, data_format->currentIndex() == 0);
   } catch(std::exception& err) {
     QMessageBox::critical(parent, "Export failed", QString::fromStdString(err.what()));
   }

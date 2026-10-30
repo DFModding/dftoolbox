@@ -23,8 +23,10 @@
 #ifndef HEADER_UI_UTIL_HPP
 #define HEADER_UI_UTIL_HPP
 
+#include <iosfwd>
 #include <string>
 
+#include <QImage>
 #include <QString>
 
 class QAction;
@@ -40,6 +42,13 @@ QAction* add_tool_action(QToolBar* toolbar, const QIcon& icon,
 /** Ask for a filename and write \a content to it, returns false if
     the dialog got canceled. */
 bool save_text_file(QWidget* parent, const std::string& content);
+
+/** Decode the top level mipmap of the DDS file in \a in, throws on
+    broken data */
+QImage read_dds_image(std::istream& in);
+
+/** Read the screenshot of the savegame \a filename, throws on errors */
+QImage read_save_image(const std::string& filename);
 
 #endif
 
