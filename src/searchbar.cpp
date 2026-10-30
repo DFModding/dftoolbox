@@ -22,72 +22,95 @@
 **  02111-1307, USA.
 */
 
-#include <iostream>
-#include "icons.hpp"
 #include "searchbar.hpp"
 
-FXDEFMAP(Searchbar) SearchbarMap[] = {
-  FXMAPFUNC(SEL_COMMAND,       Searchbar::ID_SEARCH_FORWARD,       Searchbar::onCmdSearchForward),
-  FXMAPFUNC(SEL_COMMAND,       Searchbar::ID_SEARCH_BACKWARD,      Searchbar::onCmdSearchBackward),
-};
+#include <iostream>
 
-// Object implementation
-FXIMPLEMENT(Searchbar, FXHorizontalFrame, SearchbarMap, ARRAYNUMBER(SearchbarMap));
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPlainTextEdit>
+#include <QTextCursor>
+#include <QTextDocument>
+#include <QToolButton>
 
-Searchbar::Searchbar(FXComposite* parent, FXText* text_)
-  : FXHorizontalFrame(parent, FRAME_NONE|LAYOUT_FILL_X|FRAME_LINE,
-                      0, 0, 0, 0,
-                      0, 0, 0, 0),
+#include "icons.hpp"
+
+Searchbar::Searchbar(QWidget* parent, QPlainTextEdit* text_)
+  : QFrame(parent),
     text(text_)
 {
-  new FXLabel(this, "Search:", NULL, FRAME_NONE|LAYOUT_CENTER_Y);
-  search = new FXTextField(this, 0, this, ID_SEARCH_FORWARD, TEXTFIELD_ENTER_ONLY|LAYOUT_FILL_X|FRAME_SUNKEN|LAYOUT_CENTER_Y);
-  new FXButton(this, "\tSearch backward", Icon::search_backward, this, ID_SEARCH_BACKWARD, BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_CENTER_Y);
-  new FXButton(this, "\tSearch forward", Icon::search_forward, this, ID_SEARCH_FORWARD, BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_CENTER_Y);
+  setFrameStyle(QFrame::Box | QFrame::Plain);
+  setLineWidth(1);
+
+  QHBoxLayout* hbox = new QHBoxLayout(this);
+  hbox->setContentsMargins(0, 0, 0, 0);
+
+  hbox->addWidget(new QLabel("Search:"));
+
+  search = new QLineEdit;
+  connect(search, &QLineEdit::returnPressed, this, [this]{ on_search_forward(); });
+  hbox->addWidget(search, 1);
+
+  QToolButton* backward = new QToolButton;
+  backward->setIcon(Icon::search_backward);
+  backward->setToolTip("Search backward");
+  backward->setAutoRaise(true);
+  connect(backward, &QToolButton::clicked, this, [this]{ on_search_backward(); });
+  hbox->addWidget(backward);
+
+  QToolButton* forward = new QToolButton;
+  forward->setIcon(Icon::search_forward);
+  forward->setToolTip("Search forward");
+  forward->setAutoRaise(true);
+  connect(forward, &QToolButton::clicked, this, [this]{ on_search_forward(); });
+  hbox->addWidget(forward);
 }
 
-
-long
-Searchbar::onCmdSearchForward(FXObject*,FXSelector,void*)
+void
+Searchbar::find(bool backward)
 {
-  FXint beg = 0;
-  FXint end = 0;
+  const QString needle = search->text();
+  if (needle.isEmpty())
+    return;
 
-  if (text->findText(search->getText(),
-                     &beg, &end, text->getCursorPos(),
-                     SEARCH_FORWARD|SEARCH_WRAP|SEARCH_EXACT))
-    {
-      //text->makePositionVisible(beg);
-      text->setCenterLine(beg);
-      text->setCursorPos(end);
-      text->setSelection(beg,end-beg);
-    }
+  QTextDocument::FindFlags flags = QTextDocument::FindCaseSensitively;
+  if (backward)
+    flags |= QTextDocument::FindBackward;
+
+  if (text->find(needle, flags))
+  {
+    text->centerCursor();
+    return;
+  }
+
+  // nothing found between cursor and the end, wrap around
+  const QTextCursor old_cursor = text->textCursor();
+  QTextCursor cursor = old_cursor;
+  cursor.movePosition(backward ? QTextCursor::End : QTextCursor::Start);
+  text->setTextCursor(cursor);
+
+  if (text->find(needle, flags))
+  {
+    text->centerCursor();
+  }
   else
-    {
-      std::cout << "Nothing found" << std::endl;
-    }
-  return 1;
+  {
+    text->setTextCursor(old_cursor);
+    std::cout << "Nothing found" << std::endl;
+  }
 }
 
-long
-Searchbar::onCmdSearchBackward(FXObject*,FXSelector,void*)
+void
+Searchbar::on_search_forward()
 {
-  FXint beg = 0;
-  FXint end = 0;
+  find(false);
+}
 
-  if (text->findText(search->getText(),
-                     &beg, &end, (text->getCursorPos() - search->getText().length()-1) % text->getLength(),
-                     SEARCH_BACKWARD|SEARCH_WRAP|SEARCH_EXACT))
-    {
-      text->setCenterLine(beg);
-      text->setCursorPos(end);
-      text->setSelection(beg,end-beg);
-    }
-  else
-    {
-      std::cout << "Nothing found" << std::endl;
-    }
-  return 1;
+void
+Searchbar::on_search_backward()
+{
+  find(true);
 }
 
 /* EOF */

@@ -25,31 +25,33 @@
 #ifndef HEADER_SHARK_VIEW_HPP
 #define HEADER_SHARK_VIEW_HPP
 
-#include "fx.h"
 #include <string>
 
-class SharkView : FXVerticalFrame
+#include <QWidget>
+
+class QMainWindow;
+class QPlainTextEdit;
+class QToolBar;
+
+class SharkView : public QWidget
 {
-  FXDECLARE(SharkView);
 private:
-  FXToolBar*   toolbar;
-  FXText*      text;
+  QToolBar*       toolbar;
+  QPlainTextEdit* text;
+
+  /** The text as given to set_text(), so that saving it writes
+      exactly the same bytes */
+  std::string raw_text;
 
 public:
-  SharkView();
-  SharkView(FXComposite* parent, FXComposite* toolbar_dock);
+  SharkView(QWidget* parent, QMainWindow* mainwindow);
 
   void set_shark(const std::string& filename);
   void set_text(const std::string& text);
 
-  long onCmdToggleWrap(FXObject*,FXSelector,void*);
-  long onCmdSaveText(FXObject*,FXSelector,void*);
-  void show_toolbar(bool t) { if (t) toolbar->show(); else toolbar->hide(); }
-
-  enum {
-    ID_TOGGLE_WRAP=FXVerticalFrame::ID_LAST,
-    ID_SAVE_TEXT,
-  };
+  void on_toggle_wrap();
+  void on_save_text();
+  void show_toolbar(bool t);
 };
 
 #endif

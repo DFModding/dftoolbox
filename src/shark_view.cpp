@@ -22,49 +22,53 @@
 **  02111-1307, USA.
 */
 
+#include "shark_view.hpp"
+
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <iostream>
+
+#include <QAction>
+#include <QMainWindow>
+#include <QPlainTextEdit>
+#include <QToolBar>
+#include <QVBoxLayout>
+
 #include "icons.hpp"
 #include "shark3d.hpp"
 #include "system.hpp"
 #include "searchbar.hpp"
-#include "shark_view.hpp"
+#include "ui_util.hpp"
 
-FXDEFMAP(SharkView) SharkViewMap[] = {
-  FXMAPFUNC(SEL_COMMAND,       SharkView::ID_TOGGLE_WRAP,    SharkView::onCmdToggleWrap),
-  FXMAPFUNC(SEL_COMMAND,       SharkView::ID_SAVE_TEXT,      SharkView::onCmdSaveText),
-};
-
-// Object implementation
-FXIMPLEMENT(SharkView, FXVerticalFrame, SharkViewMap, ARRAYNUMBER(SharkViewMap));
-
-SharkView::SharkView()
+SharkView::SharkView(QWidget* parent, QMainWindow* mainwindow)
+  : QWidget(parent)
 {
-}
+  toolbar = new QToolBar;
+  mainwindow->addToolBar(toolbar);
 
-SharkView::SharkView(FXComposite* parent, FXComposite* toolbar_dock)
-  : FXVerticalFrame(parent, FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_CENTER_Y,
-                    0, 0, 0, 0,
-                    0, 0, 0, 0)
-{
-  toolbar = new FXToolBar(toolbar_dock, LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|PACK_UNIFORM_WIDTH|PACK_UNIFORM_HEIGHT|FRAME_RAISED|LAYOUT_FILL_X);
+  connect(add_tool_action(toolbar, Icon::indent, "Toggle Word Wrap", "Toggle Word Wrap"),
+          &QAction::triggered, this, [this]{ on_toggle_wrap(); });
+  connect(add_tool_action(toolbar, Icon::save_file, "Save Shark3D as text", "Save Shark3D as text"),
+          &QAction::triggered, this, [this]{ on_save_text(); });
 
-  new FXButton(toolbar, "\tToggle Word Wrap\tToggle Word Wrap", Icon::indent, this, ID_TOGGLE_WRAP, BUTTON_TOOLBAR|FRAME_RAISED);
-  new FXButton(toolbar, "\tSave Shark3D as text\tSave Shark3D as text", Icon::save_file, this, ID_SAVE_TEXT, BUTTON_TOOLBAR|FRAME_RAISED);
+  QVBoxLayout* vbox = new QVBoxLayout(this);
+  vbox->setContentsMargins(0, 0, 0, 0);
+  vbox->setSpacing(0);
 
-  text = new FXText(this, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  text->setEditable(FALSE);
+  text = new QPlainTextEdit;
+  text->setReadOnly(true);
+  text->setLineWrapMode(QPlainTextEdit::WidgetWidth);
+  vbox->addWidget(text, 1);
 
-  text->setTextStyle(text->getTextStyle() | TEXT_WORDWRAP);
-
-  new Searchbar(this, text);
+  vbox->addWidget(new Searchbar(this, text));
 }
 
 void
 SharkView::set_text(const std::string& str)
 {
-  text->setText(str.c_str());
+  raw_text = str;
+  text->setPlainText(QString::fromStdString(str));
 }
 
 void
@@ -82,48 +86,30 @@ SharkView::set_shark(const std::string& filename)
 
       std::ostringstream str;
       shark->write_text(str);
-      text->setText(str.str().c_str(), str.str().size());
+      set_text(str.str());
       delete shark;
     }
 }
 
-long
-SharkView::onCmdToggleWrap(FXObject*,FXSelector,void*)
+void
+SharkView::on_toggle_wrap()
 {
-  if (text->getTextStyle() & TEXT_WORDWRAP)
-    text->setTextStyle(text->getTextStyle() & ~TEXT_WORDWRAP);
+  if (text->lineWrapMode() == QPlainTextEdit::NoWrap)
+    text->setLineWrapMode(QPlainTextEdit::WidgetWidth);
   else
-    text->setTextStyle(text->getTextStyle() | TEXT_WORDWRAP);
-
-  return 1;
+    text->setLineWrapMode(QPlainTextEdit::NoWrap);
 }
 
-long
-SharkView::onCmdSaveText(FXObject*,FXSelector,void*)
+void
+SharkView::on_save_text()
 {
-  FXFileDialog savedialog(this,tr("Save Document"));
-  FXString file;
-  savedialog.setSelectMode(SELECTFILE_ANY);
-  // savedialog.setPatternList(getPatterns());
-  // savedialog.setCurrentPattern(getCurrentPattern());
-  // savedialog.setFilename(file);
-  if(savedialog.execute())
-    {
-      //setCurrentPattern(savedialog.getCurrentPattern());
-      file = savedialog.getFilename();
-      if(FXStat::exists(file))
-        {
-          if(MBOX_CLICKED_NO==FXMessageBox::question(this,MBOX_YES_NO, "Overwrite Document",
-                                                     "Overwrite existing document: %s?",file.text()))
-            return 1;
-        }
+  save_text_file(this, raw_text);
+}
 
-      std::ofstream out(file.text());
-      out << text->getText().text();
-      out.close();
-    }
-
-  return 1;
+void
+SharkView::show_toolbar(bool t)
+{
+  toolbar->setVisible(t);
 }
 
 /* EOF */
