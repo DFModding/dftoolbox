@@ -1,0 +1,253 @@
+Dreamfall bundles and models
+============================
+
+Everything is little endian. Thanks go to DreamView and
+DreamfallTLJViewer, where most of the layout comes from, see README.md.
+
+
+Where things are
+----------------
+
+bundles/NAME.bun                     in NAME.pak, the geometry of a location
+data/generated/locations/NAME.cdr    the location, refers to the bundle and
+                                     to its .sir files as "tree"
+*.sir                                node hierarchy, the .smr with the same
+                                     name is the entry in the bundle
+*.sdr                                shaders, nodes refer to "file.sdr#name"
+
+common, init and laidback have no bundle. A .smr can be part of several
+bundles and a filename can exist in several paks with different content
+(day and night versions of a location), so a lookup should start with
+the pak of the file that refers to it.
+
+
+.bun
+----
+
+0x00  u32   offset of the data block count minus 4
+0x04  i32   texture count
+      textures: u8 length, zero terminated string
+      i32   vertex block count
+      blocks: u32 vertex size, u32 length, bytes
+
+All offsets from here on are relative to this position ("zero"):
+
+      i32   smr count
+      i32   stream format count
+      i32   unknown
+      u32   smr offsets[smr count]
+      stream formats[stream format count], 72 bytes each:
+              u32 vertex size, i32 channels[16], i32 streams
+
+smr entry:
+
+0x00  char  name[0x80]
+0x80  i32   mesh count
+0x84  u32   mesh offsets[mesh count]
+
+mesh:
+
+0x00  u32   offset of the name
+0x04  f32   rescale, nodes are scaled by 1/rescale
+0x08  f32   center[3]
+0x14  f32   bounds
+0x38  i32   bone count
+0x3C  u32   offset of the bone names
+0x40  u32   offset of the bone data
+0x44  i32   texture count
+0x48  u32   offset of the texture indices, into the textures of the bundle
+0x54  i32   part count
+0x58  u32   part offsets[part count]
+
+part:
+
+0x50  u32   offset of the stream format, 0 if there is none
+0x54  u32   bitcode, 1 is geometry, 0x200 a shadow volume
+0x58  u32   usage
+0x64  i32   index count
+0x68  u32   offset of the u16 indices, they are absolute
+0x6C  i32   bone usage count
+0x70  u32   offset of the bone usage
+0x74  i32   bone stage count
+0x78  u32   offset of u16 vertex counts for each bone stage
+0x7C  u32   offset of u16 index counts for each bone stage
+0x80  u32   offset of the bone assignment
+0xB4  i32   texture stage count
+0xB8  u32   offset of the vertex counts of the texture stages
+0xBC  u32   offset of the index counts of the texture stages
+0xC0  u32   unknown offset
+0xC4  u32   offset of i32[texture stage count], bone stages per texture stage
+0xC8  i32   vertex block count, the frames of tween animations
+0xCC  u32   offset of the animation data
+0xD0  i32   vertex count
+0x104 i32   part texture count
+0x108 u32   part texture offsets[part texture count]
+
+part texture:
+
+0x08  u32   offset of i32[texture stage count], -1 for none, indices
+            into the texture indices of the mesh
+
+The vertex blocks don't say who they belong to. They are in the order of
+the parts that have a stream format, a bitcode and a vertex size, and
+each of those takes as many blocks as it has frames.
+
+The first part is the geometry. Skinned meshes have a second part with
+bitcode 0x200 and no textures, it is a shadow volume, its vertices have
+two colors and the three corners of their triangle as Float4.
+
+
+Vertices
+--------
+
+Channels hold the type of each entry, -1 if it isn't used:
+
+  1  Float2  8 bytes
+  2  Float3  12 bytes
+  3  Float4  16 bytes
+  4  Color   4 bytes, D3DCOLOR, so BGRA in memory
+
+  0  position
+  1  bone weights, Float4
+  2  bone indices, Color
+  3  normal
+  5  color
+  6  color
+  7  texture coordinates
+  8  second texture coordinates (Float2) or tangent (Float3)
+
+With streams set to 1 the mesh has tween frames and the entries are
+packed, so that the channel numbers no longer identify them.
+
+Texture coordinates have their origin at the top left. The world is
+right handed with Z as up and front faces are counter clockwise, which
+99.99% of the area of all the triangles agrees with when checked
+against the vertex normals.
+
+Skinned meshes are stored in their bind pose, so they can be drawn
+without looking at the bones.
+
+
+Textures
+--------
+
+A stage lists its textures by layer. Lit by lightmap, the order is
+diffuse, lightmap, normal map, height map, detail map, detail normal
+map; lit by vertex colors it is diffuse, normal map, detail map. The
+filenames tell them apart: *_lightmap*, *_nml.*, *_hmap.*
+
+The extension says nothing about the content, most .png are DDS. Normal
+maps can be STFU4. Lightmaps use the second texture coordinates.
+
+
+.sir
+----
+
+data/root holds the root of a tree of nodes, each of them with:
+
+  name
+  transl       3 floats
+  quat         4 floats, its squared length is a scale factor
+  model        name of a mesh in the .smr
+  shader       file.sdr#name, nodes without aren't visible, such as volumes
+  child_array  the children
+
+The matrix of a node is T * R * S with R being the normalized quat and
+S = |quat|^2 / rescale, a child is relative to its parent.
+
+
+.sdr
+----
+
+"shaders" is an array of entries with a name and a type:
+
+  eng_shader_std.shaderfactory|basic        param/passes
+  eng_shader_funcom.shaderfactory|basic     param/passes
+  eng_shader_std.shaderfactory|alternative  param/children, by plat_pat
+  eng_shader_std.shaderfactory|variants     param/children
+  eng_shader_special.shaderfactory|billboard
+  eng_shader_shvol.shaderfactory|simple
+
+Children have child_type and child_param in place of type and param.
+Passes have cull_mode, blend_mode_src, blend_mode_dest, depth_write,
+alpha_test, alpha_ref, use_vertex_colors, tmu_channels and shaderprog.
+The latter leads to a .sgr with the D3D assembly in .scr files, which
+are plain text and tell what the data is for:
+
+  vividlight_d3d9_asm_fs1x1.scr     color = texture * lightmap * 2
+  vivid_vertex_d3d9_asm_fs1x1.scr   color = texture * vertex color * 2
+                                            * (1 + NdotL * light color)
+
+The alpha of the diffuse texture of these is the specular level, not
+the opacity.
+
+
+Animation
+---------
+
+All of this is relative to the start of the mesh or file and has been
+checked by playing it, except where noted.
+
+Skinned meshes have 0x28 byte names for each bone at mesh 0x3C and seven
+floats for each at 0x40, position and quaternion xyzw of the bind pose
+in model space.
+
+Bone indices of a vertex don't refer to those bones directly. The bone
+usage of the part is a list of u16 bones, the bone assignment has u16
+entries into that list for each bone stage and the bone vertex counts
+tell which vertices a bone stage covers. The index bytes of the vertex
+are positions in the entries of its bone stage.
+
+The vertex has three weights in use, the fourth is one minus their sum.
+That comes from the shader, it has not been seen in the data.
+
+Parents are in NAME.skr, in the entry of data/skel_array named like the
+model. bone_parent_idx_array has one delta for each bone, with
+parent = (parent + delta) & 0x7f and 0x7f meaning that there is none.
+
+A vertex moves by
+
+  bone = parent * bind * local * inverse(bind)
+
+with bind built from the data of the mesh and local from the animation,
+so that an animation only holds changes against the bind pose.
+
+.bpr, tljbone:
+
+0x00  char[7]  "tljbone"
+0x07  char     version: '0' floats, '2' packed, '1' isn't understood
+0x08  i32      bone count
+0x0C  float    duration in seconds
+0x10           24 bytes for each bone: i32 rotation keys, u32 offset,
+               u32 offset, i32 position keys, u32 offset, u32 offset,
+               offsets being relative to 8
+
+Times are in 0..1, u16 / 65536 in version 2. A rotation key has four
+coefficients of xyzw, evaluated with q = q * t + c and then normalized.
+Version 0 has no w, it is 1 - x*x - y*y - z*z. A position key has four
+coefficients of xyz. Packed floats are not IEEE half floats:
+
+  exp = ((f & 0x7c00) >> 10) - 5
+  mantissa = f & 0x3ff
+  exp == 0: 2^-14 * mantissa / 1024
+  else:     2^(exp - 15) * (mantissa + 1024) / 1024
+
+with the sign in the top bit and f == 0 being zero.
+
+Some .bpr are Shark3D with the format shark3d_std_bone_anim_runtime_2x1x2
+instead, those aren't handled.
+
+.spr, paths:
+
+data/path_array has entries with name, duration and frame_array, whose
+frames have key (time in 0..1), transl and quat. The length of the
+quaternion is the scale. The posgen of a node in a .sir names a path in
+the .spr next to its .smr. The first frame is the position the node has
+in the .sir, which all 1316 paths in the locations agree with.
+
+Tween:
+
+A part with more than one frame has that many vertex blocks and float
+times in 0..1 at 0xCC, the vertex count being the total divided by the
+frames. The game runs them over four seconds, that value is from
+DreamView.

@@ -700,23 +700,31 @@ TLJPak::extract(int file_entry, const std::string& outfile)
 
   if (files[file_entry].is_file())
     {
-      std::ifstream in(filename.c_str(), std::ios::binary);
-      if (!in)
-        throw std::runtime_error("Error: Couldn't open " + filename);
-
       std::vector<char> filebuf;
-      filebuf.resize(files[file_entry].filesize);
-      in.seekg(files[file_entry].offset, std::ios::beg);
-      in.read(reinterpret_cast<char*>(&*filebuf.begin()), filebuf.size());
+      read(file_entry, filebuf);
 
       std::ofstream out(outfile.c_str(), std::ios::binary);
       if (!out)
         throw std::runtime_error("Error: Couldn't open " + outfile);
       out.write(reinterpret_cast<char*>(&*filebuf.begin()), filebuf.size());
       out.close();
-
-      in.close();
     }
+}
+
+void
+TLJPak::read(int file_entry, std::vector<char>& data)
+{
+  assert(file_entry >= 0 && file_entry < int(files.size()));
+
+  std::ifstream in(filename.c_str(), std::ios::binary);
+  if (!in)
+    throw std::runtime_error("Error: Couldn't open " + filename);
+
+  data.resize(files[file_entry].filesize);
+  in.seekg(files[file_entry].offset, std::ios::beg);
+  in.read(data.data(), data.size());
+  if (!in)
+    throw std::runtime_error("Error: Couldn't read from " + filename);
 }
 
 void

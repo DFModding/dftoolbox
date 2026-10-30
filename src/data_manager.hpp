@@ -81,6 +81,14 @@ public:
   bool extract(const PakFileEntry& entry, const std::string& outfile);
   bool extract_by_language(const std::string& lang_code, const std::string& location, const std::string& outfile);
 
+  /** Read the given file into \a data, the paks hold different
+      versions of some files, so \a pak (if not empty) is tried first */
+  bool read(const std::string& location, const std::string& pak, std::vector<char>& data);
+
+  /** Returns all the known files that start with \a prefix and end
+      with \a suffix, sorted and without duplicates */
+  std::vector<std::string> find_files(const std::string& prefix, const std::string& suffix) const;
+
   /** Query the file for the type */
   FileType get_type(const std::string& pathname);
 

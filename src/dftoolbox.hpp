@@ -40,6 +40,7 @@ class DialogView;
 class DirectoryView;
 class DreamfallFileEntry;
 class ImageView;
+class ModelView;
 class ProgressDialog;
 class QAction;
 class QComboBox;
@@ -88,6 +89,7 @@ protected:
 
   ImageView*     imageview;
   SharkView*     sharkview;
+  ModelView*     modelview;
   SoundView*     soundview;
   DialogView*    dialogview;
   DirectoryView* directoryview;
@@ -153,7 +155,8 @@ public:
     SWITCHER_IMAGEVIEW,
     SWITCHER_SHARKVIEW,
     SWITCHER_SOUNDVIEW,
-    SWITCHER_DIALOGVIEW
+    SWITCHER_DIALOGVIEW,
+    SWITCHER_MODELVIEW
   };
 
 private:

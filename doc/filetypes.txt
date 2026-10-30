@@ -1,19 +1,19 @@
 Bundels
 =======
 
-.bun - containing texture filenames and probally vertex data (3d models?)
+.bun - texture filenames, vertex data and index data of all the models of a location, see bundle-format.txt
 
 Shark3D Snake Binary
 ====================
 .cdr - shark3d_snake_binary, used in 'data/scripts/' and 'data/interactiontables/'
 .sgr - shark3d_snake_binary, used for shaders, contained in directory 'art/shaders/prog/...'
 .sdr - shark3d_snake_binary, used for shaders, contained in directory 'art/locations/.../shader'
-.skr - shark3d_snake_binary, shark3d_std_bone_skel_runtime
-.sir - shark3d_snake_binary, probally 3d script? see format, shark3d_std_inst_3x0
+.skr - shark3d_snake_binary, shark3d_std_bone_skel_runtime, see bundle-format.txt
+.sir - shark3d_snake_binary, node hierarchy of a model, format shark3d_std_inst_3x0, see bundle-format.txt
 .svr - shark3d_snake_binary, shark3d_runtime_model_pvs, seldomly used
 .ikr - shark3d_snake_binary, tlj2_ikr_0
 .rgr - shark3d_snake_binary, funcom_bone_rig_runtime
-.spr - shark3d_snake_binary
+.spr - shark3d_snake_binary, paths, see bundle-format.txt
 
 Lip Sync Data:
 ==============
@@ -21,7 +21,7 @@ Lip Sync Data:
 
 TLJ Bone
 ========
-.bpr - tljbone
+.bpr - tljbone, see bundle-format.txt
 
 Shader Scripts:
 ===============
@@ -41,7 +41,7 @@ Unknown:
 .dat - binary data for the lights, used in art/lights/
 .ikr_data - random binary data, most likly connected to .ikr
 .skr_data
-.smr - references to those files are found, but the files themself not, probally an uncompiled form of other files
+.smr - references to those files are found, but the files themself not, they are the entries in the .bun files
 
 Missdetections?:
 ================

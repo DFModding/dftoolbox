@@ -71,6 +71,7 @@
 #include "shark_view.hpp"
 #include "sound_view.hpp"
 #include "image_view.hpp"
+#include "model_view.hpp"
 #include "progress_dialog.hpp"
 #include "savegame.hpp"
 #include "dialog_view.hpp"
@@ -116,6 +117,81 @@ TreeItem* append_item(QTreeWidgetItem* parent, const std::string& text,
   if (parent)
     parent->addChild(item);
   return item;
+}
+
+/** Remove the leading directory \a prefix from \a path, if it has it */
+std::string strip_directory(const std::string& path, const std::string& prefix)
+{
+  if (path == prefix)
+    return "";
+  else if (path.compare(0, prefix.size() + 1, prefix + "/") == 0)
+    return path.substr(prefix.size() + 1);
+  else
+    return path;
+}
+
+std::string join_directory(const std::string& lhs, const std::string& rhs)
+{
+  return rhs.empty() ? lhs : lhs + "/" + rhs;
+}
+
+/** Get the directory of \a entry in the 'by type' tree, \a directory
+    is where the file is in the pak. Empty if it doesn't belong there,
+    which is the case for files that are only of use to other files,
+    like .lip and .ikr. */
+std::string get_category(const PakFileEntry& entry, const std::string& directory,
+                         const std::string& pak)
+{
+  const std::string& name = entry.fullname;
+  const std::string art   = strip_directory(directory, "art");
+
+  std::string category;
+  if (entry.type == FILETYPE_DDS || entry.type == FILETYPE_STFU4)
+    {
+      category = join_directory("textures", art);
+    }
+  else if (entry.type == FILETYPE_WAV || entry.type == FILETYPE_MP3)
+    {
+      const std::string voice = strip_directory(directory, "sound/voice-over");
+      const std::string music = strip_directory(directory, "sound/music");
+
+      if (voice != directory)
+        {
+          // All languages use the same filenames, vox_en_00.pak -> en
+          const std::string lang = tolowercase(pak).compare(0, 4, "vox_") == 0 ? pak.substr(4, 2) : "unknown";
+          category = join_directory("voice/" + lang, voice);
+        }
+      else if (music != directory)
+        {
+          category = join_directory("music", music);
+        }
+      else
+        {
+          category = join_directory("sound effects", strip_directory(directory, "sound"));
+        }
+    }
+  else if (entry.type == FILETYPE_BUNDLE || has_suffix(name, ".sir"))
+    {
+      category = join_directory("3d models", art);
+    }
+  else if (entry.type == FILETYPE_TLJBONE || has_suffix(name, ".bpr"))
+    {
+      category = join_directory("animations", art);
+    }
+  else if (entry.type == FILETYPE_LOCALISATION)
+    {
+      category = "localization";
+    }
+  else if (has_suffix(name, ".sdr") || has_suffix(name, ".sgr") || has_suffix(name, ".scr"))
+    {
+      category = join_directory("shaders", strip_directory(art, "shaders"));
+    }
+  else if (has_suffix(name, ".cdr"))
+    {
+      category = join_directory("scripts", strip_directory(strip_directory(directory, "data"), "scripts"));
+    }
+
+  return category.empty() ? "" : "by type/" + category;
 }
 
 } // namespace
@@ -262,6 +338,11 @@ DFToolBoxWindow::DFToolBoxWindow()
   switcher->addWidget(soundview);
   dialogview    = new DialogView(switcher, this, this);
   switcher->addWidget(dialogview);
+  modelview     = new ModelView(switcher, this);
+  switcher->addWidget(modelview);
+
+  modelview->set_show_source([this]{ show_switcher(SWITCHER_SHARKVIEW); });
+  sharkview->set_show_model([this]{ show_switcher(SWITCHER_MODELVIEW); });
 
   show_switcher(SWITCHER_ICONVIEW);
 
@@ -519,6 +600,15 @@ DFToolBoxWindow::build_trees()
                     append_item(item, filepart + " (" + *pak + ")",
                                 Icon::unknown_document, dfentry);
                     entry_of(item)->get_dir().children.push_back(dfentry);
+
+                    const std::string category = get_category(*i->second, pathpart, *pak);
+                    if (!category.empty())
+                      {
+                        QTreeWidgetItem* category_item = add_directory(category, topmost);
+                        append_item(category_item, filepart + " (" + *pak + ")",
+                                    Icon::unknown_document, dfentry);
+                        entry_of(category_item)->get_dir().children.push_back(dfentry);
+                      }
                   }
               }
           }
@@ -745,6 +835,7 @@ DFToolBoxWindow::show_switcher(int i)
   soundview->show_toolbar(false);
   dialogview->show_toolbar(false);
   directoryview->show_toolbar(false);
+  modelview->show_toolbar(false);
 
   switch(i)
     {
@@ -765,6 +856,10 @@ DFToolBoxWindow::show_switcher(int i)
       break;
     case SWITCHER_DIALOGVIEW:
       dialogview->show_toolbar(true);
+      break;
+
+    case SWITCHER_MODELVIEW:
+      modelview->show_toolbar(true);
       break;
     }
 
@@ -920,8 +1015,29 @@ DFToolBoxWindow::display(QTreeWidgetItem* item)
               if (data_manager.extract(entry->get_pak(), get_temp_path() + "tmp.dat"))
                 {
                   sharkview->set_shark(get_temp_path() + "tmp.dat");
-                  show_switcher(SWITCHER_SHARKVIEW);
+
+                  bool has_model = false;
+                  if (has_suffix(entry->get_pak().fullname, ".sir"))
+                    {
+                      try {
+                        has_model = modelview->set_sir(entry->get_pak().fullname, entry->get_pak().pakfile);
+                      } catch(std::exception& err) {
+                        // .sir files aren't required to come with geometry
+                        std::cout << err.what() << std::endl;
+                      }
+                    }
+                  sharkview->show_model_action(has_model);
+                  show_switcher(has_model ? SWITCHER_MODELVIEW : SWITCHER_SHARKVIEW);
                 }
+            }
+            break;
+
+          case FILETYPE_BUNDLE:
+            {
+              std::string name = entry->get_pak().filename;
+              name = name.substr(0, name.rfind('.'));
+              modelview->set_bundle(name, entry->get_pak().pakfile);
+              show_switcher(SWITCHER_MODELVIEW);
             }
             break;
 

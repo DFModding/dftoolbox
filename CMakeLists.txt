@@ -50,7 +50,7 @@ option(WERROR "Turn warnings into errors" OFF)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(SDL REQUIRED sdl IMPORTED_TARGET)
 pkg_search_module(SDL_MIXER REQUIRED SDL_mixer IMPORTED_TARGET)
-find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets OpenGL OpenGLWidgets)
 
 add_library(libdftoolbox STATIC
   "src/util.cpp"
@@ -61,7 +61,12 @@ add_library(libdftoolbox STATIC
   "src/data_manager.cpp"
   "src/shark3d.cpp"
   "src/shark3d_nodes.cpp"
-  "src/config.cpp")
+  "src/config.cpp"
+  "src/progress_logger.cpp"
+  "src/dreamfall_file_entry.cpp"
+  "src/model_animation.cpp"
+  "src/model_bundle.cpp"
+  "src/model_scene.cpp")
 target_compile_definitions(libdftoolbox PUBLIC "USE_SDL")
 
 add_library(tinygettext STATIC src/tinygettext.cpp)
@@ -105,6 +110,9 @@ target_link_libraries(dftool-xrc libdftoolbox)
 add_executable(dftool-cir "src/cir.cpp")
 target_link_libraries(dftool-cir libdftoolbox)
 
+add_executable(dftool-model "src/model_main.cpp")
+target_link_libraries(dftool-model libdftoolbox)
+
 add_executable(dfmodtool
   "src/dfmodactivator.cpp"
   "src/dfmodactivator.hpp"
@@ -112,7 +120,6 @@ add_executable(dfmodtool
   "src/icons.cpp"
   "src/progress_dialog.cpp"
   "src/progress_dialog.hpp"
-  "src/progress_logger.cpp"
   # + (cross and ['dfmodtool-res.o'] or []),
   )
 target_link_libraries(dfmodtool PRIVATE
@@ -133,6 +140,7 @@ install(TARGETS
   dftool-xmg
   dftool-xrc
   dftool-cir
+  dftool-model
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_executable(dftoolbox
@@ -142,13 +150,14 @@ add_executable(dftoolbox
   "src/shark_view.hpp"
   "src/image_view.cpp"
   "src/image_view.hpp"
+  "src/model_view.cpp"
+  "src/model_view.hpp"
   "src/dialog_view.cpp"
   "src/dialog_view.hpp"
   "src/searchbar.cpp"
   "src/searchbar.hpp"
   "src/export_dialog.cpp"
   "src/export_dialog.hpp"
-  "src/dreamfall_file_entry.cpp"
   "src/directory_view.cpp"
   "src/directory_view.hpp"
   "src/sound_view.cpp"
@@ -158,12 +167,13 @@ add_executable(dftoolbox
   "src/icons.cpp"
   "src/progress_dialog.cpp"
   "src/progress_dialog.hpp"
-  "src/progress_logger.cpp"
   # (cross and ['dftoolbox-res.o'] or []),
   )
 target_link_libraries(dftoolbox PRIVATE
   libdftoolbox
   Qt6::Widgets
+  Qt6::OpenGL
+  Qt6::OpenGLWidgets
   PkgConfig::SDL
   PkgConfig::SDL_MIXER)
 install_with_wrapper(dftoolbox)

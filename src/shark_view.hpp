@@ -25,10 +25,12 @@
 #ifndef HEADER_SHARK_VIEW_HPP
 #define HEADER_SHARK_VIEW_HPP
 
+#include <functional>
 #include <string>
 
 #include <QWidget>
 
+class QAction;
 class QMainWindow;
 class QPlainTextEdit;
 class QToolBar;
@@ -37,7 +39,10 @@ class SharkView : public QWidget
 {
 private:
   QToolBar*       toolbar;
+  QAction*        model_action;
   QPlainTextEdit* text;
+
+  std::function<void ()> show_model;
 
   /** The text as given to set_text(), so that saving it writes
       exactly the same bytes */
@@ -48,6 +53,12 @@ public:
 
   void set_shark(const std::string& filename);
   void set_text(const std::string& text);
+
+  /** \a callback gets called when the user asks for the 3D view */
+  void set_show_model(std::function<void ()> callback);
+
+  /** The 3D view is available for the current file */
+  void show_model_action(bool t);
 
   void on_toggle_wrap();
   void on_save_text();

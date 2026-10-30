@@ -52,6 +52,10 @@ SharkView::SharkView(QWidget* parent, QMainWindow* mainwindow)
   connect(add_tool_action(toolbar, Icon::save_file, "Save Shark3D as text", "Save Shark3D as text"),
           &QAction::triggered, this, [this]{ on_save_text(); });
 
+  model_action = toolbar->addAction("3D");
+  model_action->setVisible(false);
+  connect(model_action, &QAction::triggered, this, [this]{ if (show_model) show_model(); });
+
   QVBoxLayout* vbox = new QVBoxLayout(this);
   vbox->setContentsMargins(0, 0, 0, 0);
   vbox->setSpacing(0);
@@ -65,8 +69,21 @@ SharkView::SharkView(QWidget* parent, QMainWindow* mainwindow)
 }
 
 void
+SharkView::set_show_model(std::function<void ()> callback)
+{
+  show_model = callback;
+}
+
+void
+SharkView::show_model_action(bool t)
+{
+  model_action->setVisible(t);
+}
+
+void
 SharkView::set_text(const std::string& str)
 {
+  model_action->setVisible(false);
   raw_text = str;
   text->setPlainText(QString::fromStdString(str));
 }

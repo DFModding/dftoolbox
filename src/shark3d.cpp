@@ -69,7 +69,7 @@ Shark3D::parse_section(std::istream& in)
   for(int i = 0; i < num; ++i)
     {
       std::string name = read_string(in);
-      char code = in.get();
+      unsigned char code = in.get();
       switch(code)
         {
         case 0x0: // nil

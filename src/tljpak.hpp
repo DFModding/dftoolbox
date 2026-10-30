@@ -159,6 +159,9 @@ struct TLJPak
 
   void extract(int file_entry, const std::string& outfile);
 
+  /** Reads the content of \a file_entry into \a data */
+  void read(int file_entry, std::vector<char>& data);
+
   void print_nametable();
   void print_indextable();
   void print_file_table();

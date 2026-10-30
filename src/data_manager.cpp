@@ -172,6 +172,57 @@ DataManager::extract(const PakFileEntry& entry, const std::string& outfile)
     }
 }
 
+bool
+DataManager::read(const std::string& location, const std::string& pak, std::vector<char>& data)
+{
+  Paks::iterator preferred = paks.find(pak);
+  if (preferred != paks.end())
+    {
+      int at = preferred->second->lookup(location);
+      if (at != -1)
+        {
+          preferred->second->read(at, data);
+          return true;
+        }
+    }
+
+  for(Paks::iterator i = paks.begin(); i != paks.end(); ++i)
+    {
+      int at = i->second->lookup(location);
+      if (at != -1)
+        {
+          i->second->read(at, data);
+          return true;
+        }
+    }
+  return false;
+}
+
+std::vector<std::string>
+DataManager::find_files(const std::string& prefix, const std::string& suffix) const
+{
+  std::set<std::string> result;
+
+  // Filenames in the paks only exist after scan_paks()
+  for(std::vector<std::string>::const_iterator i = filelist.begin(); i != filelist.end(); ++i)
+    {
+      const std::string name = tolowercase(*i);
+      if (name.compare(0, prefix.size(), prefix) == 0 && has_suffix(name, suffix))
+        result.insert(name);
+    }
+
+  for(Paks::const_iterator i = paks.begin(); i != paks.end(); ++i)
+    {
+      const std::vector<FileEntry>& files = i->second->files;
+      for(std::vector<FileEntry>::const_iterator j = files.begin(); j != files.end(); ++j)
+        {
+          if (j->pathname.compare(0, prefix.size(), prefix) == 0 && has_suffix(j->pathname, suffix))
+            result.insert(j->pathname);
+        }
+    }
+  return std::vector<std::string>(result.begin(), result.end());
+}
+
 FileType
 DataManager::get_type(const std::string& pathname)
 {
