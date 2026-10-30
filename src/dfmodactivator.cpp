@@ -385,6 +385,8 @@ FXIMPLEMENT(DFModActivatorWindow, FXMainWindow, DFModActivatorWindowMap, ARRAYNU
 
 int main(int argc,char** argv)
 {
+  parse_args(argc, argv);
+
   std::ifstream in((get_config_path() + "dreamfall_path.txt").c_str());
   if (in)
     {
@@ -410,7 +412,14 @@ int main(int argc,char** argv)
 
   std::vector<char> icon_data;
   if (file_readbytes(get_data_path() + "icons/enabled.gif", icon_data))
-    ok_icon = new FXGIFIcon(&application, &*icon_data.begin());
+    {
+      ok_icon = new FXGIFIcon(&application, &*icon_data.begin());
+    }
+  else
+    {
+      std::cout << "Error: Couldn't open " << get_data_path() << "icons/enabled.gif" << std::endl;
+      ok_icon = new FXGIFIcon(&application, okicon_data);
+    }
 
   ok_icon->create();
   cancel_icon->create();

@@ -19,7 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 cmake_minimum_required(VERSION 3.15)
-project(dftoolbox VERSION 0.0.0)
+project(dftoolbox VERSION 0.1.0)
 
 include(GNUInstallDirs)
 
@@ -30,7 +30,7 @@ function(install_with_wrapper TARGET)
   file(WRITE ${CMAKE_BINARY_DIR}/${TARGET}.sh
     "#!/bin/sh\n"
     "exec \"${CMAKE_INSTALL_FULL_LIBEXECDIR}/${TARGET}\""
-    " --datadir \"${CMAKE_INSTALL_FULL_DATADIR}/${TARGET}\" \"$@\"\n")
+    " --datadir \"${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}\" \"$@\"\n")
 
   install(PROGRAMS
     ${CMAKE_BINARY_DIR}/${TARGET}.sh
@@ -60,44 +60,44 @@ target_compile_definitions(libdftoolbox PUBLIC "USE_SDL")
 
 add_library(tinygettext STATIC src/tinygettext.cpp)
 
-add_executable(dialog "src/dialog.cpp")
-target_link_libraries(dialog libdftoolbox tinygettext)
+add_executable(dftool-dialog "src/dialog.cpp")
+target_link_libraries(dftool-dialog libdftoolbox tinygettext)
 
-add_executable(extract "src/extract.cpp")
-target_link_libraries(extract libdftoolbox)
+add_executable(dftool-extract "src/extract.cpp")
+target_link_libraries(dftool-extract libdftoolbox)
 
-add_executable(bundle "src/bundle.cpp")
-target_link_libraries(bundle libdftoolbox)
+add_executable(dftool-bundle "src/bundle.cpp")
+target_link_libraries(dftool-bundle libdftoolbox)
 
-add_executable(dialog-fix "src/dialog-fix.cpp")
-target_link_libraries(dialog-fix libdftoolbox)
+add_executable(dftool-dialog-fix "src/dialog-fix.cpp")
+target_link_libraries(dftool-dialog-fix libdftoolbox)
 
-add_executable(savegame2tga "src/savegame2tga.cpp")
-target_link_libraries(savegame2tga libdftoolbox)
+add_executable(dftool-savegame2tga "src/savegame2tga.cpp")
+target_link_libraries(dftool-savegame2tga libdftoolbox)
 
-add_executable(insert "src/insert.cpp")
-target_link_libraries(insert libdftoolbox)
+add_executable(dftool-insert "src/insert.cpp")
+target_link_libraries(dftool-insert libdftoolbox)
 
-add_executable(ddstool "src/ddstool.cpp")
-target_link_libraries(ddstool libdftoolbox)
+add_executable(dftool-ddstool "src/ddstool.cpp")
+target_link_libraries(dftool-ddstool libdftoolbox)
 
-add_executable(shark3d "src/shark3d_main.cpp")
-target_link_libraries(shark3d libdftoolbox)
+add_executable(dftool-shark3d "src/shark3d_main.cpp")
+target_link_libraries(dftool-shark3d libdftoolbox)
 
-add_executable(stfu4 "src/stfu4.cpp")
-target_link_libraries(stfu4 libdftoolbox)
+add_executable(dftool-stfu4 "src/stfu4.cpp")
+target_link_libraries(dftool-stfu4 libdftoolbox)
 
-add_executable(xarc "src/xarc.cpp")
-target_link_libraries(xarc libdftoolbox)
+add_executable(dftool-xarc "src/xarc.cpp")
+target_link_libraries(dftool-xarc libdftoolbox)
 
-add_executable(xmg "src/xmg.cpp")
-target_link_libraries(xmg libdftoolbox)
+add_executable(dftool-xmg "src/xmg.cpp")
+target_link_libraries(dftool-xmg libdftoolbox)
 
-add_executable(xrc "src/xrc.cpp")
-target_link_libraries(xrc libdftoolbox)
+add_executable(dftool-xrc "src/xrc.cpp")
+target_link_libraries(dftool-xrc libdftoolbox)
 
-add_executable(cir "src/cir.cpp")
-target_link_libraries(cir libdftoolbox)
+add_executable(dftool-cir "src/cir.cpp")
+target_link_libraries(dftool-cir libdftoolbox)
 
 add_executable(dfmodtool
   "src/dfmodactivator.cpp"
@@ -132,10 +132,29 @@ target_link_libraries(dftoolbox PRIVATE
   PkgConfig::SDL
   PkgConfig::SDL_MIXER)
 
+install(TARGETS
+  dftool-dialog
+  dftool-extract
+  dftool-bundle
+  dftool-dialog-fix
+  dftool-savegame2tga
+  dftool-insert
+  dftool-ddstool
+  dftool-shark3d
+  dftool-stfu4
+  dftool-xarc
+  dftool-xmg
+  dftool-xrc
+  dftool-cir
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 install_with_wrapper(dftoolbox)
+install_with_wrapper(dfmodtool)
 
 install(DIRECTORY icons DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
   PATTERN "*.gif")
+
+install(DIRECTORY mods DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
 install(FILES df-directory.txt  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 

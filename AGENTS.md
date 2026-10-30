@@ -10,7 +10,7 @@ DFToolBox provides C++ tools for inspecting and modifying Dreamfall game data. `
 - `cmake -S . -B build` configures an out-of-source build. Install CMake 3.15+, pkg-config, FOX 1.6, SDL 1.2, and SDL_mixer first; pkg-config must resolve `fox`, `sdl`, and `SDL_mixer`.
 - `cmake --build build -j` builds the libraries, GUI applications, and command-line tools.
 - `./build/dftoolbox --datadir .` launches the GUI with repository assets; run from the repository root.
-- `./build/shark3d path/to/file.sdr > /tmp/file.txt` exercises Shark3D decompilation.
+- `./build/dftool-shark3d path/to/file.sdr > /tmp/file.txt` exercises Shark3D decompilation.
 
 `SConstruct` and `Makefile` are legacy build paths. Prefer CMake for new build changes.
 
