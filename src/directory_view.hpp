@@ -25,41 +25,49 @@
 #ifndef HEADER_DIRECTORY_VIEW_HPP
 #define HEADER_DIRECTORY_VIEW_HPP
 
-#include "fx.h"
+#include <vector>
+
+#include <QWidget>
 
 class DFToolBoxWindow;
 class DreamfallFileEntry;
+class QItemSelectionModel;
+class QListView;
+class QMainWindow;
+class QStackedWidget;
+class QStandardItemModel;
+class QToolBar;
+class QTreeView;
+class QTreeWidgetItem;
 
 /** */
-class DirectoryView : public FXVerticalFrame
+class DirectoryView : public QWidget
 {
-  FXDECLARE(DirectoryView);
+public:
+  enum Mode { BIG_ICONS, MINI_ICONS, DETAILED };
+
 private:
-  FXTreeItem* item;
-  DFToolBoxWindow* dftoolbox;
-  FXIconList*  iconlist;
-  FXToolBar* toolbar;
+  DFToolBoxWindow*     dftoolbox;
+  QToolBar*            toolbar;
+  QStandardItemModel*  model;
+  QItemSelectionModel* selection;
+  QStackedWidget*      stack;
+  QTreeView*           detailview;
+  QListView*           listview;
+  Mode                 mode;
+
+  QTreeWidgetItem* tree_item_of(const QModelIndex& index) const;
 
 public:
-  DirectoryView() {}
-  DirectoryView(FXComposite* parent, FXComposite* dock, DFToolBoxWindow* dftoolbox);
+  DirectoryView(QWidget* parent, QMainWindow* mainwindow, DFToolBoxWindow* dftoolbox);
 
-  void change_directory(FXTreeItem* item);
+  void change_directory(QTreeWidgetItem* item);
 
-  long onCmdIconListBigIcons (FXObject*, FXSelector,void*);
-  long onCmdIconListMiniIcons(FXObject*, FXSelector,void*);
-  long onCmdIconListDetailed (FXObject*, FXSelector,void*);
-  long onIconDblClick(FXObject* sender, FXSelector, void* data);
+  void set_mode(Mode mode_);
+  void on_icon_double_click(const QModelIndex& index);
 
-  void show_toolbar(bool t) { if (t) toolbar->show(); else toolbar->hide(); }
+  void show_toolbar(bool t);
   void get_selection(std::vector<DreamfallFileEntry*>& lst);
-
-  enum {
-    ID_ICONLIST_BIG_ICONS = FXVerticalFrame::ID_LAST,
-    ID_ICONLIST_MINI_ICONS,
-    ID_ICONLIST_DETAILED,
-    ID_ICON_DOUBLECLICKED,
-  };
 };
 
 #endif
