@@ -168,7 +168,7 @@ let
     Portable mode: create a file portable.txt next to dftoolbox.exe.
 
     Licence: GPL-3.0-or-later (COPYING.txt).
-    Source: https://gitlab.com/DFModding/dftoolbox
+    Source: https://github.com/DFModding/dftoolbox
     EOR
     sed -i 's/^    //; s/$/\r/' $out/README.txt
   '';

@@ -51,7 +51,7 @@
 
           meta = {
             description = "Inspect and modify the data files of the game Dreamfall";
-            homepage = "https://gitlab.com/DFModding/dftoolbox";
+            homepage = "https://github.com/DFModding/dftoolbox";
             license = lib.licenses.gpl3Plus;
             mainProgram = "dftoolbox";
           };

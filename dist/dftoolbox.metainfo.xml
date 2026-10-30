@@ -22,10 +22,10 @@
     <name>Ingo Ruhnke</name>
   </developer>
   <launchable type="desktop-id">dftoolbox.desktop</launchable>
-  <url type="homepage">https://gitlab.com/DFModding/dftoolbox</url>
+  <url type="homepage">https://github.com/DFModding/dftoolbox</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://gitlab.com/DFModding/dftoolbox/-/raw/master/dist/screenshot.png</image>
+      <image>https://raw.githubusercontent.com/DFModding/dftoolbox/master/dist/screenshot.png</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
