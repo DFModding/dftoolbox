@@ -50,6 +50,7 @@
 #include <QStatusBar>
 #include <QToolBar>
 #include <QToolButton>
+#include <QTimer>
 #include <QTreeWidget>
 #include <QVBoxLayout>
 
@@ -402,8 +403,10 @@ DFToolBoxWindow::DFToolBoxWindow()
         }
     }
 
+  // Waits for the event loop, so that the progress dialog doesn't end
+  // up behind this window
   if (!dreamfall_path.empty())
-    init();
+    QTimer::singleShot(0, this, [this]{ init(); });
 }
 
 DFToolBoxWindow::~DFToolBoxWindow()
