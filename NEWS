@@ -10,6 +10,7 @@ DFToolBox
 - the tree has a right-click menu to export files, as they are or
   converted: textures to PNG, Shark3D files, localization and savegames
   to text
+- STFU4 normal maps can be converted to PNG, see doc/stfu-format.txt
 - the export dialog can convert images and write Shark3D files unchanged
 - dftool-insert looks for dreamfall-mods/ in the user data directory
   first, see the README

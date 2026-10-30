@@ -1,0 +1,90 @@
+STFU
+====
+
+Normal maps, nearly all of them are the *_nml.png files. Worked out from
+the 2569 files in the paks, of which 1661 are different. All little
+endian. The code for it is in src/stfu.cpp.
+
+
+File
+----
+
+  char[4]  "STFU"
+  uint32   0x44229A34, the same in all files. This is where the "4" of
+           the name STFU4 comes from. As a unix time it is 2006-03-23.
+  uint32   0
+  uint32   1, DreamView and DreamfallTLJViewer see this as a version
+  uint32   width
+  uint32   height
+  uint32   number of mipmap levels, 1 or the full chain
+  uint32   unknown, 0 in 1629 of the 1661 files, else 1-5
+
+The levels follow, largest first:
+
+  uint32   size of the data
+  uint32   width
+  uint32   height
+  uint32   blocks per row, max(1, width / 4)
+  data
+
+With blocks_y = max(1, height / 4) the size of the data is
+
+  2 * width * height + 2 * blocks_x * blocks_y
+
+This holds for all 15580 levels.
+
+
+Data
+----
+
+A level is a list of bands, one for every row of blocks: blocks_x
+uint16 blocks, followed by height / blocks_y rows of width uint16
+pixels. A block belongs to the 4x4 pixels it is next to. Only the
+largest level was looked at in detail, the size of the bands is the same
+in the others, as far as DreamView and DreamfallTLJViewer go.
+
+  pixel    bits 15-8  X
+           bits 7-3   Y, see below
+           bits 2-0   alpha index
+  block    bits 7-0   alpha endpoint 0
+           bits 15-8  alpha endpoint 1
+
+Alpha is the alpha channel of DXT5 with its parts spread over the block
+and the pixels. 369 files have no alpha: all blocks are 0xffff, all
+indices 0. What it means isn't known. It is smooth and shows eyes and
+lips on faces, but it is not a height map.
+
+X is 129 without a slope. On average it is 0 along a row of pixels,
+which is what a slope in X does, and in 97% of the files the rows vary
+less than the columns.
+
+Y is not bits 7-3 as they are. They depend on X: for every value of X
+there is a value of the bits that stands for no slope, and the distance
+to it is Y, wrapping around at 32. The value for each X is measured, the
+table is in src/stfu.cpp. Why it looks that random isn't known, there
+might be a formula behind it that gives more precise results. What
+speaks for the table:
+
+- fitted on 800 files, for 456 others the result shows the opposite of
+  X, the columns vary less than the rows in 95% of them
+- 98% of the most common values in a single file are within 2 of the
+  table
+- averaging a level predicts Y of the next one, with a correlation of
+  0.66 (0.95 for X), which the table was not fitted to
+- slopes of a surface are curl free: dX/dy = dY/dx. This holds with a
+  correlation of 0.57 and, using errors in both variables, says that a
+  step of Y is worth 8.1 of X, the 8 of a 5 bit value in place of an 8
+  bit one. The sign is the same in 82% of the files.
+
+The direction of the normals, which of them point up, wasn't checked
+against the game.
+
+
+Other tools
+-----------
+
+DreamView and DreamfallTLJViewer read the same layout, but take bits
+15-8 as a height and calculate normals from it, and use the average of
+the two endpoints of a block as alpha.
+
+# EOF #

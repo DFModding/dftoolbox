@@ -39,6 +39,7 @@ int main()
   check(make_pak(FILETYPE_DDS, "foo.DDS").get_export_name(EXPORT_ORIGINAL), "foo.DDS");
 
   check(make_pak(FILETYPE_STFU4, "foo_nml.png").get_export_name(EXPORT_ORIGINAL), "foo_nml.png.stfu4");
+  check(make_pak(FILETYPE_STFU4, "foo_nml.png").get_export_name(EXPORT_PNG), "foo_nml.png");
 
   const DreamfallFileEntry shark = make_pak(FILETYPE_SHARK3D, "foo.sdr");
   check(shark.get_export_name(EXPORT_ORIGINAL), "foo.sdr");

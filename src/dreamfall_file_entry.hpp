@@ -151,7 +151,7 @@ public:
   /** The filename for an export to \a format, Dreamfall stores
       textures that really are DDS as .png, so the original of foo.png
       is foo.png.dds and only its conversion is foo.png, the same goes
-      for STFU4 textures which have no conversion */
+      for STFU4 textures */
   std::string get_export_name(ExportFormat format) const;
 
   // Function for placing the file entry in the tree

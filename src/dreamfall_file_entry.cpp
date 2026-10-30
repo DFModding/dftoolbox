@@ -96,7 +96,7 @@ DreamfallFileEntry::get_export_formats() const
     {
     case PAK_FILE_ENTRY:
       formats.push_back(EXPORT_ORIGINAL);
-      if (pak.type == FILETYPE_DDS)
+      if (pak.type == FILETYPE_DDS || pak.type == FILETYPE_STFU4)
         formats.push_back(EXPORT_PNG);
       else if (pak.type == FILETYPE_SHARK3D || pak.type == FILETYPE_LOCALISATION)
         formats.push_back(EXPORT_TEXT);

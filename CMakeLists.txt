@@ -71,7 +71,8 @@ add_library(libdftoolbox STATIC
   "src/dreamfall_file_entry.cpp"
   "src/model_animation.cpp"
   "src/model_bundle.cpp"
-  "src/model_scene.cpp")
+  "src/model_scene.cpp"
+  "src/stfu.cpp")
 set_property(SOURCE "src/system.cpp" APPEND PROPERTY COMPILE_DEFINITIONS
   DFTOOLBOX_VERSION="${PROJECT_VERSION_FULL}"
   DFTOOLBOX_INSTALL_DATADIR="${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}")
@@ -225,6 +226,11 @@ if(BUILD_TESTING)
   target_include_directories(test-export-name PRIVATE src)
   target_link_libraries(test-export-name libdftoolbox)
   add_test(NAME export-name COMMAND test-export-name)
+
+  add_executable(test-stfu "tests/test_stfu.cpp")
+  target_include_directories(test-stfu PRIVATE src)
+  target_link_libraries(test-stfu libdftoolbox)
+  add_test(NAME stfu COMMAND test-stfu)
 
   add_test(NAME dftoolbox-version COMMAND dftoolbox --version)
   string(REPLACE "+" "\\+" _version_regex "${PROJECT_VERSION_FULL}")

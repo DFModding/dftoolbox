@@ -59,6 +59,7 @@
 #include "config.hpp"
 #include "util.hpp"
 #include "shark3d.hpp"
+#include "stfu.hpp"
 #include "dftoolbox.hpp"
 #include "progress_logger.hpp"
 #include "export_dialog.hpp"
@@ -1399,6 +1400,14 @@ DFToolBoxWindow::get_export_image(DreamfallFileEntry& entry)
 
   const std::vector<char> data = read_pak_file(entry.get_pak());
   std::istringstream in(std::string(data.begin(), data.end()), std::ios::binary);
+
+  if (entry.get_pak().type == FILETYPE_STFU4)
+    {
+      const StfuImage image = read_stfu(in);
+      return QImage(image.rgba.data(), image.width, image.height,
+                    image.width * 4, QImage::Format_RGBA8888).copy();
+    }
+
   return read_dds_image(in);
 }
 

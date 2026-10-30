@@ -69,7 +69,8 @@ only support other files, like `.lip`, are not listed there.
 
 Right-click a file in the tree of the `dftoolbox` GUI to export it.
 "Export Original" writes the data as it is stored, "Export as PNG"
-converts textures (and the screenshot of a savegame), "Export as Text"
+converts textures, normal maps (with the alpha of the texture in the
+PNG's alpha channel) and the screenshot of a savegame, "Export as Text"
 converts Shark3D files, `localization.dat` and the parts of a
 savegame. Dreamfall calls textures `.png` although they are DDS files,
 so their original gets the name `foo.png.dds`.
@@ -140,10 +141,10 @@ shader and hasn't been seen in the data directly.
 
 ### Partly understood
 
-- STFU4 (2,214 files, nearly all normal maps): `dftool-stfu4` is still
-  an experiment. The layout looks like a quarter size bump plane plus
-  blocks of normal data. DreamfallTLJViewer has a parser for it which
-  has yet to be studied.
+- STFU4 (2,569 files, nearly all normal maps): the layout is known,
+  Y of the normals goes through a table measured from the files, see
+  `doc/stfu-format.txt`. `dftool-stfu4` is still an old experiment, the
+  GUI can export them to PNG.
 - `.bun`: a few header fields are unlabelled, nothing that gets drawn
   depends on them.
 
