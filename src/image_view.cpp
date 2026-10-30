@@ -83,12 +83,9 @@ ImageView::set_image(const std::string& filename)
   DDS dds(in);
   std::cout << "DDS: " << dds.width << "x" << dds.height << std::endl;
 
-  // FIXME: is this ok or should we use malloc()?
-  FXColor* image_data = static_cast<FXColor*>(malloc(sizeof(FXColor)*dds.get_data().size()/4));
-
-  memcpy(image_data,
-         reinterpret_cast<const FXColor*>(&*dds.get_data().begin()),
-         dds.get_data().size());
+  // FOX frees IMAGE_OWNED data with free(), so it has to come from malloc()
+  FXColor* image_data = static_cast<FXColor*>(malloc(dds.get_data().size()));
+  memcpy(image_data, &*dds.get_data().begin(), dds.get_data().size());
 
   image = new FXImage(getApp(), image_data,
                       IMAGE_KEEP|IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED, dds.width, dds.height);
@@ -110,7 +107,9 @@ ImageView::cleanup()
       delete *i;
       *i = 0;
     }
+  imageview->setImage(0);
   delete image;
+  image = 0;
 }
 
 void
@@ -146,6 +145,9 @@ ImageView::set_save_image(const std::string& filename)
 void
 ImageView::set_scale(int scale_)
 {
+  if (!image)
+    return;
+
   if (scale_ >= -SCALE_LIMIT && scale_ <= SCALE_LIMIT)
     {
       float factor = powf(2, scale_);
@@ -164,8 +166,8 @@ ImageView::set_scale(int scale_)
           else
             {
               // FIXME: this is slow, but FXImageView doesn't support scaling of the view
-              FXColor* newdata = new FXColor[width*height*4];
-              memcpy(newdata, data, width*height*4);
+              FXColor* newdata = static_cast<FXColor*>(malloc(sizeof(FXColor)*width*height));
+              memcpy(newdata, data, sizeof(FXColor)*width*height);
               scaled_images[scale+SCALE_LIMIT] = new FXImage(getApp(), newdata,
                                                              IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED,
                                                              width, height);

@@ -32,7 +32,13 @@
 
 void parse_args(int argc, char** argv);
 std::string get_data_path();
+/** Directory for configuration files: $XDG_CONFIG_HOME/dftoolbox/ on
+    Linux, %APPDATA%/dftoolbox/ on Windows, created if missing */
 std::string get_config_path();
+
+/** Directory for regeneratable data: $XDG_CACHE_HOME/dftoolbox/ on
+    Linux, %LOCALAPPDATA%/dftoolbox/ on Windows, created if missing */
+std::string get_cache_path();
 std::string get_temp_path();
 std::string get_exe_path();
 
@@ -63,6 +69,9 @@ void find_files(const std::string& pathname, std::vector<std::string>& lst);
 
 void file_copy(const std::string& from, const std::string& to);
 bool file_exists(const std::string& pathname);
+
+/** Returns the size and modification time of \a pathname, false on error */
+bool file_stat(const std::string& pathname, int64_t& size, int64_t& mtime);
 std::vector<char> file_read(const std::string& filename);
 std::vector<std::string> file_readlines(const std::string& filename);
 

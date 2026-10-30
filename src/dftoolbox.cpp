@@ -38,6 +38,7 @@
 #include "dds.hpp"
 #include "data_manager.hpp"
 #include "system.hpp"
+#include "config.hpp"
 #include "util.hpp"
 #include "shark3d.hpp"
 #include "dftoolbox.hpp"
@@ -216,6 +217,7 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
   if (in)
     {
       std::getline(in, dreamfall_path);
+      in.close();
 
       // ignore invalid an path
       if (!file_exists(dreamfall_path + "/bin/res/"))
@@ -224,13 +226,20 @@ DFToolBoxWindow::DFToolBoxWindow(FXApp* a)
                     << "\ncouldn't find pak subdirectory" << std::endl;
           dreamfall_path = "";
         }
-      else
-        {
-          init();
-        }
-
-      in.close();
     }
+
+  if (dreamfall_path.empty())
+    {
+      dreamfall_path = find_dreamfall_path();
+      if (!dreamfall_path.empty())
+        {
+          std::cout << "Found Dreamfall in: " << dreamfall_path << std::endl;
+          save_dreamfall_path();
+        }
+    }
+
+  if (!dreamfall_path.empty())
+    init();
 }
 
 DFToolBoxWindow::~DFToolBoxWindow()
@@ -504,7 +513,12 @@ DFToolBoxWindow::build_trees()
 
   std::cout << "Build 'by pak' tree" << std::endl;
   FXTreeItem* save_item  = add_directory("savegames", topmost);
-  Directory directory = open_directory(dreamfall_path + "/saves/", ".sav");
+  Directory directory;
+  try {
+    directory = open_directory(dreamfall_path + "/saves/", ".sav");
+  } catch(std::exception& err) {
+    std::cout << "Warning: " << err.what() << std::endl;
+  }
   for(Directory::iterator i = directory.begin(); i != directory.end(); ++i)
     {
       FXTreeItem* this_save_item  = add_directory(i->name, save_item);
@@ -642,15 +656,28 @@ DFToolBoxWindow::onCmdDreamfallPath(FXObject*,FXSelector,void*)
 
   if (!new_dreamfall_path.empty())
     {
-      std::ofstream out((get_config_path() + "dreamfall_path.txt").c_str());
-      out << new_dreamfall_path << std::endl;
-      out.close();
-
       dreamfall_path = new_dreamfall_path;
+      save_dreamfall_path();
       init();
     }
 
   return 1;
+}
+
+void
+DFToolBoxWindow::save_dreamfall_path()
+{
+  std::string filename = get_config_path() + "dreamfall_path.txt";
+  std::ofstream out(filename.c_str());
+  if (!out)
+    {
+      std::cout << "Error: couldn't write " << filename << std::endl;
+    }
+  else
+    {
+      out << dreamfall_path << std::endl;
+      out.close();
+    }
 }
 
 // Open

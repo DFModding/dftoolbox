@@ -176,7 +176,8 @@ Token::get_int() const
 {
   assert(type == T_INT);
   int v = 0;
-  assert(from_string(value, v));
+  if (!from_string(value, v))
+    throw std::runtime_error("Shark3D: couldn't convert '" + value + "' to int");
   return v;
 }
 
@@ -185,7 +186,8 @@ Token::get_float() const
 {
   assert(type == T_FLOAT);
   float v = 0;
-  assert(from_string(value, v));
+  if (!from_string(value, v))
+    throw std::runtime_error("Shark3D: couldn't convert '" + value + "' to float");
   return v;
 }
 

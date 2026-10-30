@@ -25,6 +25,12 @@
 #ifndef HEADER_CONFIG_HPP
 #define HEADER_CONFIG_HPP
 
+#include <string>
+
+/** Looks for a Dreamfall installation in the usual install locations,
+    returns an empty string if none was found */
+std::string find_dreamfall_path();
+
 class Config
 {
 public:

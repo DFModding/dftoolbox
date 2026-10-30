@@ -51,6 +51,9 @@ private:
   /** List of possible filenames, used to optimize guessing */
   std::vector<std::string> filelist;
 
+  /** Lowercase directories of all entries in filelist */
+  std::set<std::string> known_directories;
+
   std::vector<Dialog> dialogs;
 
   std::map<unsigned int, Speech> id_to_speech;

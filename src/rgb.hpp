@@ -34,17 +34,20 @@ struct RGB
   RGB() : r(0), g(0), b(0) {}
 
   RGB(unsigned short color)
-    : r((color & 0x1F) << 3),
-      g(((color & 0x7E0) >> 5) << 2),
-      b(((color & 0xF800) >> 11) << 3)
   {
+    *this = color;
   }
 
   RGB& operator=(unsigned short color)
   {
-    r = (color & 0x1F) << 3;
-    g = ((color & 0x7E0) >> 5) << 2;
-    b = ((color & 0xF800) >> 11) << 3;
+    // replicate the high bits into the low ones so that 0x1F maps to 0xFF
+    r = color & 0x1F;
+    g = (color & 0x7E0) >> 5;
+    b = (color & 0xF800) >> 11;
+
+    r = (r << 3) | (r >> 2);
+    g = (g << 2) | (g >> 4);
+    b = (b << 3) | (b >> 2);
 
     return *this;
   }

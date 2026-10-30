@@ -24,34 +24,68 @@
 
 #include <iostream>
 #include <fstream>
+#include <stdlib.h>
+#include <vector>
 #include "system.hpp"
 #include "shark3d.hpp"
 #include "config.hpp"
 
+namespace {
+
+bool is_dreamfall_path(const std::string& path)
+{
+  return !path.empty() && file_exists(path + "bin/res/");
+}
+
+} // namespace
+
+std::string find_dreamfall_path()
+{
+  std::vector<std::string> candidates;
+
+#ifdef _WIN32
+  const char* roots[] = { "ProgramFiles(x86)", "ProgramFiles", "ProgramW6432" };
+  for(size_t i = 0; i < sizeof(roots)/sizeof(roots[0]); ++i)
+    {
+      const char* root = getenv(roots[i]);
+      if (root && *root)
+        {
+          std::string r = std::string(root) + "/";
+          candidates.push_back(r + "Funcom/Dreamfall/");
+          candidates.push_back(r + "Dreamfall/");
+          candidates.push_back(r + "GOG Galaxy/Games/Dreamfall - The Longest Journey/");
+          candidates.push_back(r + "Steam/steamapps/common/Dreamfall The Longest Journey/");
+        }
+    }
+  candidates.push_back("C:/GOG Games/Dreamfall - The Longest Journey/");
+  candidates.push_back("C:/Program Files/Funcom/Dreamfall/");
+  candidates.push_back("C:/Program Files/Dreamfall/");
+#else
+  const char* home_c = getenv("HOME");
+  if (home_c && *home_c)
+    {
+      std::string home = std::string(home_c) + "/";
+      candidates.push_back(home + "Games/Heroic/Dreamfall - The Longest Journey/");
+      candidates.push_back(home + "games/Heroic/Dreamfall - The Longest Journey/");
+      candidates.push_back(home + "GOG Games/Dreamfall - The Longest Journey/");
+      candidates.push_back(home + ".local/share/Steam/steamapps/common/Dreamfall The Longest Journey/");
+      candidates.push_back(home + ".steam/steam/steamapps/common/Dreamfall The Longest Journey/");
+    }
+#endif
+
+  for(std::vector<std::string>::iterator i = candidates.begin(); i != candidates.end(); ++i)
+    {
+      if (is_dreamfall_path(*i))
+        return *i;
+    }
+
+  return std::string();
+}
+
 Config::Config()
 {
   use_stdout     = true;
-  dreamfall_path = "C:/Program Files/Dreamfall/"; // use registry to check this
-
-#ifndef __linux
-  /*
-HKEY_CLASSES_ROOT
-HKEY_CURRENT_CONFIG
-HKEY_CURRENT_USER
-HKEY_LOCAL_MACHINE
-HKEY_USERS
-
-  LONG RegGetValue(
-                   HKEY hkey,
-                   LPCTSTR lpSubKey, "...funcom/dreamfal/..."
-                   LPCTSTR lpValue, "installpath"
-                   DWORD dwFlags, // which type should be queried string, int, etc
-                   LPDWORD pdwType, // pointer to type enum
-                   PVOID pvData, // buffer pointer
-                   LPDWORD pcbData // buffer length
-);
-  */
-#endif
+  dreamfall_path = find_dreamfall_path();
 
   std::string filename = get_config_path() + "dftoolbox.ini";
   std::ifstream in(filename.c_str());

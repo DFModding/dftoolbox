@@ -26,6 +26,7 @@
 #define HEADER_DDSTOOL_HPP
 
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include "system.hpp"
 #include "util.hpp"
@@ -69,16 +70,23 @@ public:
   // volume textures, DDSCAPS2_VOLUME should be included.
   uint32_t dwCaps2;
 
+  // Unused
+  uint32_t dwReserved[2];
+
   DDSCapabilities()
   {
     dwCaps1 = 0;
     dwCaps2 = 0;
+    dwReserved[0] = 0;
+    dwReserved[1] = 0;
   }
 
   DDSCapabilities(std::istream& in)
   {
     dwCaps1 = read_uint32(in);
     dwCaps2 = read_uint32(in);
+    dwReserved[0] = read_uint32(in);
+    dwReserved[1] = read_uint32(in);
   }
 };
 
@@ -238,134 +246,228 @@ public:
     return data;
   }
 
-  /** Returns the image data in RGBA format */
+  /** Reads the top level mipmap of the image and converts it to RGBA */
   void read_data(std::istream& in)
   {
-    // Read pixel data
-    if (flags & DDPF_FOURCC)
+    if (width == 0 || height == 0 || width > 16384 || height > 16384)
+      {
+        std::ostringstream str;
+        str << "DDS: invalid image size " << width << "x" << height;
+        throw std::runtime_error(str.str());
+      }
+
+    data.resize(width * height * 4);
+
+    if (pixel_format.dwFlags & DDPF_FOURCC)
       {
         switch (pixel_format.dwFourCC)
           {
           case DDS_DXT1:
-            read_data_dxt1(in);
+            read_data_dxt(in, 1);
             break;
 
           case DDS_DXT2:
-            throw std::runtime_error("DXT2 Format not supported");
-            break;
-
           case DDS_DXT3:
-            read_data_dtx3(in);
+            read_data_dxt(in, 3);
             break;
 
           case DDS_DXT4:
-            throw std::runtime_error("DXT4 Format not supported");
-            break;
-
           case DDS_DXT5:
-            read_data_dtx3(in);
-            break;
-
-          case 0:
-            // HU?
-            read_data_dxt1(in);
+            read_data_dxt(in, 5);
             break;
 
           default:
-	       {
-		  std::ostringstream str;
-		  str << "Format unknown: " << pixel_format.dwFourCC << " " << std::string((char*)&pixel_format.dwFourCC, 4);
-                  throw std::runtime_error(str.str());
-	       }
-
+            {
+              std::ostringstream str;
+              str << "Format unknown: " << pixel_format.dwFourCC << " " << std::string((char*)&pixel_format.dwFourCC, 4);
+              throw std::runtime_error(str.str());
+            }
           }
+      }
+    else if (pixel_format.dwFlags & (DDPF_RGB | DDPF_LUMINANCE | DDPF_ALPHA))
+      {
+        read_data_uncompressed(in);
       }
     else
       {
+        std::ostringstream str;
+        str << "DDS: unsupported pixel format flags " << pixel_format.dwFlags;
+        throw std::runtime_error(str.str());
+      }
+
+    if (!in)
+      throw std::runtime_error("DDS: unexpected end of file");
+  }
+
+private:
+  static unsigned int mask_shift(uint32_t mask)
+  {
+    unsigned int shift = 0;
+    while (mask && !(mask & 1))
+      {
+        mask >>= 1;
+        shift += 1;
+      }
+    return shift;
+  }
+
+  /** Extracts the channel given by \a mask from \a pixel and scales it to 0-255 */
+  static unsigned char get_channel(uint32_t pixel, uint32_t mask)
+  {
+    if (mask == 0)
+      return 0;
+
+    unsigned int shift = mask_shift(mask);
+    uint32_t max = mask >> shift;
+    return static_cast<unsigned char>((((pixel & mask) >> shift) * 255 + max/2) / max);
+  }
+
+  void read_data_uncompressed(std::istream& in)
+  {
+    unsigned int bpp = pixel_format.dwRGBBitCount / 8;
+    if (bpp < 1 || bpp > 4)
+      {
+        std::ostringstream str;
+        str << "DDS: unsupported bit count " << pixel_format.dwRGBBitCount;
+        throw std::runtime_error(str.str());
+      }
+
+    bool has_alpha = (pixel_format.dwFlags & (DDPF_ALPHAPIXELS | DDPF_ALPHA)) && pixel_format.dwRGBAlphaBitMask;
+
+    std::vector<unsigned char> line(width * bpp);
+    for(unsigned int y = 0; y < height; ++y)
+      {
+        in.read(reinterpret_cast<char*>(&*line.begin()), line.size());
+
+        for(unsigned int x = 0; x < width; ++x)
+          {
+            uint32_t pixel = 0;
+            for(unsigned int b = 0; b < bpp; ++b)
+              pixel |= uint32_t(line[x*bpp + b]) << (8*b);
+
+            char* out = &data[4*(y*width + x)];
+            if (pixel_format.dwFlags & DDPF_LUMINANCE)
+              {
+                out[0] = out[1] = out[2] = get_channel(pixel, pixel_format.dwRBitMask);
+              }
+            else if (pixel_format.dwFlags & DDPF_RGB)
+              {
+                out[0] = get_channel(pixel, pixel_format.dwRBitMask);
+                out[1] = get_channel(pixel, pixel_format.dwGBitMask);
+                out[2] = get_channel(pixel, pixel_format.dwBBitMask);
+              }
+            else
+              { // alpha only
+                out[0] = out[1] = out[2] = 255;
+              }
+            out[3] = has_alpha ? get_channel(pixel, pixel_format.dwRGBAlphaBitMask) : 255;
+          }
       }
   }
 
-  void decode_dxt1(unsigned char buf[8], unsigned char out[4*4*3])
+  /** Decodes a 4x4 DXT color block into RGBA, \a dxt1 enables
+      the one bit alpha mode of DXT1 */
+  static void decode_color_block(const unsigned char buf[8], unsigned char out[4*4*4], bool dxt1)
   {
     unsigned short color0 = buf[0] | (buf[1] << 8);
     unsigned short color1 = buf[2] | (buf[3] << 8);
 
-    unsigned int bits = buf[4] + 256 * (buf[5] + 256 * (buf[6] + 256 * buf[7]));
+    unsigned int bits = buf[4] | (buf[5] << 8) | (buf[6] << 16) | (unsigned(buf[7]) << 24);
 
+    // RGB stores the 5:6:5 value with blue in 'r' and red in 'b'
     RGB rgb[4];
+    unsigned char alpha[4] = { 255, 255, 255, 255 };
 
-    if (color0 > color1)
+    rgb[0] = color0;
+    rgb[1] = color1;
+
+    if (color0 > color1 || !dxt1)
       {
-        rgb[0] = color0;
-        rgb[1] = color1;
         rgb[2] = (2*rgb[0] + rgb[1])/3;
         rgb[3] = (rgb[0] + 2*rgb[1])/3;
       }
     else
       {
-        rgb[0] = color0;
-        rgb[1] = color1;
         rgb[2] = (rgb[0] + rgb[1])/2;
-        rgb[3] = RGB(0);
+        rgb[3] = RGB();
+        alpha[3] = 0;
       }
 
-    for(int y1 = 0; y1 < 4; ++y1)
-      for(int x1 = 0; x1 < 4; ++x1)
-        {
-          unsigned int idx = ((bits >> (2*(4*(y1)+(x1)))) & 0x3);
+    for(int i = 0; i < 16; ++i)
+      {
+        unsigned int idx = (bits >> (2*i)) & 0x3;
 
-          out[3*4*y1 + 3*x1 + 2] = rgb[idx].r;
-          out[3*4*y1 + 3*x1 + 1] = rgb[idx].g;
-          out[3*4*y1 + 3*x1 + 0] = rgb[idx].b;
-        }
+        out[4*i + 0] = rgb[idx].b;
+        out[4*i + 1] = rgb[idx].g;
+        out[4*i + 2] = rgb[idx].r;
+        out[4*i + 3] = alpha[idx];
+      }
   }
 
-  void read_data_dxt1(std::istream& in)
+  /** Decodes a DXT3 explicit alpha block into \a out */
+  static void decode_dxt3_alpha(const unsigned char buf[8], unsigned char out[4*4*4])
   {
-    unsigned char buf[8];
-    unsigned char out[4*4*3];
+    for(int i = 0; i < 16; ++i)
+      {
+        unsigned int a = (buf[i/2] >> (4*(i%2))) & 0xf;
+        out[4*i + 3] = static_cast<unsigned char>(a * 17);
+      }
+  }
 
-    data.resize(width * height * 4);
+  /** Decodes a DXT5 interpolated alpha block into \a out */
+  static void decode_dxt5_alpha(const unsigned char buf[8], unsigned char out[4*4*4])
+  {
+    unsigned int alpha[8];
+    alpha[0] = buf[0];
+    alpha[1] = buf[1];
+
+    if (alpha[0] > alpha[1])
+      {
+        for(int i = 1; i < 7; ++i)
+          alpha[i+1] = ((7-i)*alpha[0] + i*alpha[1]) / 7;
+      }
+    else
+      {
+        for(int i = 1; i < 5; ++i)
+          alpha[i+1] = ((5-i)*alpha[0] + i*alpha[1]) / 5;
+        alpha[6] = 0;
+        alpha[7] = 255;
+      }
+
+    uint64_t bits = 0;
+    for(int i = 0; i < 6; ++i)
+      bits |= uint64_t(buf[2+i]) << (8*i);
+
+    for(int i = 0; i < 16; ++i)
+      out[4*i + 3] = static_cast<unsigned char>(alpha[(bits >> (3*i)) & 0x7]);
+  }
+
+  /** \a format is 1, 3 or 5 for DXT1, DXT3 and DXT5 */
+  void read_data_dxt(std::istream& in, int format)
+  {
+    unsigned char alpha_buf[8];
+    unsigned char color_buf[8];
+    unsigned char out[4*4*4];
+
     for(unsigned int y = 0; y < height; y += 4)
       for(unsigned int x = 0; x < width; x += 4)
         {
-          in.read((char*)buf, 8);
-          decode_dxt1(buf, out);
+          // in DXT3 and DXT5 the alpha block comes before the color block
+          if (format != 1)
+            in.read(reinterpret_cast<char*>(alpha_buf), 8);
+          in.read(reinterpret_cast<char*>(color_buf), 8);
 
-          for(unsigned int y1 = 0; y1 < 4; y1 += 1)
-            for(unsigned int x1 = 0; x1 < 4; x1 += 1)
-              {
-                data[4*(y+y1)*width + 4*(x+x1) + 0] = out[3*4*y1 + 3*x1 + 0];
-                data[4*(y+y1)*width + 4*(x+x1) + 1] = out[3*4*y1 + 3*x1 + 1];
-                data[4*(y+y1)*width + 4*(x+x1) + 2] = out[3*4*y1 + 3*x1 + 2];
-                data[4*(y+y1)*width + 4*(x+x1) + 3] = 255;
-              }
-        }
-  }
+          decode_color_block(color_buf, out, format == 1);
+          if (format == 3)
+            decode_dxt3_alpha(alpha_buf, out);
+          else if (format == 5)
+            decode_dxt5_alpha(alpha_buf, out);
 
-  void read_data_dtx3(std::istream& in)
-  {
-    unsigned char buf[8];
-    unsigned char out[4*4*3];
-
-    data.resize(width * height * 4);
-    for(unsigned int y = 0; y < height; y += 4)
-      for(unsigned int x = 0; x < width; x += 4)
-        {
-          in.read((char*)buf, 8);
-          decode_dxt1(buf, out);
-
-          // Skip alpha information
-          in.read((char*)buf, 8);
-
-          for(unsigned int y1 = 0; y1 < 4; y1 += 1)
-            for(unsigned int x1 = 0; x1 < 4; x1 += 1)
-              {
-                data[4*(y+y1)*width + 4*(x+x1) + 0] = out[3*4*y1 + 3*x1 + 0];
-                data[4*(y+y1)*width + 4*(x+x1) + 1] = out[3*4*y1 + 3*x1 + 1];
-                data[4*(y+y1)*width + 4*(x+x1) + 2] = out[3*4*y1 + 3*x1 + 2];
-                data[4*(y+y1)*width + 4*(x+x1) + 3] = 255;
-              }
+          // images smaller than 4x4 or with odd sizes only use part of the block
+          for(unsigned int y1 = 0; y1 < 4 && y + y1 < height; y1 += 1)
+            for(unsigned int x1 = 0; x1 < 4 && x + x1 < width; x1 += 1)
+              for(int c = 0; c < 4; ++c)
+                data[4*((y+y1)*width + (x+x1)) + c] = out[4*(4*y1 + x1) + c];
         }
   }
 };

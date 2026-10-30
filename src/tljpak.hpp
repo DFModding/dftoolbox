@@ -28,6 +28,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
+#include <iosfwd>
 
 class ProgressLogger;
 
@@ -94,11 +96,11 @@ struct FileEntry
     : filetype(FILETYPE_INVALID), chunk_id(-1)
   {}
 
-  bool is_file() {
+  bool is_file() const {
     return filesize != 0;
   }
 
-  bool is_terminal() {
+  bool is_terminal() const {
     return nametable_index == 0 && path_length == 0 && nametable_index == 0;
   }
 };
@@ -120,6 +122,10 @@ struct TLJPak
 
   std::vector<std::vector<char> > chunks;
 
+  /** For every entry the list of (directory entry, character) pairs
+      that could have it as child, used to walk the trie backwards */
+  std::vector<std::vector<std::pair<int, int> > > parents;
+
   TLJPak(const std::string& filename_);
 
   void write(const std::string& outfile);
@@ -136,7 +142,11 @@ struct TLJPak
 
   int      get_size(int id);
   FileType get_type(int id);
+  FileType get_type(int id, std::istream& in);
 
+  void build_parent_table();
+
+  /** Returns all pathnames that could belong to \a entry */
   std::vector<std::string> guess(int entry);
   void guess();
 
@@ -155,11 +165,18 @@ struct TLJPak
   void print_info();
 
   /** Scans the pak and generates full pathnames, \a lst is a list of
-      filenames to ease the brute force hash guessing */
-  void scan(const std::vector<std::string>& lst, ProgressLogger& logger);
+      filenames to ease the brute force hash guessing, guesses in
+      \a known_directories are preferred */
+  void scan(const std::vector<std::string>& lst, ProgressLogger& logger,
+            const std::set<std::string>* known_directories = 0);
 
-  void dump_filetable(std::ostream& out);
-  void read_filetable(std::istream& in);
+  /** Writes the result of scan() to \a out, \a cache_key should
+      identify the pak and filelist used to generate it */
+  void dump_filetable(std::ostream& out, const std::string& cache_key);
+
+  /** Reads a filetable written by dump_filetable(), returns false if
+      it is invalid or doesn't match \a cache_key */
+  bool read_filetable(std::istream& in, const std::string& cache_key);
 };
 
 #endif

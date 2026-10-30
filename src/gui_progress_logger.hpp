@@ -28,6 +28,8 @@
 
 #include "fx.h"
 #include <iostream>
+#include <sstream>
+#include <vector>
 #include "progress_logger.hpp"
 
 class GUIChildProgressLogger : public ProgressLogger
@@ -38,6 +40,7 @@ private:
   int task_status;
   bool done;
   GUIChildProgressLogger* subtask;
+  std::vector<GUIChildProgressLogger*> old_subtasks;
 
 public:
   mutable FXMutex mutex;
@@ -53,6 +56,8 @@ public:
   virtual ~GUIChildProgressLogger()
   {
     delete subtask;
+    for(std::vector<GUIChildProgressLogger*>::iterator i = old_subtasks.begin(); i != old_subtasks.end(); ++i)
+      delete *i;
   }
 
   void println(const std::string& str)
@@ -77,7 +82,10 @@ public:
   ProgressLogger& start_subtask()
   { FXMutexLock lock(mutex);
 
-    delete subtask;
+    // the GUI thread might still be looking at the old subtask, so
+    // keep it around instead of deleting it
+    if (subtask)
+      old_subtasks.push_back(subtask);
     subtask = new GUIChildProgressLogger(this);
     return *subtask;
   }
@@ -126,6 +134,7 @@ private:
   bool done;
 
   GUIChildProgressLogger* subtask;
+  std::vector<GUIChildProgressLogger*> old_subtasks;
 public:
   mutable FXMutex mutex;
 
@@ -141,6 +150,8 @@ public:
   virtual ~GUIProgressLogger()
   {
     delete subtask;
+    for(std::vector<GUIChildProgressLogger*>::iterator i = old_subtasks.begin(); i != old_subtasks.end(); ++i)
+      delete *i;
   }
 
   void println(const std::string& str)
@@ -164,7 +175,10 @@ public:
   ProgressLogger& start_subtask()
   { FXMutexLock lock(mutex);
 
-    delete subtask; // FIXME:
+    // the GUI thread might still be looking at the old subtask, so
+    // keep it around instead of deleting it
+    if (subtask)
+      old_subtasks.push_back(subtask);
     subtask = new GUIChildProgressLogger(this);
     return *subtask;
   }
@@ -188,7 +202,8 @@ public:
   }
 
   std::string pop_log()
-  {
+  { FXMutexLock lock(mutex);
+
     const std::string ret = log.str();
     log.str(""); // clear
     return ret;

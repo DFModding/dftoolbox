@@ -22,50 +22,94 @@
 **  02111-1307, USA.
 */
 
-#ifdef __linux__
+#ifndef _WIN32
 #  include <sys/stat.h>
 #  include <sys/types.h>
 #  include <dirent.h>
 #  include <unistd.h>
+#  include <limits.h>
 #else
 #  include <windows.h>
 #  include <direct.h>
+#  include <io.h>
+#  include <sys/types.h>
+#  include <sys/stat.h>
+#  define access _access
+#  define R_OK 4
 #endif
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 #include <fstream>
 #include <stdexcept>
 #include <iostream>
 #include "system.hpp"
 #include "util.hpp"
 
-std::string g_datadir = "./";
-std::string g_configdir = "./";
+// Empty means "use the platform default", see the get_*_path() functions
+std::string g_datadir;
+std::string g_configdir;
+std::string g_cachedir;
+
+namespace {
+
+std::string with_slash(std::string path)
+{
+  if (!path.empty() && path[path.size()-1] != '/' && path[path.size()-1] != '\\')
+    path += "/";
+  return path;
+}
+
+/** Returns the environment variable \a name or an empty string, XDG
+    requires relative paths to be ignored, so \a absolute_only can be
+    used to enforce that */
+std::string get_env(const char* name, bool absolute_only = false)
+{
+  const char* value = getenv(name);
+  if (!value || !*value)
+    return std::string();
+
+#ifndef _WIN32
+  if (absolute_only && value[0] != '/')
+    return std::string();
+#endif
+
+  return value;
+}
+
+/** Returns $XDG_*_HOME or $HOME/\a fallback, empty if neither is available */
+std::string get_xdg_dir(const char* xdg_var, const char* fallback)
+{
+  std::string dir = get_env(xdg_var, true);
+  if (!dir.empty())
+    return with_slash(dir);
+
+  std::string home = get_env("HOME");
+  if (!home.empty())
+    return with_slash(home) + fallback;
+
+  return std::string();
+}
+
+/** Creates \a path including all its parent directories */
+void create_directories(const std::string& path)
+{
+  for(std::string::size_type i = 1; i <= path.size(); ++i)
+    {
+      if (i == path.size() || path[i] == '/' || path[i] == '\\')
+        {
+          std::string dir = path.substr(0, i);
+          if (!dir.empty() && !file_exists(dir))
+            create_dir(dir);
+        }
+    }
+}
+
+} // namespace
 
 void parse_args(int argc, char** argv)
 {
-  std::string config_home;
-  char* config_home_c = getenv("XDG_CONFIG_HOME");
-  if (config_home_c)
-  {
-    config_home = config_home_c;
-  }
-  else
-  {
-    char* home_c = getenv("HOME");
-    if (home_c)
-    {
-      config_home = std::string(home_c) + "/.config";
-    }
-    else
-    {
-      throw std::runtime_error("couldn't find XDG_CONFIG_HOME");
-    }
-  }
-
-  g_configdir = config_home + "/dftoolbox/";
-
   for (int i = 1; i < argc; ++i)
   {
     if (strcmp(argv[i], "--datadir") == 0)
@@ -77,7 +121,7 @@ void parse_args(int argc, char** argv)
       }
       else
       {
-        g_datadir = argv[i];
+        g_datadir = with_slash(argv[i]);
       }
     }
     else if (strcmp(argv[i], "--configdir") == 0)
@@ -89,7 +133,19 @@ void parse_args(int argc, char** argv)
       }
       else
       {
-        g_configdir = argv[i];
+        g_configdir = with_slash(argv[i]);
+      }
+    }
+    else if (strcmp(argv[i], "--cachedir") == 0)
+    {
+      ++i;
+      if (i >= argc)
+      {
+        throw std::runtime_error("--cachedir requires an argument");
+      }
+      else
+      {
+        g_cachedir = with_slash(argv[i]);
       }
     }
     else
@@ -98,6 +154,7 @@ void parse_args(int argc, char** argv)
                 << "\n"
                 << "  --datadir PATH    Location for dftoolbox data files\n"
                 << "  --configdir PATH  Location for configuration files\n"
+                << "  --cachedir PATH   Location for cached pak file tables\n"
                 << std::endl;
       exit(EXIT_FAILURE);
     }
@@ -106,48 +163,94 @@ void parse_args(int argc, char** argv)
   std::cout << "Directories:" << std::endl;
   std::cout << "    data: " << get_data_path() << std::endl;
   std::cout << "  config: " << get_config_path() << std::endl;
+  std::cout << "   cache: " << get_cache_path() << std::endl;
   std::cout << "    temp: " << get_temp_path() << std::endl;
 }
 
 std::string get_temp_path()
 {
-  char* tmpdir_c = getenv("TMPDIR");
-  if (tmpdir_c) {
-    std::string tmpdir = tmpdir_c;
-    if (tmpdir.back() != '/') {
-      tmpdir = tmpdir + "/";
+#ifdef _WIN32
+  char buffer[MAX_PATH+1];
+  DWORD len = GetTempPathA(sizeof(buffer), buffer);
+  if (len > 0 && len < sizeof(buffer))
+    {
+      std::string tmpdir(buffer, len);
+      for(std::string::size_type i = 0; i < tmpdir.size(); ++i)
+        if (tmpdir[i] == '\\')
+          tmpdir[i] = '/';
+      return with_slash(tmpdir);
     }
-    return tmpdir;
-  }
+  return get_exe_path();
+#else
+  std::string tmpdir = get_env("TMPDIR");
+  if (!tmpdir.empty())
+    return with_slash(tmpdir);
   else
-  {
     return "/tmp/";
-  }
+#endif
 }
 
 std::string get_data_path()
 {
-#ifdef __linux__
-  return g_datadir;
-#else
+  if (!g_datadir.empty())
+    return g_datadir;
+
+#ifdef _WIN32
   return get_exe_path();
+#else
+  return "./";
 #endif
 }
 
 std::string get_config_path()
 {
-#ifdef __linux__
-  return g_configdir;
+  if (g_configdir.empty())
+    {
+#ifdef _WIN32
+      std::string appdata = get_env("APPDATA");
+      if (!appdata.empty())
+        g_configdir = with_slash(appdata) + "dftoolbox/";
+      else
+        g_configdir = get_exe_path();
 #else
-  return get_exe_path();
+      std::string config_home = get_xdg_dir("XDG_CONFIG_HOME", ".config/");
+      if (!config_home.empty())
+        g_configdir = config_home + "dftoolbox/";
+      else
+        g_configdir = "./";
 #endif
+      create_directories(g_configdir);
+    }
+
+  return g_configdir;
+}
+
+std::string get_cache_path()
+{
+  if (g_cachedir.empty())
+    {
+#ifdef _WIN32
+      std::string localappdata = get_env("LOCALAPPDATA");
+      if (!localappdata.empty())
+        g_cachedir = with_slash(localappdata) + "dftoolbox/";
+      else
+        g_cachedir = get_temp_path() + "dftoolbox/";
+#else
+      std::string cache_home = get_xdg_dir("XDG_CACHE_HOME", ".cache/");
+      if (!cache_home.empty())
+        g_cachedir = cache_home + "dftoolbox/";
+      else
+        g_cachedir = get_temp_path() + "dftoolbox/";
+#endif
+      create_directories(g_cachedir);
+    }
+
+  return g_cachedir;
 }
 
 std::string get_exe_path()
 {
-#ifdef __linux__
-  assert(false && "not implemented");
-#else
+#ifdef _WIN32
   // Get path to executable:
   char szDllName[_MAX_PATH];
   char szDrive[_MAX_DRIVE];
@@ -158,6 +261,14 @@ std::string get_exe_path()
   _splitpath(szDllName, szDrive, szDir, szFilename, szExt);
 
   return std::string(szDrive) + std::string(szDir);
+#else
+  char buffer[PATH_MAX];
+  ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+  if (len <= 0)
+    return "./";
+
+  std::string exe(buffer, len);
+  return exe.substr(0, exe.rfind('/') + 1);
 #endif
 }
 
@@ -177,7 +288,7 @@ void create_hierachy(const std::string& outfile)
 
 int create_dir(const std::string& path)
 {
-#ifdef __linux__
+#ifndef _WIN32
   return mkdir(path.c_str(), 0755);
 #else
   return _mkdir(path.c_str());
@@ -186,7 +297,7 @@ int create_dir(const std::string& path)
 
 void wait()
 {
-#ifndef __linux__
+#ifdef _WIN32
   // Wait for a keypress so that the user can look at the textual
   // output in Windows
   std::cout << "\nPress Enter to continue..." << std::endl;
@@ -194,7 +305,7 @@ void wait()
 #endif
 }
 
-#ifndef __linux__
+#ifdef _WIN32
 std::vector<DirectoryEntry>
 open_directory(const std::string& pathname)
 {
@@ -335,6 +446,17 @@ void file_copy(const std::string& from, const std::string& to)
 bool file_exists(const std::string& pathname)
 {
   return access(pathname.c_str(), R_OK) == 0;
+}
+
+bool file_stat(const std::string& pathname, int64_t& size, int64_t& mtime)
+{
+  struct stat buf;
+  if (stat(pathname.c_str(), &buf) != 0)
+    return false;
+
+  size  = buf.st_size;
+  mtime = buf.st_mtime;
+  return true;
 }
 
 std::vector<char>

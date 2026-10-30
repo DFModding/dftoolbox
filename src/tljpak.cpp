@@ -54,16 +54,20 @@ char ascii2nametable_tbl[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+// number of characters in the nametable alphabet, child nodes of a
+// directory entry are located at nametable_offset + [1, NAMETABLE_CHARS)
+const int NAMETABLE_CHARS = 44;
+
 inline char ascii2nametable(char c)
 {
-  return ascii2nametable_tbl[int(c)];
+  return ascii2nametable_tbl[static_cast<unsigned char>(c)];
 }
 
 inline char  nametable2ascii(char c)
 {
-  if (size_t(c) < sizeof(nametabel2ascii_tbl))
+  if (static_cast<unsigned char>(c) < sizeof(nametabel2ascii_tbl))
     {
-      return nametabel2ascii_tbl[int(c)];
+      return nametabel2ascii_tbl[static_cast<unsigned char>(c)];
     }
   else
     {
@@ -497,68 +501,72 @@ TLJPak::read_nametable(int offset)
 int
 TLJPak::lookup(const char* pathname, int ptr, int i, int depth)
 {
-  if (depth > 20)
+  // The pak directory is a double-array trie: pathname[ptr] selected
+  // entry i, the entry stores the following characters up to the
+  // next branch point, directories store the base index of their
+  // children in nametable_offset. There is no check array, so every
+  // entry is verified by the path_length to reject false hits.
+  if (depth > 64)
     return -1;
 
   if (i < 0 || i >= int(files.size()))
+    return -1;
+
+  const FileEntry& entry = files[i];
+
+  if (entry.filesize         == 0 &&
+      entry.path_length      == 0 &&
+      entry.nametable_offset == 0 &&
+      entry.nametable_index  == 0)
     {
-      std::cerr << "Error: Lookup out of range " << std::endl;
       return -1;
     }
 
-  if (files[i].filesize         == 0 &&
-      files[i].path_length      == 0 &&
-      files[i].nametable_offset == 0 &&
-      files[i].nametable_index  == 0)
-    {
-      return -1;
+  if (entry.nametable_index < 0 || entry.nametable_index >= int(nametable.size()))
+    return -1;
+
+  const char* ntbl_entry     = &*nametable.begin() + entry.nametable_index;
+  int         ntbl_entry_len = strlen(ntbl_entry);
+
+  if (strncmp(ntbl_entry, pathname+ptr+1, ntbl_entry_len) != 0)
+    return -1;
+
+  int matched = ptr + 1 + ntbl_entry_len; // number of characters matched so far
+
+  if (entry.filesize != 0)
+    { // Found a file, path_length is the length of the full pathname
+      if (pathname[matched] == '\0' && entry.path_length == matched)
+        return i;
+      else
+        return -1;
     }
   else
-    {
-      assert(files[i].nametable_index >= 0 && files[i].nametable_index < int(nametable.size()));
+    { // Directory, path_length is the index of its last character
+      if (entry.path_length != matched - 1 || pathname[matched] == '\0')
+        return -1;
 
-      char* ntbl_entry     = &*nametable.begin() + files[i].nametable_index;
-      int   ntbl_entry_len = strlen(ntbl_entry);
+      char c = ascii2nametable(pathname[matched]);
+      if (c == 0)
+        return -1;
 
-      if (0)
-        {
-          std::cout << ntbl_entry << " == ";
-          std::cout.write(pathname+ptr+1, ntbl_entry_len);
-          std::cout << std::endl;
-        }
-
-      if (strncmp(ntbl_entry, pathname+ptr+1, ntbl_entry_len) != 0)
-        {
-          return -1;
-        }
-      else
-        {
-          if (files[i].filesize != 0)
-            { // Found a file
-              //std::cout << files[i].path_length << std::endl;
-              return i;
-            }
-          else
-            {
-              if (0)
-                {
-                  std::cout << i << std::endl;
-                  std::cout << "Offset:     " << files[i].offset << "\n"
-                            << "Filesize:   " << files[i].filesize << "\n"
-                            << "NTblOffset: " << files[i].nametable_offset << "\n"
-                            << "PathLength: " << files[i].path_length << "\n"
-                            << "NTblIndex:  " << files[i].nametable_index << std::endl;
-
-                  std::cout << "Pathname:    " << pathname << " " << strlen(pathname) << std::endl;
-                  std::cout << "PathPtr:     " << pathname + ptr << " " << strlen(pathname + ptr) << std::endl;
-                  std::cout << "Path so far: "; std::cout.write(pathname, files[i].path_length+1); std::cout << std::endl;
-                }
-              return lookup(pathname, ptr + ntbl_entry_len + 1,
-                            ascii2nametable(pathname[files[i].path_length+1]) + files[i].nametable_offset, depth+1);
-            }
-        }
+      return lookup(pathname, matched, c + entry.nametable_offset, depth+1);
     }
 }
+
+struct KnownDirectory
+{
+  const std::set<std::string>& directories;
+
+  KnownDirectory(const std::set<std::string>& directories_)
+    : directories(directories_)
+  {}
+
+  bool operator()(const std::string& pathname) const
+  {
+    std::string::size_type slash = pathname.rfind('/');
+    return slash != std::string::npos && directories.find(pathname.substr(0, slash)) != directories.end();
+  }
+};
 
 bool is_good_filename(const std::string& filename)
 {
@@ -584,12 +592,36 @@ filter_filenames(const std::vector<std::string>& guesses)
   return ret;
 }
 
+void
+TLJPak::build_parent_table()
+{
+  if (!parents.empty() || files.empty())
+    return;
+
+  parents.resize(files.size());
+  for(int entry = 0; entry < int(files.size()); ++entry)
+    {
+      const FileEntry& dir = files[entry];
+      if (!dir.is_file() && !(dir.path_length == 0 && dir.nametable_offset == 0 && dir.nametable_index == 0))
+        {
+          for(int j = 1; j < NAMETABLE_CHARS; ++j)
+            {
+              int child = dir.nametable_offset + j;
+              if (child >= 0 && child < int(files.size()))
+                parents[child].push_back(std::make_pair(entry, j));
+            }
+        }
+    }
+}
+
 std::vector<std::string>
 TLJPak::guess(int entry)
 {
   assert(entry >= 0);
   assert(entry < file_count);
   assert(files[entry].is_file());
+
+  build_parent_table();
 
   std::string pathname = &nametable[files[entry].nametable_index];
   std::vector<std::string> guesses;
@@ -604,21 +636,12 @@ TLJPak::guess()
     {
       if (files[entry].is_file())
         {
-          std::vector<std::string> guesses;
+          std::vector<std::string> guesses = guess(entry);
 
-          std::string pathname = &nametable[files[entry].nametable_index];
-          guess_lookup(entry, entry, pathname, files[entry].path_length, guesses);
+          for(int j = 0; j < int(guesses.size()); ++j)
+            std::cout << entry << ") " << guesses[j] << std::endl;
 
-          //            if (guesses.size() == 1)
-          //              std::cout << guesses[0] << std::endl;
-
-          if (1)
-            {
-              for(int j = 0; j < int(guesses.size()); ++j)
-                std::cout << entry << ") " << guesses[j] << std::endl;
-
-              std::cout << std::endl;
-            }
+          std::cout << std::endl;
         }
     }
 }
@@ -627,29 +650,30 @@ void
 TLJPak::guess_lookup(int orig_entry, int source_entry, const std::string& pathname, int path_length,
                      std::vector<std::string>& guesses)
 {
+  // the trie can't be walked backwards unambiguously, so limit the
+  // amount of guesses to avoid a combinatorial explosion
+  const size_t max_guesses = 64;
+
+  if (guesses.size() >= max_guesses)
+    return;
+
   if (int(pathname.size()) + 1 == path_length)
-    {
-      //std::cout
-      //<< orig_entry << " "
-      //<< nametable2ascii(source_entry) << pathname << std::endl;
-      guesses.push_back(nametable2ascii(source_entry) + pathname);
+    { // reached the root, the entry index is the first character
+      if (source_entry > 0 && source_entry < NAMETABLE_CHARS)
+        guesses.push_back(nametable2ascii(source_entry) + pathname);
     }
-  else
+  else if (int(pathname.size()) + 1 < path_length)
     {
-      for(int entry = 0; entry < file_count; ++entry)
+      const std::vector<std::pair<int, int> >& candidates = parents[source_entry];
+      for(std::vector<std::pair<int, int> >::const_iterator i = candidates.begin(); i != candidates.end(); ++i)
         {
-          if (!files[entry].is_file())
+          const FileEntry& dir = files[i->first];
+          if (dir.path_length + int(pathname.length()) + 2 == path_length)
             {
-              for(int j = 1; j < 44; ++j)
-                {
-                  if (files[entry].nametable_offset + j == source_entry
-                      && files[entry].path_length + int(pathname.length()) + 2 == path_length)
-                    {
-                      std::ostringstream str;
-                      str << &nametable[files[entry].nametable_index] << nametable2ascii(j) << pathname;
-                      guess_lookup(orig_entry, entry, str.str(), path_length, guesses);
-                    }
-                }
+              std::string str = &nametable[dir.nametable_index];
+              str += nametable2ascii(i->second);
+              str += pathname;
+              guess_lookup(orig_entry, i->first, str, path_length, guesses);
             }
         }
     }
@@ -771,7 +795,6 @@ TLJPak::print_info()
 FileType
 TLJPak::get_type(const std::string& pathname)
 {
-  std::cout << "Pathname: " << pathname << std::endl;
   int i = lookup(pathname);
   if (i == -1)
     {
@@ -786,7 +809,6 @@ TLJPak::get_type(const std::string& pathname)
 FileType
 TLJPak::get_type(int i)
 {
-  // FIXME: add some assert/exceptions here
   std::ifstream in(filename.c_str(), std::ios::binary);
   if (!in)
     {
@@ -794,43 +816,52 @@ TLJPak::get_type(int i)
     }
   else
     {
-      char magic[8];
-      in.seekg(files[i].offset, std::ios::beg);
-      in.read(magic, sizeof(magic));
-      in.close();
-
-      if (strncmp(magic, "DDS", 3) == 0)
-        return FILETYPE_DDS;
-      else if (strncmp(magic, "tljbone", 7) == 0)
-        return FILETYPE_TLJBONE;
-      else if (strncmp(magic, "STFU4", 4) == 0)
-        return FILETYPE_STFU4;
-      else if (strncmp(magic, "RIFF", 4) == 0)
-        return FILETYPE_WAV;
-      else if (strncmp(magic, "shark3d", 7) == 0)
-        return FILETYPE_SHARK3D;
-      else if (has_suffix(files[i].pathname, ".bun"))
-        return FILETYPE_BUNDLE;
-      else if (has_suffix(files[i].pathname, ".mp3"))
-        return FILETYPE_MP3;
-      else if (has_suffix(files[i].pathname, ".wav"))
-        return FILETYPE_WAV;
-      else if (has_suffix(files[i].pathname, ".lip"))
-        return FILETYPE_LIP;
-      else if (files[i].pathname, "art/generated/config/universe/localization.dat")
-        return FILETYPE_LOCALISATION;
-      // FIXME: This is mostly guessing
-      else if (strncmp(magic, "ID3", 3) == 0)
-        return FILETYPE_MP3;
-      else if (strncmp(magic, "vs", 2) == 0 || strncmp(magic, "xvs", 3) == 0)
-        return FILETYPE_TEXT;
-      else if (strncmp(magic, "ps", 2) == 0 || strncmp(magic, "xps", 3) == 0)
-        return FILETYPE_TEXT;
-      else if (strncmp(magic, "; ", 2) == 0 || strncmp(magic, "//", 2) == 0)
-        return FILETYPE_TEXT;
-      else
-        return FILETYPE_UNKNOWN;
+      return get_type(i, in);
     }
+}
+
+FileType
+TLJPak::get_type(int i, std::istream& in)
+{
+  assert(i >= 0 && i < int(files.size()));
+
+  char magic[8] = { 0 };
+  in.clear();
+  in.seekg(files[i].offset, std::ios::beg);
+  in.read(magic, std::min(int(sizeof(magic)), std::max(0, files[i].filesize)));
+  in.clear();
+
+  if (strncmp(magic, "DDS", 3) == 0)
+    return FILETYPE_DDS;
+  else if (strncmp(magic, "tljbone", 7) == 0)
+    return FILETYPE_TLJBONE;
+  else if (strncmp(magic, "STFU4", 4) == 0)
+    return FILETYPE_STFU4;
+  else if (strncmp(magic, "RIFF", 4) == 0)
+    return FILETYPE_WAV;
+  else if (strncmp(magic, "shark3d", 7) == 0)
+    return FILETYPE_SHARK3D;
+  else if (has_suffix(files[i].pathname, ".bun"))
+    return FILETYPE_BUNDLE;
+  else if (has_suffix(files[i].pathname, ".mp3"))
+    return FILETYPE_MP3;
+  else if (has_suffix(files[i].pathname, ".wav"))
+    return FILETYPE_WAV;
+  else if (has_suffix(files[i].pathname, ".lip"))
+    return FILETYPE_LIP;
+  else if (has_suffix(files[i].pathname, "config/universe/localization.dat"))
+    return FILETYPE_LOCALISATION;
+  // FIXME: This is mostly guessing
+  else if (strncmp(magic, "ID3", 3) == 0)
+    return FILETYPE_MP3;
+  else if (strncmp(magic, "vs", 2) == 0 || strncmp(magic, "xvs", 3) == 0)
+    return FILETYPE_TEXT;
+  else if (strncmp(magic, "ps", 2) == 0 || strncmp(magic, "xps", 3) == 0)
+    return FILETYPE_TEXT;
+  else if (strncmp(magic, "; ", 2) == 0 || strncmp(magic, "//", 2) == 0)
+    return FILETYPE_TEXT;
+  else
+    return FILETYPE_UNKNOWN;
 }
 
 int
@@ -840,49 +871,69 @@ TLJPak::get_size(int id)
 }
 
 void
-TLJPak::scan(const std::vector<std::string>& lst, ProgressLogger& logger)
+TLJPak::scan(const std::vector<std::string>& lst, ProgressLogger& logger,
+             const std::set<std::string>* known_directories)
 {
-  std::map<int, std::string> entry2name;
-
   for(std::vector<std::string>::const_iterator i = lst.begin(); i != lst.end(); ++i)
     {
       int j = lookup(*i);
-      if (j != -1)
+      if (j != -1 && files[j].pathname.empty())
         files[j].pathname = *i;
     }
+
+  std::ifstream in(filename.c_str(), std::ios::binary);
+  if (!in)
+    throw std::runtime_error("Error: Couldn't open " + filename);
 
   logger.set_task_size(files.size());
   for(int i = 0; i < int(files.size()); ++i)
     {
       if (files[i].is_file() && files[i].pathname.empty())
         {
-          // FIXME: Add filtering somewhere
           files[i].guesses = guess(i);
-          assert(files[i].guesses.size() > 0);
+
+          if (known_directories)
+            { // move guesses that are located in known directories to the front
+              std::stable_partition(files[i].guesses.begin(), files[i].guesses.end(),
+                                    KnownDirectory(*known_directories));
+            }
+
+          if (files[i].guesses.empty())
+            {
+              std::ostringstream str;
+              str << "unknown/" << i << "/" << &nametable[files[i].nametable_index];
+              files[i].guesses.push_back(str.str());
+            }
+
           files[i].pathname = files[i].guesses.front();
           logger.println("found " + files[i].pathname + " (guessed)");
         }
-      /* to much of an speed impact
-      else if (!files[i].pathname.empty())
+
+      if (files[i].is_file())
+        files[i].filetype = get_type(i, in);
+
+      // updating the GUI is expensive, so only do it every now and then
+      if ((i % 256) == 0 || i == int(files.size()) - 1)
         {
-        logger.println("found " + files[i].pathname);
+          logger.set_task_status(i);
+          logger.sync();
         }
-      */
-
-      files[i].filetype = get_type(i);
-
-      logger.set_task_status(i);
-      logger.sync();
     }
 }
 
+// Increment when the filetable format or the scan algorithm changes,
+// so that old caches get regenerated
+static const int FILETABLE_CACHE_VERSION = 2;
+
 void
-TLJPak::dump_filetable(std::ostream& out)
+TLJPak::dump_filetable(std::ostream& out, const std::string& cache_key)
 {
   std::string pathpart, filepart;
   splitpath(filename, pathpart, filepart);
 
   out << "filename \"" << filepart << "\"" << std::endl;
+  out << "cache_version " << FILETABLE_CACHE_VERSION << std::endl;
+  out << "cache_key \"" << cache_key << "\"" << std::endl;
   out << "files" << std::endl;
   for(int i = 0; i < int(files.size()); ++i)
     {
@@ -890,7 +941,6 @@ TLJPak::dump_filetable(std::ostream& out)
         {
           out << "{" << std::endl;
           out << "    index      " << i << std::endl;
-          //out << "    pathname \"" << files[i].pathname << "\"" << std::endl;
           out << "    pathnames  ";
           if (files[i].guesses.empty())
             {
@@ -910,28 +960,59 @@ TLJPak::dump_filetable(std::ostream& out)
   out << "$" << std::endl;
 }
 
-void
-TLJPak::read_filetable(std::istream& in)
+bool
+TLJPak::read_filetable(std::istream& in, const std::string& cache_key)
 {
-  Shark3D* shark = Shark3D::parse_text(in);
-  if (!has_suffix(filename, shark->get_string("filename", "")))
+  Shark3D* shark = 0;
+  try {
+    shark = Shark3D::parse_text(in);
+  } catch(std::exception& err) {
+    std::cout << "TLJPak::read_filetable: " << filename << ": " << err.what() << std::endl;
+    return false;
+  }
+
+  bool valid = true;
+
+  if (!has_suffix(filename, shark->get_string("filename", "")) ||
+      shark->get_int("cache_version", 0) != FILETABLE_CACHE_VERSION ||
+      shark->get_string("cache_key", "") != cache_key)
     {
-      std::cout << "TLJPak::read_filetable: filename missmatch in " << filename << std::endl;
+      valid = false;
+    }
+  else
+    {
+      std::vector<FileEntry> cached = files;
+
+      SectionNodes* nodes = shark->get_sections("files");
+      for(std::vector<SectionNode*>::iterator i = nodes->sections.begin();
+          valid && i != nodes->sections.end(); ++i)
+        {
+          std::vector<int>         index     = (*i)->get_ints("index");
+          std::vector<std::string> pathnames = (*i)->get_strings("pathnames");
+          std::vector<std::string> filetype  = (*i)->get_strings("filetype");
+
+          if (index.empty() || pathnames.empty() || filetype.empty() ||
+              index.front() < 0 || index.front() >= int(cached.size()) ||
+              !cached[index.front()].is_file())
+            {
+              valid = false;
+            }
+          else
+            {
+              FileEntry& entry = cached[index.front()];
+              entry.pathname = pathnames.front();
+              if (pathnames.size() > 1)
+                entry.guesses = pathnames;
+              entry.filetype = string2filetype(filetype.front().c_str());
+            }
+        }
+
+      if (valid)
+        files = cached;
     }
 
-  SectionNodes* nodes = shark->get_sections("files");
-  for(std::vector<SectionNode*>::iterator i = nodes->sections.begin();
-      i != nodes->sections.end(); ++i)
-    {
-      int index = (*i)->get_ints("index").front();
-
-      assert(index >= 0 && index < int(files.size()) && files[index].is_file());
-
-      files[index].guesses  = (*i)->get_strings("pathnames");
-      files[index].pathname = files[index].guesses.front();
-      files[index].filetype = string2filetype((*i)->get_strings("filetype").front().c_str());
-      //files[i].guesses = (*i)->get_strings("pathnames");
-    }
+  delete shark;
+  return valid;
 }
 
 /* EOF */

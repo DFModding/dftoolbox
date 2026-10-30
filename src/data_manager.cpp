@@ -24,6 +24,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <set>
 #include "system.hpp"
 #include "tljpak.hpp"
 #include "location.hpp"
@@ -188,16 +190,37 @@ DataManager::get_type(const std::string& pathname)
 void
 DataManager::add_filelist(const std::string& filename)
 {
-  if (!file_readlines(get_data_path() + "df-directory.txt", filelist))
+  std::vector<std::string> lines;
+  if (!file_readlines(filename, lines))
     {
-      std::cout << "Ignoring: " << get_config_path() << "df-directory.txt" << std::endl;
+      std::cout << "Ignoring: " << filename << std::endl;
+    }
+  else
+    {
+      std::set<std::string> seen(filelist.begin(), filelist.end());
+      for(std::vector<std::string>::iterator i = lines.begin(); i != lines.end(); ++i)
+        {
+          // strip trailing '\r' from files with DOS line endings
+          if (!i->empty() && (*i)[i->size()-1] == '\r')
+            i->erase(i->size()-1);
+
+          if (!i->empty() && seen.insert(*i).second)
+            {
+              filelist.push_back(*i);
+
+              std::string::size_type slash = i->rfind('/');
+              if (slash != std::string::npos)
+                known_directories.insert(tolowercase(i->substr(0, slash)));
+            }
+        }
     }
 }
 
 void
 DataManager::scan_paks(ProgressLogger& logger)
 {
-  create_dir(get_data_path() + "/filetables");
+  std::string cachedir = get_cache_path() + "filetables/";
+  create_dir(cachedir);
 
   // Generate filetables for all paks
   logger.set_task_size(paks.size());
@@ -208,31 +231,38 @@ DataManager::scan_paks(ProgressLogger& logger)
     {
       std::string pathpart, filepart;
       splitpath(i->second->filename, pathpart, filepart);
-      std::string filetablecache = get_data_path() + "filetables/" + filepart;
+      std::string filetablecache = cachedir + filepart + ".txt";
+
+      // invalidate the cache when the pak or the filelist changes
+      std::ostringstream cache_key;
+      int64_t size = 0, mtime = 0;
+      file_stat(i->second->filename, size, mtime);
+      cache_key << size << ":" << mtime << ":" << filelist.size();
 
       std::ifstream in(filetablecache.c_str());
 
-      if (in)
+      if (in && i->second->read_filetable(in, cache_key.str()))
         {
           logger.println("reading cache " + i->second->filename);
           logger.sync();
-          (*i).second->read_filetable(in);
         }
       else
         {
+          in.close();
+
           logger.println("scanning " + i->second->filename);
           logger.sync();
 
-          (*i).second->scan(filelist, logger.start_subtask());
+          (*i).second->scan(filelist, logger.start_subtask(), &known_directories);
 
           std::ofstream out(filetablecache.c_str());
           if (!out)
             {
-              std::cout << "Couldn't write to filetable cache: " << filepart << std::endl;
+              std::cout << "Couldn't write to filetable cache: " << filetablecache << std::endl;
             }
           else
             {
-              (*i).second->dump_filetable(out);
+              (*i).second->dump_filetable(out, cache_key.str());
               out.close();
             }
         }

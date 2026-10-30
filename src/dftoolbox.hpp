@@ -116,6 +116,7 @@ public:
   void display(DirectoryFileEntry* dfentry);
   void display(FXTreeItem* item);
   void init();
+  void save_dreamfall_path();
 
   void export_files(const std::vector<DreamfallFileEntry*>& selection,
                     const std::string& outpath,
