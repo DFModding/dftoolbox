@@ -20,10 +20,12 @@
 **  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <set>
+#include <stdexcept>
 #include "system.hpp"
 #include "tljpak.hpp"
 #include "location.hpp"
@@ -429,7 +431,7 @@ DataManager::scan_for_mp3s(const std::string& filename, ProgressLogger& logger)
   for(std::map<unsigned int, Speech>::const_iterator i = location.get_speechs().begin();
       i != location.get_speechs().end(); ++i)
     {
-      mp3_to_speech[i->second.wavefile] = i->second;
+      mp3_to_speech[tolowercase(i->second.wavefile)] = i->second;
       id_to_speech[i->second.text]      = i->second;
 
       logger.increment_status();
@@ -442,64 +444,63 @@ DataManager::scan_for_mp3s(const std::string& filename, ProgressLogger& logger)
 void
 DataManager::scan_for_all_mp3s(ProgressLogger& logger)
 {
-  //std::cout << "Reading dialogs: " << std::endl;
   logger.println("Scanning for dialogs...");
   logger.sync();
 
   dialogs.clear();
-  data_manager.extract("data/generated/config/universe/localization.dat", get_temp_path() + "/tmp.dialog");
-  read_dialogs(get_temp_path() + "/tmp.dialog", dialogs);
+  id_to_speech.clear();
+  mp3_to_speech.clear();
 
-  DreamfallFileEntry* dfentry = 0; // Little slow
-  for(std::vector<DreamfallFileEntry*>::iterator i = filetable.begin(); i != filetable.end(); ++i)
-    {
-      if ((*i)->is_dir() && (*i)->get_dir().fullname == "data/generated/locations")
-        {
-          dfentry = (*i);
-          break;
-        }
-    }
+  const std::string dialogfile = get_temp_path() + "tmp.dialog";
+  try {
+    if (extract("data/generated/config/universe/localization.dat", dialogfile))
+      read_dialogs(dialogfile, dialogs);
+    else
+      logger.println("Couldn't find localization.dat");
+  } catch(const std::exception& err) {
+    logger.println(std::string("Couldn't read localization.dat: ") + err.what());
+  }
 
-  if (!dfentry)
+  // Speech is stored in the location itself, e.g. locations/airship.cdr,
+  // not in the files of the subdirectories
+  const std::string prefix = "data/generated/locations/";
+  std::vector<std::string> locations = find_files(prefix, ".cdr");
+  locations.erase(std::remove_if(locations.begin(), locations.end(),
+                                 [&prefix](const std::string& location) {
+                                   return location.find('/', prefix.size()) != std::string::npos;
+                                 }),
+                  locations.end());
+
+  logger.set_task_size(locations.size());
+  logger.set_task_status(0);
+  logger.sync();
+
+  const std::string locationfile = get_temp_path() + "tmp.shark3d";
+  for(std::vector<std::string>::iterator i = locations.begin(); i != locations.end(); ++i)
     {
-      std::cout << "Error: Couldn't find locations" << std::endl;
-    }
-  else
-    {
-      logger.set_task_size(dfentry->get_dir().children.size());
-      logger.set_task_status(0);
+      logger.println("    scanning " + *i);
       logger.sync();
 
-      for(std::vector<DreamfallFileEntry*>::iterator i = dfentry->get_dir().children.begin();
-          i != dfentry->get_dir().children.end(); ++i)
-        {
-          std::cout << (*i)->get_url() << std::endl;
-          if ((*i)->is_pak())
-            {
-              logger.println("    scanning " + (*i)->get_url());
-              logger.sync();
+      try {
+        if (extract(*i, locationfile))
+          scan_for_mp3s(locationfile, logger.start_subtask());
+      } catch(const std::exception& err) {
+        logger.println("Couldn't read " + *i + ": " + err.what());
+      }
 
-              data_manager.extract((*i)->get_pak(), get_temp_path() + "/tmp.shark3d");
-              scan_for_mp3s(get_temp_path() + "/tmp.shark3d", logger.start_subtask());
-            }
-
-          logger.increment_status();
-          logger.sync();
-        }
-
-
-      logger.println("Scanning for dialogs... done");
-      logger.println("");
-      logger.println("### Done ###");
-      logger.set_done();
+      logger.increment_status();
       logger.sync();
     }
+
+  logger.println("Scanning for dialogs... done");
+  logger.set_done();
+  logger.sync();
 }
 
 Speech
 DataManager::get_speech_by_mp3(const std::string& str) const
 {
-  std::map<std::string, Speech>::const_iterator it = mp3_to_speech.find(str);
+  std::map<std::string, Speech>::const_iterator it = mp3_to_speech.find(tolowercase(str));
 
   if (it != mp3_to_speech.end())
     {

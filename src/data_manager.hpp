@@ -104,7 +104,11 @@ public:
   const Dialog& get_dialog(int i) const;
   const std::vector<Dialog>& get_dialogs() const { return dialogs; }
 
+  /** Collect the speech of the given location file */
   void scan_for_mp3s(const std::string& filename, ProgressLogger& logger);
+
+  /** Read the localization and the speech of all locations, this
+      needs the filenames from scan_paks() */
   void scan_for_all_mp3s(ProgressLogger& logger);
 
   Speech get_speech_by_mp3(const std::string& ) const;

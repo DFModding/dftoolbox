@@ -138,7 +138,6 @@ public:
   void on_collapse_tree();
   void on_expand_tree();
   void on_goto_parent_dir();
-  void on_scan_for_mp3();
 
   /** Find the tree item matching url */
   QTreeWidgetItem* find(QTreeWidgetItem* root, const std::string& url);

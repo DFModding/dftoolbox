@@ -654,15 +654,25 @@ SectionNode::get_int(const std::string& ident) const
 float
 SectionNode::get_float(const std::string& ident) const
 {
-  // FIXME: add error checking
-  return get_floats(ident).front();
+  const std::vector<float>& floats = get_floats(ident);
+  if (floats.empty())
+    {
+      std::cout << "Warning: Couldn't find float for: " << ident << std::endl;
+      return 0.0f;
+    }
+  return floats.front();
 }
 
 std::string
 SectionNode::get_string(const std::string& ident) const
 {
-  // FIXME: add error checking
-  return get_strings(ident).front();
+  const std::vector<std::string>& strings = get_strings(ident);
+  if (strings.empty())
+    {
+      std::cout << "Warning: Couldn't find string for: " << ident << std::endl;
+      return std::string();
+    }
+  return strings.front();
 }
 
 std::vector<int>

@@ -145,8 +145,7 @@ DialogView::on_language_switch(int lang_id)
 void
 DialogView::play(int dialog_id, const std::string& lang_code)
 {
-  // play_dialog() throws if the speech data of the dialog isn't known
-  // (it only gets collected by the unimplemented "Scan for Dialogs"),
+  // play_dialog() throws if the speech data of the dialog isn't known,
   // which must not escape from the event handler
   try {
     dftoolbox->play_dialog(dialog_id, lang_code);

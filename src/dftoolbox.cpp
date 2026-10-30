@@ -214,7 +214,6 @@ DFToolBoxWindow::DFToolBoxWindow()
   QMenu* filemenu = menuBar()->addMenu("&File");
   filemenu->addAction("&Dreamfall Path", this, [this]{ on_dreamfall_path(); });
   filemenu->addAction("&Preferences")->setEnabled(false);
-  filemenu->addAction("Scan for Dialogs", this, [this]{ on_scan_for_mp3(); });
   filemenu->addSeparator();
   QAction* quit = filemenu->addAction("&Quit", qApp, &QApplication::quit);
   quit->setShortcut(QKeySequence("Ctrl+Q"));
@@ -492,7 +491,7 @@ DFToolBoxWindow::add_directory(const std::string& pathname, QTreeWidgetItem* roo
 /** Worker that reads the pak files, runs on its own thread */
 static void load_files_worker(DataManager& data_manager, ProgressLogger& logger, DFToolBoxWindow* window)
 {
-  logger.set_task_size(2);
+  logger.set_task_size(3);
   logger.set_task_status(0);
   logger.println("Reading Directory: " + dreamfall_path + "/bin/res/");
   logger.sync();
@@ -509,6 +508,11 @@ static void load_files_worker(DataManager& data_manager, ProgressLogger& logger,
   logger.sync();
 
   data_manager.scan_paks(logger.start_subtask());
+
+  logger.increment_status();
+  logger.sync();
+
+  data_manager.scan_for_all_mp3s(logger.start_subtask());
 
   logger.increment_status();
   logger.println("");
@@ -1072,8 +1076,7 @@ DFToolBoxWindow::display(QTreeWidgetItem* item)
 
                   } catch(...) {
                     soundview->set_music(get_temp_path() + "tmp.mp3",
-                                         "<nothing found>\n\n"
-                                         "If you want to see the dialog in text form displayed here, click \"File->Scan for Dialogs\".");
+                                         "<no dialog found for this sound>");
                   }
 
                   show_switcher(SWITCHER_SOUNDVIEW);
@@ -1360,22 +1363,6 @@ DFToolBoxWindow::export_files(const std::vector<DreamfallFileEntry*>& selection,
           std::cout << "Error this shouldn't happen" << std::endl;
         }
     }
-}
-
-void
-DFToolBoxWindow::on_scan_for_mp3()
-{
-  progress_dialog->show();
-  progress_dialog->relayout(2);
-
-  GUIProgressLogger* logger = new GUIProgressLogger(progress_dialog); // FIXME: delete me
-  (void)logger;
-
-  // The scanning itself isn't implemented (and never was), so this
-  // thread does nothing and the dialog never gets the done signal
-  progress_dialog->set_thread(std::thread([]{
-    //dftoolbox->scan_for_all_mp3s(logger);
-  }));
 }
 
 int main(int argc,char** argv)

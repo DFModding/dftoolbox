@@ -62,7 +62,7 @@ struct Conversation
           Action()
             : action_type(0),
               camera(0),
-              metastate(0),
+              metastate(),
               speech(-1)
           {}
         };

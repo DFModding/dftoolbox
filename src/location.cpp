@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include "location.hpp"
 
 Location::Location(const std::string& filename)
@@ -40,7 +41,7 @@ Location::parse(const std::string& filename)
     }
   else
     {
-      Shark3D* shark = Shark3D::parse_binary(in);
+      std::unique_ptr<Shark3D> shark(Shark3D::parse_binary(in));
 
       parse_root(shark->section);
 
@@ -69,6 +70,8 @@ Location::parse_actor_param(SectionNode* node)
 void
 Location::parse_children(SectionNode* node)
 {
+  if (!node) return;
+
   const std::vector<SectionNode*>& sections = node->get_sections("children");
 
   for(std::vector<SectionNode*>::const_iterator i = sections.begin();
@@ -93,6 +96,8 @@ Location::parse_children(SectionNode* node)
 void
 Location::parse_speech(SectionNode* node)
 { // we get the first node of the param subsection
+  if (!node) return;
+
   Speech speech;
 
   speech.id         = node->get_int("id");
@@ -100,6 +105,7 @@ Location::parse_speech(SectionNode* node)
 
   // goto subtiles subnode
   node = node->get_section("subtitles");
+  if (!node) return;
 
   speech.actor_id    = node->get_int("actor_id");
   speech.actor_name  = node->get_int("actor_name");
@@ -117,6 +123,8 @@ Location::parse_speech(SectionNode* node)
 void
 Location::parse_conversation(SectionNode* node)
 {
+  if (!node) return;
+
   Conversation conversation;
 
   conversation.id = node->get_int("id");
@@ -176,7 +184,6 @@ Location::parse_conversation(SectionNode* node)
       conversation.choices.push_back(choice);
     }
 
-  std::cout << "Found Conversation: " << conversation.id  << std::endl;
   conversations[conversation.id] = conversation;
 }
 
