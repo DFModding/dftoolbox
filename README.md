@@ -268,7 +268,7 @@ or skipped:
 | STACK-2, INT-3, INT-9, SDL3-* | Qt instead of SDL, as STACK-6 asks for: Qt Multimedia plays the sounds, `setDesktopFileName()` sets the window IDs |
 | DIR-1, INT-7 man section, categories | The man page is in section 1, and the .desktop file is not in `Game`, since this is not a game |
 | FLAKE-1 `dftoolbox-win32` | Qt 6 has no 32-bit Windows support |
-| FLAKE-14 | The project is hosted on GitLab and Radicle, not GitHub. `nix flake check` compiles Qt, which also doesn't fit shared CI runners |
+| FLAKE-14 | No GitHub Actions, `nix flake check` compiles Qt, which doesn't fit shared CI runners |
 | Android, PortMaster, web | Not targets |
 
 The DIR-3 search means that a checkout has to be told where its data
