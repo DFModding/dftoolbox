@@ -27,6 +27,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
+# Installs TARGET into libexec and a wrapper script into bin that
+# passes the shared data directory (share/dftoolbox) via --datadir
 function(install_with_wrapper TARGET)
   install(TARGETS ${TARGET}
     RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
@@ -158,8 +160,11 @@ install(TARGETS
 install_with_wrapper(dftoolbox)
 install_with_wrapper(dfmodtool)
 
+# Shared runtime data of dftoolbox and dfmodtool: icons (PNG and the
+# GIFs of the mods), the mods dfmodtool lists and the known filenames
 install(DIRECTORY icons DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
-  PATTERN "*.gif")
+  PATTERN "*.xcf" EXCLUDE)
+install(DIRECTORY mods DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
 install(DIRECTORY mods DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
