@@ -23,6 +23,10 @@ project(dftoolbox VERSION 0.1.0)
 
 include(GNUInstallDirs)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+
 function(install_with_wrapper TARGET)
   install(TARGETS ${TARGET}
     RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
@@ -45,6 +49,7 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(SDL REQUIRED sdl IMPORTED_TARGET)
 pkg_search_module(SDL_MIXER REQUIRED SDL_mixer IMPORTED_TARGET)
 pkg_search_module(FOX REQUIRED fox IMPORTED_TARGET)
+find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets)
 
 add_library(libdftoolbox STATIC
   "src/util.cpp"
@@ -109,6 +114,7 @@ add_executable(dfmodtool
   )
 target_link_libraries(dfmodtool PRIVATE
   libdftoolbox
+  Qt6::Widgets
   PkgConfig::FOX)
 
 add_executable(dftoolbox
@@ -128,6 +134,7 @@ add_executable(dftoolbox
   )
 target_link_libraries(dftoolbox PRIVATE
   libdftoolbox
+  Qt6::Widgets
   PkgConfig::FOX
   PkgConfig::SDL
   PkgConfig::SDL_MIXER)
