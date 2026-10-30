@@ -284,11 +284,12 @@ DataManager::scan_paks(ProgressLogger& logger)
       splitpath(i->second->filename, pathpart, filepart);
       std::string filetablecache = cachedir + filepart + ".txt";
 
-      // invalidate the cache when the pak or the filelist changes
+      // invalidate the cache when the pak or the filelist changes, the
+      // leading number is raised when the type detection changes
       std::ostringstream cache_key;
       int64_t size = 0, mtime = 0;
       file_stat(i->second->filename, size, mtime);
-      cache_key << size << ":" << mtime << ":" << filelist.size();
+      cache_key << "2:" << size << ":" << mtime << ":" << filelist.size();
 
       std::ifstream in(filetablecache.c_str());
 

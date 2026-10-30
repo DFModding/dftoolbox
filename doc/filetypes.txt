@@ -50,9 +50,7 @@ Multimedia:
 .mp3 (23,108)    - standard MP3
 .wav (4,880)     - standard RIFF WAV
 .png .tga .dds   - DirectX DDS textures (10,859), not real .pngs or .tgas
-.scr (3,509)     - plain text D3D shader assembly. 314 of them begin with
-                   an empty line and show up as unknown, as get_type()
-                   only looks at the first bytes
+.scr (3,509)     - plain text D3D shader assembly
 
 Other:
 
@@ -140,9 +138,10 @@ letters wrong or missing. 72 extensions are visibly damaged that way:
   .op3 .qp3 .sp3 .up3 .wp3 .yp3                are MP3 (18)
   .nip .pip .rip .tip .vip .xip                are .lip (18)
 
-The 36 MP3 and .lip files are all in vox_de, vox_en and vox_no. They
-are the only ones of the 1,919 files with no detected type that are
-not covered by the .ikr_data, .scr, .dat and .graph entries above.
+The 36 MP3 and .lip files are all in vox_de, vox_en and vox_no. The
+MP3s are still detected by their content. The .lip files have no magic,
+so they are the only ones of the 1,587 files with no detected type
+that are not .ikr_data, .dat or .graph.
 
 
 The old "Missdetections?" list

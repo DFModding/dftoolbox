@@ -855,11 +855,15 @@ TLJPak::get_type(int i, std::istream& in)
     return FILETYPE_WAV;
   else if (has_suffix(files[i].pathname, ".lip"))
     return FILETYPE_LIP;
+  else if (has_suffix(files[i].pathname, ".scr"))
+    return FILETYPE_TEXT;
   else if (has_suffix(files[i].pathname, "config/universe/localization.dat"))
     return FILETYPE_LOCALISATION;
   // FIXME: This is mostly guessing
   else if (strncmp(magic, "ID3", 3) == 0)
     return FILETYPE_MP3;
+  else if (static_cast<unsigned char>(magic[0]) == 0xff && (magic[1] & 0xe0) == 0xe0)
+    return FILETYPE_MP3; // MPEG frame sync, for mp3s with a damaged filename
   else if (strncmp(magic, "vs", 2) == 0 || strncmp(magic, "xvs", 3) == 0)
     return FILETYPE_TEXT;
   else if (strncmp(magic, "ps", 2) == 0 || strncmp(magic, "xps", 3) == 0)
