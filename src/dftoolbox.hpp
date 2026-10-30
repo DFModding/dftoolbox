@@ -27,17 +27,32 @@
 
 #include <map>
 #include <string>
+#include <vector>
+
+#include <QMainWindow>
+
 #include "icons.hpp"
 #include "dialog.hpp"
 #include "location.hpp"
 #include "data_manager.hpp"
 
-class SharkView;
-class SoundView;
-class ImageView;
 class DialogView;
 class DirectoryView;
+class DreamfallFileEntry;
+class ImageView;
 class ProgressDialog;
+class QAction;
+class QComboBox;
+class QLineEdit;
+class QMenu;
+class QPlainTextEdit;
+class QSplitter;
+class QStackedWidget;
+class QToolBar;
+class QTreeWidget;
+class QTreeWidgetItem;
+class SharkView;
+class SoundView;
 
 struct Bookmark
 {
@@ -50,71 +65,58 @@ struct Bookmark
   {}
 };
 
-class DFToolBoxWindow : public FXMainWindow
+/** Get the DreamfallFileEntry that belongs to an item of the main tree */
+DreamfallFileEntry* entry_of(QTreeWidgetItem* item);
+
+class DFToolBoxWindow : public QMainWindow
 {
-  FXDECLARE(DFToolBoxWindow);
 protected:
-  FXMenuBar*   menubar;
-  FXDockSite*  topdock;
-  FXMenuPane*  filemenu;
-  FXMenuPane*  bookmarkmenu;
-  FXMenuPane*  helpmenu;
+  QMenu*       bookmarkmenu;
 
-  FXToolBar*   toolbar;
-  FXToolBar*   toolbar2;
-  FXToolBar*   modbar;
+  QToolBar*    toolbar;
+  QToolBar*    toolbar2;
+  QToolBar*    modbar;
 
-  FXSplitter*  splitter;
-  FXStatusBar* status;
+  QSplitter*   splitter;
 
-  FXListBox*  paklist;
-  FXTreeList* tree;
-  FXTreeItem* topmost;
-  FXTreeItem* current_tree_item;
+  QComboBox*       paklist;
+  QTreeWidget*     tree;
+  QTreeWidgetItem* topmost;
+  QTreeWidgetItem* current_tree_item;
 
-  FXTextField* locationbar;
+  QLineEdit* locationbar;
 
   ImageView*     imageview;
   SharkView*     sharkview;
   SoundView*     soundview;
   DialogView*    dialogview;
   DirectoryView* directoryview;
-  FXText*        error_log;
+  QPlainTextEdit* error_log;
 
-  FXVerticalFrame* group1;
-  FXVerticalFrame* group2;
-  FXSwitcher*      switcher;
+  QStackedWidget*  switcher;
 
-  FXGIFIcon         *big_folder_closed;
+  QAction*       parent_action;
 
-  FXImage*       image;
-  FXButton*      parent_button;
-
-  FXMenuTitle* bookmark_title;
   ProgressDialog* progress_dialog;
 
   // Cache to speed up tree insertion
-  typedef std::map<FXTreeItem*, std::map<std::string, FXTreeItem*> > Directories;
+  typedef std::map<QTreeWidgetItem*, std::map<std::string, QTreeWidgetItem*> > Directories;
   Directories directories;
 
   std::vector<Bookmark*> bookmarks;
 
 public:
   DFToolBoxWindow();
-  DFToolBoxWindow(FXApp* a);
 
   virtual ~DFToolBoxWindow();
 
-  void create();
-
   /** the \a directories table is used for cashing */
-  FXTreeItem* add_directory(const std::string& pathname, FXTreeItem* rootitem);
+  QTreeWidgetItem* add_directory(const std::string& pathname, QTreeWidgetItem* rootitem);
 
   void load_files();
   void build_trees();
 
-  void display(DirectoryFileEntry* dfentry);
-  void display(FXTreeItem* item);
+  void display(QTreeWidgetItem* item);
   void init();
   void save_dreamfall_path();
 
@@ -125,22 +127,21 @@ public:
   void show_switcher(int i);
   void play_dialog(int i, const std::string& lang);
 
-  long onCmdOpen(FXObject*,FXSelector,void*);
-  long onCmdSave(FXObject*,FXSelector,void*);
-  long onCmdAbout(FXObject*,FXSelector,void*);
-  long onCmdBookmark(FXObject*, FXSelector, void* data);
-  long onCmdAddBookmark(FXObject*, FXSelector, void* data);
-  long onCmdLocationbar(FXObject*, FXSelector, void* data);
-  long onDirChange(FXObject* sender, FXSelector, void* data);
-  long onCmdDreamfallPath(FXObject*,FXSelector,void*);
-  long onCmdCollapseTree(FXObject*, FXSelector,void*);
-  long onCmdExpandTree(FXObject*, FXSelector,void*);
-  long onCmdGotoParentDir(FXObject* sender, FXSelector, void* data);
-  long onCmdScanForMP3(FXObject* sender, FXSelector, void* data);
-  long onCmdBuildTree(FXObject* sender, FXSelector, void* data);
+  void on_open();
+  void on_save();
+  void on_about();
+  void on_bookmark(Bookmark* bookmark);
+  void on_add_bookmark();
+  void on_locationbar();
+  void on_dir_change(QTreeWidgetItem* item);
+  void on_dreamfall_path();
+  void on_collapse_tree();
+  void on_expand_tree();
+  void on_goto_parent_dir();
+  void on_scan_for_mp3();
 
   /** Find the tree item matching url */
-  FXTreeItem* find(FXTreeItem* root, const std::string& url);
+  QTreeWidgetItem* find(QTreeWidgetItem* root, const std::string& url);
 
   void clear_bookmarks();
   void load_bookmarks(const std::string& filename);
@@ -155,22 +156,11 @@ public:
     SWITCHER_DIALOGVIEW
   };
 
-  enum {
-    ID_SAVE = FXMainWindow::ID_LAST,
-    ID_OPEN,
-    ID_ABOUT,
-    ID_DIRECTORYCHANG,
-    ID_BOOKMARK,
-    ID_ADD_BOOKMARK,
-    ID_PREFERENCES,
-    ID_LOCATIONBAR,
-    ID_COLLAPSE_TREE,
-    ID_EXPAND_TREE,
-    ID_DREAMFALL_PATH,
-    ID_GOTO_PARENTDIR,
-    ID_SCAN_FOR_MP3,
-    ID_BUILD_TREE
-  };
+private:
+  void add_bookmark_action(Bookmark* bookmark);
+
+  DFToolBoxWindow(const DFToolBoxWindow&) = delete;
+  DFToolBoxWindow& operator=(const DFToolBoxWindow&) = delete;
 };
 
 #endif

@@ -112,6 +112,7 @@ add_executable(dfmodtool
   "src/pak_insert_thread.cpp"
   "src/icons.cpp"
   "src/progress_dialog.cpp"
+  "src/progress_dialog.hpp"
   "src/progress_logger.cpp"
   # + (cross and ['dfmodtool-res.o'] or []),
   )
@@ -135,33 +136,38 @@ install(TARGETS
   dftool-cir
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# FIXME: temporary, the dftoolbox GUI is ported to Qt6 step by step
-# and gets built again once the port is complete
-set(DFTOOLBOX_QT_PORT_DONE OFF)
-if(DFTOOLBOX_QT_PORT_DONE)
 add_executable(dftoolbox
   "src/dftoolbox.cpp"
+  "src/dftoolbox.hpp"
   "src/shark_view.cpp"
+  "src/shark_view.hpp"
   "src/image_view.cpp"
+  "src/image_view.hpp"
   "src/dialog_view.cpp"
+  "src/dialog_view.hpp"
   "src/searchbar.cpp"
+  "src/searchbar.hpp"
   "src/export_dialog.cpp"
+  "src/export_dialog.hpp"
   "src/dreamfall_file_entry.cpp"
   "src/directory_view.cpp"
+  "src/directory_view.hpp"
   "src/sound_view.cpp"
+  "src/sound_view.hpp"
+  "src/ui_util.cpp"
+  "src/ui_util.hpp"
   "src/icons.cpp"
   "src/progress_dialog.cpp"
+  "src/progress_dialog.hpp"
   "src/progress_logger.cpp"
   # (cross and ['dftoolbox-res.o'] or []),
   )
 target_link_libraries(dftoolbox PRIVATE
   libdftoolbox
   Qt6::Widgets
-  PkgConfig::FOX
   PkgConfig::SDL
   PkgConfig::SDL_MIXER)
 install_with_wrapper(dftoolbox)
-endif()
 install_with_wrapper(dfmodtool)
 
 # Shared runtime data of dftoolbox and dfmodtool: icons (PNG and the
