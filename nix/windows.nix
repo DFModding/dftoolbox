@@ -157,7 +157,7 @@ let
     done
 
     cp ${../COPYING} $out/COPYING.txt
-    cat > $out/README.txt <<EOR
+    cat > $out/README.txt <<'EOR'
     DFToolBox ${version}
     Inspect and modify the data files of the game Dreamfall.
 
