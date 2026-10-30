@@ -30,6 +30,7 @@
 #include <QBuffer>
 #include <QFile>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QMediaDevices>
 #include <QMediaPlayer>
 #include <QPlainTextEdit>
@@ -39,6 +40,12 @@
 
 #include "icons.hpp"
 #include "system.hpp"
+
+static QString format_time(qint64 msec)
+{
+  const qint64 seconds = msec / 1000;
+  return QString("%1:%2").arg(seconds / 60).arg(seconds % 60, 2, 10, QChar('0'));
+}
 
 // http://www.gamedev.net/reference/articles/article2053.asp
 SoundView::SoundView(QWidget* parent)
@@ -51,6 +58,14 @@ SoundView::SoundView(QWidget* parent)
   connect(player, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState state)
           {
             play_button->setChecked(state == QMediaPlayer::PlayingState);
+          });
+  connect(player, &QMediaPlayer::positionChanged, this, [this](qint64 position)
+          {
+            update_time(position, player->duration());
+          });
+  connect(player, &QMediaPlayer::durationChanged, this, [this](qint64 duration)
+          {
+            update_time(player->position(), duration);
           });
   connect(player, &QMediaPlayer::errorOccurred, this, [](QMediaPlayer::Error, const QString& message)
           {
@@ -94,9 +109,14 @@ SoundView::SoundView(QWidget* parent)
   connect(stop_button, &QToolButton::clicked, this, [this]{ on_stop(); });
   hbox->addWidget(stop_button);
 
-  QSlider* slider = new QSlider(Qt::Horizontal);
+  slider = new QSlider(Qt::Horizontal);
   slider->setEnabled(false);
+  connect(slider, &QSlider::sliderMoved, player, &QMediaPlayer::setPosition);
   hbox->addWidget(slider, 1);
+
+  time_label = new QLabel;
+  hbox->addWidget(time_label);
+  update_time(0, 0);
 
   text = new QPlainTextEdit;
   text->setReadOnly(true);
@@ -123,6 +143,19 @@ SoundView::set_music(const std::string& filename, const std::string& desc)
 
   player->setSourceDevice(buffer, QUrl::fromLocalFile(file.fileName()));
   player->play();
+}
+
+void
+SoundView::update_time(qint64 position, qint64 duration)
+{
+  slider->setEnabled(duration > 0);
+  slider->setMaximum(static_cast<int>(duration));
+
+  // don't fight with the user when the slider is getting dragged
+  if (!slider->isSliderDown())
+    slider->setValue(static_cast<int>(position));
+
+  time_label->setText(format_time(position) + " / " + format_time(duration));
 }
 
 void

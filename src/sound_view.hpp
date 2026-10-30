@@ -30,7 +30,9 @@
 class QAudioOutput;
 class QBuffer;
 class QMediaPlayer;
+class QLabel;
 class QPlainTextEdit;
+class QSlider;
 class QToolButton;
 
 class SoundView : public QWidget
@@ -43,6 +45,8 @@ private:
       player has it open */
   QBuffer* buffer;
   QToolButton* play_button;
+  QSlider* slider;
+  QLabel* time_label;
   QPlainTextEdit* text;
 
 public:
@@ -54,6 +58,10 @@ public:
   void on_stop();
 
   void show_toolbar(bool t) { }
+
+private:
+  /** Update the timeline, \a position and \a duration are in msec */
+  void update_time(qint64 position, qint64 duration);
 };
 
 #endif
