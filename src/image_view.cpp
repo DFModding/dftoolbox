@@ -22,53 +22,60 @@
 **  02111-1307, USA.
 */
 
+#include "image_view.hpp"
+
 #include <stdexcept>
 #include <fstream>
 #include <iostream>
+#include <cmath>
+
+#include <QAction>
+#include <QLabel>
+#include <QMainWindow>
+#include <QPixmap>
+#include <QPlainTextEdit>
+#include <QScrollArea>
+#include <QToolBar>
+#include <QVBoxLayout>
+
 #include "icons.hpp"
 #include "dds.hpp"
 #include "system.hpp"
-#include "image_view.hpp"
-
-FXDEFMAP(ImageView) ImageViewMap[] = {
-  FXMAPFUNC(SEL_COMMAND,       ImageView::ID_ZOOM_1_1,        ImageView::onCmdZoom1_1),
-  FXMAPFUNC(SEL_COMMAND,       ImageView::ID_ZOOM_IN,         ImageView::onCmdZoomIn),
-  FXMAPFUNC(SEL_COMMAND,       ImageView::ID_ZOOM_OUT,        ImageView::onCmdZoomOut),
-};
-
-// Object implementation
-FXIMPLEMENT(ImageView, FXVerticalFrame, ImageViewMap, ARRAYNUMBER(ImageViewMap));
+#include "ui_util.hpp"
 
 #define SCALE_LIMIT 4
 
-ImageView::ImageView()
-{
-}
-
-ImageView::ImageView(FXComposite* parent, FXDockSite* dock)
-  : FXVerticalFrame(parent, FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y,
-                    0, 0, 0, 0,
-                    0, 0, 0, 0),
-    image(0),
+ImageView::ImageView(QWidget* parent, QMainWindow* mainwindow)
+  : QWidget(parent),
     scale(0)
 {
-  scaled_images.resize(2*SCALE_LIMIT+1, 0);
+  toolbar = new QToolBar;
+  mainwindow->addToolBar(toolbar);
 
-  toolbar = new FXToolBar(dock, LAYOUT_SIDE_TOP|FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_DOCK_SAME);
+  connect(add_tool_action(toolbar, Icon::zoom_1_1, "Zoom 1:1"),
+          &QAction::triggered, this, [this]{ set_scale(0); });
+  connect(add_tool_action(toolbar, Icon::zoom_in, "Zoom in"),
+          &QAction::triggered, this, [this]{ set_scale(scale + 1); });
+  connect(add_tool_action(toolbar, Icon::zoom_out, "Zoom out"),
+          &QAction::triggered, this, [this]{ set_scale(scale - 1); });
+  toolbar->addSeparator();
+  add_tool_action(toolbar, Icon::grayscale, "Grayscale")->setEnabled(false);
+  add_tool_action(toolbar, Icon::normalmap, "Normalmap")->setEnabled(false);
 
-  new FXButton(toolbar, "\tZoom 1:1", Icon::zoom_1_1, this, ID_ZOOM_1_1, BUTTON_TOOLBAR|FRAME_RAISED);
-  new FXButton(toolbar, "\tZoom in",  Icon::zoom_in,  this, ID_ZOOM_IN,  BUTTON_TOOLBAR|FRAME_RAISED);
-  new FXButton(toolbar, "\tZoom out", Icon::zoom_out, this, ID_ZOOM_OUT, BUTTON_TOOLBAR|FRAME_RAISED);
-  new FXHorizontalSeparator(toolbar, SEPARATOR_GROOVE);
-  (new FXButton(toolbar, "\tGrayscale", Icon::grayscale, NULL, 0, BUTTON_TOOLBAR|FRAME_RAISED))->disable();
-  (new FXButton(toolbar, "\tNormalmap", Icon::normalmap, NULL, 0, BUTTON_TOOLBAR|FRAME_RAISED))->disable();
+  QVBoxLayout* vbox = new QVBoxLayout(this);
+  vbox->setContentsMargins(0, 0, 0, 0);
+  vbox->setSpacing(0);
 
   // Text view for info on file format and stuff
-  text = new FXText(this, NULL, 0, LAYOUT_FILL_X);
-  text->setText("Hello World");
+  text = new QPlainTextEdit("Hello World");
   text->hide();
+  vbox->addWidget(text);
 
-  imageview  = new FXImageView(this, NULL, NULL,0, LAYOUT_FILL_X|LAYOUT_FILL_Y);
+  imagelabel = new QLabel;
+  scrollarea = new QScrollArea;
+  scrollarea->setWidget(imagelabel);
+  scrollarea->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+  vbox->addWidget(scrollarea, 1);
 }
 
 void
@@ -83,17 +90,18 @@ ImageView::set_image(const std::string& filename)
   DDS dds(in);
   std::cout << "DDS: " << dds.width << "x" << dds.height << std::endl;
 
-  // FOX frees IMAGE_OWNED data with free(), so it has to come from malloc()
-  FXColor* image_data = static_cast<FXColor*>(malloc(dds.get_data().size()));
-  memcpy(image_data, &*dds.get_data().begin(), dds.get_data().size());
+  // DDS::get_data() is RGBA, one byte per channel; copy() so that the
+  // image doesn't depend on the lifetime of the DDS data
+  const std::vector<char>& data = dds.get_data();
+  if (data.size() < size_t(dds.width) * dds.height * 4)
+    throw std::runtime_error("DDS: not enough image data");
 
-  image = new FXImage(getApp(), image_data,
-                      IMAGE_KEEP|IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED, dds.width, dds.height);
-
-  image->create();
-  imageview->setImage(image);
-  //delete old;
+  image = QImage(reinterpret_cast<const uchar*>(data.data()), dds.width, dds.height,
+                 dds.width * 4, QImage::Format_RGBA8888).copy();
   in.close();
+
+  imagelabel->setPixmap(QPixmap::fromImage(image));
+  imagelabel->adjustSize();
 
   set_scale(scale);
 }
@@ -101,15 +109,8 @@ ImageView::set_image(const std::string& filename)
 void
 ImageView::cleanup()
 {
-  for(std::vector<FXImage*>::iterator i = scaled_images.begin();
-      i != scaled_images.end(); ++i)
-    {
-      delete *i;
-      *i = 0;
-    }
-  imageview->setImage(0);
-  delete image;
-  image = 0;
+  imagelabel->clear();
+  image = QImage();
 }
 
 void
@@ -124,19 +125,17 @@ ImageView::set_save_image(const std::string& filename)
     }
   else
     {
-      FXColor* buffer = static_cast<FXColor*>(malloc(sizeof(FXColor)*256*256));
-
-      // Extract screenshot
+      // Extract screenshot, the last 256*256 RGBA pixels of the file
+      std::vector<uchar> buffer(256*256*4);
       in.seekg(-(256*256*4), std::ios::end);
-      in.read(reinterpret_cast<char*>(buffer), 256*256*4);
+      in.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
+      if (!in)
+        throw std::runtime_error("Couldn't read screenshot from: " + filename);
       in.close();
 
-      // FIXME: Memleak
-      image = new FXImage(getApp(), buffer,
-                          IMAGE_KEEP|IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED,
-                          256, 256);
-      image->create();
-      imageview->setImage(image);
+      image = QImage(buffer.data(), 256, 256, 256*4, QImage::Format_RGBA8888).copy();
+      imagelabel->setPixmap(QPixmap::fromImage(image));
+      imagelabel->adjustSize();
     }
 
   set_scale(scale);
@@ -145,37 +144,30 @@ ImageView::set_save_image(const std::string& filename)
 void
 ImageView::set_scale(int scale_)
 {
-  if (!image)
+  if (image.isNull())
     return;
 
   if (scale_ >= -SCALE_LIMIT && scale_ <= SCALE_LIMIT)
     {
       float factor = powf(2, scale_);
-      FXColor* data = image->getData();
-      int width     = image->getWidth();
-      int height    = image->getHeight();
+      int width     = image.width();
+      int height    = image.height();
 
       if (width*height * factor <= 1048*1048*2 && width*height*factor > 8*8)
         {
           scale = scale_;
 
-          if (scaled_images[scale + SCALE_LIMIT])
+          if (scale == 0)
             {
-              imageview->setImage(scaled_images[scale + SCALE_LIMIT]);
+              imagelabel->setPixmap(QPixmap::fromImage(image));
             }
           else
             {
-              // FIXME: this is slow, but FXImageView doesn't support scaling of the view
-              FXColor* newdata = static_cast<FXColor*>(malloc(sizeof(FXColor)*width*height));
-              memcpy(newdata, data, sizeof(FXColor)*width*height);
-              scaled_images[scale+SCALE_LIMIT] = new FXImage(getApp(), newdata,
-                                                             IMAGE_SHMI|IMAGE_SHMP|IMAGE_OWNED,
-                                                             width, height);
-              scaled_images[scale+SCALE_LIMIT]->scale(static_cast<int>(width*factor),
-                                                      static_cast<int>(height*factor));
-              scaled_images[scale+SCALE_LIMIT]->create();
-              imageview->setImage(scaled_images[scale+SCALE_LIMIT]);
+              imagelabel->setPixmap(QPixmap::fromImage(
+                image.scaled(static_cast<int>(width*factor), static_cast<int>(height*factor),
+                             Qt::IgnoreAspectRatio, Qt::SmoothTransformation)));
             }
+          imagelabel->adjustSize();
         }
     }
   else
@@ -184,38 +176,10 @@ ImageView::set_scale(int scale_)
     }
 }
 
-long
-ImageView::onCmdZoom1_1(FXObject*,FXSelector,void*)
-{
-  set_scale(0);
-  return 1;
-}
-
-long
-ImageView::onCmdZoomIn(FXObject*,FXSelector,void*)
-{
-  set_scale(scale+1);
-  return 1;
-}
-
-long
-ImageView::onCmdZoomOut(FXObject*,FXSelector,void*)
-{
-  set_scale(scale-1);
-  return 1;
-}
-
 void
 ImageView::show_toolbar(bool t)
 {
-  if (t)
-    {
-      toolbar->show();
-    }
-  else
-    {
-      toolbar->hide();
-    }
+  toolbar->setVisible(t);
 }
 
 /* EOF */

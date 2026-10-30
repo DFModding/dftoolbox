@@ -26,10 +26,16 @@
 #ifndef HEADER_GUI_PROGRESS_LOGGER_HPP
 #define HEADER_GUI_PROGRESS_LOGGER_HPP
 
-#include "fx.h"
+#include <algorithm>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <vector>
+
+#include <QMetaObject>
+#include <QPointer>
+
+#include "progress_dialog.hpp"
 #include "progress_logger.hpp"
 
 class GUIChildProgressLogger : public ProgressLogger
@@ -43,7 +49,7 @@ private:
   std::vector<GUIChildProgressLogger*> old_subtasks;
 
 public:
-  mutable FXMutex mutex;
+  mutable std::mutex mutex;
 
   GUIChildProgressLogger(ProgressLogger* parent_)
     : parent(parent_),
@@ -61,26 +67,26 @@ public:
   }
 
   void println(const std::string& str)
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     parent->println("    " + str);
   }
 
   void set_task_size(int s)
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     // can't allow task size smaller 1, else crash due to div by zero
     task_size = std::max(1, s);
   }
 
   void set_task_status(int s)
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     task_status = s;
   }
 
   ProgressLogger& start_subtask()
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     // the GUI thread might still be looking at the old subtask, so
     // keep it around instead of deleting it
@@ -91,30 +97,30 @@ public:
   }
 
   int get_task_size()  const
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     return task_size;
   }
 
   int get_task_status()  const
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     return task_status;
   }
 
   ProgressLogger* get_subtask() const
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     return subtask;
   }
 
   void set_done()
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
     done = true;
   }
 
   bool is_done() const
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
     return done;
   }
 
@@ -127,7 +133,7 @@ public:
 class GUIProgressLogger : public ProgressLogger
 {
 private:
-  FXGUISignal signal;
+  QPointer<ProgressDialog> target;
   int task_size;
   int task_status;
   std::ostringstream log;
@@ -136,10 +142,10 @@ private:
   GUIChildProgressLogger* subtask;
   std::vector<GUIChildProgressLogger*> old_subtasks;
 public:
-  mutable FXMutex mutex;
+  mutable std::mutex mutex;
 
-  GUIProgressLogger(FXApp* app, FXObject* target, FXSelector sel)
-    : signal(app, target, sel),
+  GUIProgressLogger(ProgressDialog* target_)
+    : target(target_),
       task_size(1),
       task_status(0),
       done(false),
@@ -155,25 +161,25 @@ public:
   }
 
   void println(const std::string& str)
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     log << str << std::endl;
   }
 
   void set_task_size(int s)
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     task_size = s;
   }
 
   void set_task_status(int s)
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     task_status = s;
   }
 
   ProgressLogger& start_subtask()
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     // the GUI thread might still be looking at the old subtask, so
     // keep it around instead of deleting it
@@ -184,25 +190,25 @@ public:
   }
 
   int get_task_size()  const
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     return task_size;
   }
 
   int get_task_status()  const
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     return task_status;
   }
 
   ProgressLogger* get_subtask() const
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     return subtask;
   }
 
   std::string pop_log()
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
 
     const std::string ret = log.str();
     log.str(""); // clear
@@ -210,19 +216,27 @@ public:
   }
 
   void set_done()
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
     done = true;
   }
 
   bool is_done() const
-  { FXMutexLock lock(mutex);
+  { std::lock_guard<std::mutex> lock(mutex);
     return done;
   }
 
+  /** Called from the worker thread, the actual update of the dialog
+      happens later in the GUI thread. */
   void sync()
   {
-    signal.setData(this);
-    signal.signal();
+    QPointer<ProgressDialog> t = target;
+    if (t)
+    {
+      QMetaObject::invokeMethod(t.data(), [t, this]{
+        if (t)
+          t->on_thread_update(this);
+      }, Qt::QueuedConnection);
+    }
   }
 };
 

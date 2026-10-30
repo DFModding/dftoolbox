@@ -22,139 +22,167 @@
 **  02111-1307, USA.
 */
 
+#include "export_dialog.hpp"
+
 #include <algorithm>
+#include <exception>
+
+#include <QCheckBox>
+#include <QComboBox>
+#include <QFileDialog>
+#include <QFormLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QMessageBox>
+#include <QPlainTextEdit>
+#include <QPushButton>
+#include <QScrollBar>
+#include <QVBoxLayout>
+
 #include "icons.hpp"
 #include "dftoolbox.hpp"
 #include "system.hpp"
-#include "export_dialog.hpp"
-
-FXDEFMAP(ExportDialog) ExportDialogMap[] = {
-  FXMAPFUNC(SEL_COMMAND,       ExportDialog::ID_EXPORT,        ExportDialog::onCmdExport),
-  FXMAPFUNC(SEL_COMMAND,       ExportDialog::ID_CANCEL,        ExportDialog::onCmdCancel),
-  FXMAPFUNC(SEL_COMMAND,       ExportDialog::ID_BROWSE,        ExportDialog::onCmdBrowse),
-};
-
-// Object implementation
-FXIMPLEMENT(ExportDialog, FXDialogBox, ExportDialogMap, ARRAYNUMBER(ExportDialogMap));
 
 ExportDialog::ExportDialog(DFToolBoxWindow* parent_)
-  : FXDialogBox(parent_->getApp(),
-                "Export Dialog",
-                DECOR_TITLE|DECOR_BORDER|DECOR_RESIZE|DECOR_CLOSE,
-                0, 0, 640, 0),
+  : QDialog(parent_),
     parent(parent_)
 {
-  FXVerticalFrame* vbox = new FXVerticalFrame(this, LAYOUT_FILL_X|LAYOUT_FILL_Y,
-                                              0,0,0,0, 0,0,0,0);
+  setWindowTitle("Export Dialog");
+  setAttribute(Qt::WA_DeleteOnClose);
 
-  FXMatrix* matrix = new FXMatrix(vbox, 2, MATRIX_BY_COLUMNS|LAYOUT_FILL_X);
+  QVBoxLayout* vbox = new QVBoxLayout(this);
 
-  new FXLabel(matrix, "Selection:");
-  filename = new FXText(matrix, NULL, 0, LAYOUT_FILL_COLUMN|LAYOUT_FILL_X|FRAME_SUNKEN|LAYOUT_CENTER_Y);
-  filename->setEditable(FALSE);
-  new FXLabel(matrix, "Export to:");
+  QFormLayout* form = new QFormLayout;
+  vbox->addLayout(form);
+
+  filename = new QPlainTextEdit;
+  filename->setReadOnly(true);
+  filename->setLineWrapMode(QPlainTextEdit::NoWrap);
+  form->addRow("Selection:", filename);
 
   {
-    FXHorizontalFrame* hbox = new FXHorizontalFrame(matrix, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN, 0,0,0,0, 0,0,0,0);
-    pathname = new FXTextField(hbox,0, NULL, 0, TEXTFIELD_ENTER_ONLY|LAYOUT_FILL_X|FRAME_SUNKEN|LAYOUT_CENTER_Y);
-    pathname->setText(get_temp_path().c_str());
-    new FXButton(hbox, "Browse", Icon::folder_open, this, ID_BROWSE);
+    QHBoxLayout* hbox = new QHBoxLayout;
+    pathname = new QLineEdit(QString::fromStdString(get_temp_path()));
+    hbox->addWidget(pathname, 1);
+    QPushButton* browse = new QPushButton(Icon::folder_open, "Browse");
+    connect(browse, &QPushButton::clicked, this, [this]{ on_browse(); });
+    hbox->addWidget(browse);
+    form->addRow("Export to:", hbox);
   }
   {
-    FXHorizontalFrame* hbox = new FXHorizontalFrame(vbox, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN, 0,0,0,0, 0,0,0,0);
-    new FXLabel(hbox, "Convert Images to: ");
-    FXListBox* typebox = new FXListBox(hbox, NULL,0, LAYOUT_CENTER_Y|FRAME_SUNKEN);
-
-    typebox->appendItem("Native");
-    typebox->appendItem("Targa (.tga)");
-    typebox->setNumVisible(std::min(typebox->getNumItems(), 20));
-    typebox->disable();
+    QHBoxLayout* hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel("Convert Images to: "));
+    QComboBox* typebox = new QComboBox;
+    typebox->addItem("Native");
+    typebox->addItem("Targa (.tga)");
+    typebox->setEnabled(false);
+    hbox->addWidget(typebox);
+    hbox->addStretch(1);
+    vbox->addLayout(hbox);
   }
   {
-    FXHorizontalFrame* hbox = new FXHorizontalFrame(vbox, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN, 0,0,0,0, 0,0,0,0);
-    new FXLabel(hbox, "Convert Shark3D to: ");
-    FXListBox* typebox = new FXListBox(hbox, NULL,0, LAYOUT_CENTER_Y|FRAME_SUNKEN);
-
-    typebox->appendItem("Text");
-    typebox->appendItem("Native");
-    typebox->setNumVisible(std::min(typebox->getNumItems(), 20));
-    typebox->disable();
+    QHBoxLayout* hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel("Convert Shark3D to: "));
+    QComboBox* typebox = new QComboBox;
+    typebox->addItem("Text");
+    typebox->addItem("Native");
+    typebox->setEnabled(false);
+    hbox->addWidget(typebox);
+    hbox->addStretch(1);
+    vbox->addLayout(hbox);
   }
   {
-    FXHorizontalFrame* hbox = new FXHorizontalFrame(vbox, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_COLUMN, 0,0,0,0, 0,0,0,0);
-    new FXLabel(hbox, "Filter: \tOnly export files matching the expression");
-    filter = new FXTextField(hbox,0, NULL, 0, TEXTFIELD_ENTER_ONLY|FRAME_SUNKEN|LAYOUT_CENTER_Y);
-    filter->setNumColumns(16);
-    filter->disable();
+    QHBoxLayout* hbox = new QHBoxLayout;
+    QLabel* label = new QLabel("Filter: ");
+    label->setToolTip("Only export files matching the expression");
+    hbox->addWidget(label);
+    filter = new QLineEdit;
+    filter->setEnabled(false);
+    hbox->addWidget(filter);
+    hbox->addStretch(1);
+    vbox->addLayout(hbox);
   }
 
-  preserve_path = new FXCheckButton(vbox, "preserve directory structure on export");
-  fix_extension = new FXCheckButton(vbox, "append proper file extension where necessary (.png -> .png.dds)");
+  preserve_path = new QCheckBox("preserve directory structure on export");
+  vbox->addWidget(preserve_path);
+  fix_extension = new QCheckBox("append proper file extension where necessary (.png -> .png.dds)");
+  vbox->addWidget(fix_extension);
 
-  FXHorizontalFrame* buttonbar = new FXHorizontalFrame(vbox, FRAME_NONE|LAYOUT_FILL_X|PACK_UNIFORM_WIDTH|LAYOUT_SIDE_BOTTOM);
-  new FXButton(buttonbar, "Export", Icon::export_file, this, ID_EXPORT, LAYOUT_RIGHT|FRAME_RAISED|FRAME_THICK|TEXT_AFTER_ICON);
-  new FXButton(buttonbar, "Cancel", Icon::cancel, this, ID_CANCEL, LAYOUT_RIGHT|FRAME_RAISED|FRAME_THICK|TEXT_AFTER_ICON);
+  QHBoxLayout* buttonbar = new QHBoxLayout;
+  buttonbar->addStretch(1);
+  QPushButton* export_button = new QPushButton(Icon::export_file, "Export");
+  connect(export_button, &QPushButton::clicked, this, [this]{ on_export(); });
+  buttonbar->addWidget(export_button);
+  QPushButton* cancel_button = new QPushButton(Icon::cancel, "Cancel");
+  connect(cancel_button, &QPushButton::clicked, this, [this]{ on_cancel(); });
+  buttonbar->addWidget(cancel_button);
+  vbox->addLayout(buttonbar);
+
+  resize(640, sizeHint().height());
 }
 
 void
 ExportDialog::set_filename(const std::string& filename_)
 {
-  filename->setText(filename_.c_str());
-  filename->setVisibleRows(filename->getNumRows());
+  filename->setPlainText(QString::fromStdString(filename_));
 }
 
 void
 ExportDialog::set_file_entry(DreamfallFileEntry* entry)
 {
-  filename->setText(entry->get_url().c_str());
+  filename->setPlainText(QString::fromStdString(entry->get_url()));
   entries.push_back(entry);
 }
 
 void
 ExportDialog::set_file_entries(const std::vector<DreamfallFileEntry*>& selection)
 {
-  filename->setText("");
+  QStringList lines;
   for(std::vector<DreamfallFileEntry*>::const_iterator i = selection.begin(); i != selection.end(); ++i)
     {
-      filename->appendText((*i)->get_url().c_str());
-      if (i+1 != selection.end())
-        filename->appendText("\n");
-
+      lines << QString::fromStdString((*i)->get_url());
       entries.push_back(*i);
     }
-  filename->setVisibleRows(std::min(filename->getNumRows(), 20));
+  filename->setPlainText(lines.join("\n"));
+
+  // show up to 20 lines
+  const int rows = std::min(std::max(1, int(lines.size())), 20);
+  filename->setFixedHeight(rows * filename->fontMetrics().lineSpacing() +
+                           2 * filename->frameWidth() +
+                           2 * static_cast<int>(filename->document()->documentMargin()) +
+                           filename->horizontalScrollBar()->sizeHint().height() + 4);
 }
 
-long
-ExportDialog::onCmdExport(FXObject*,FXSelector,void*)
+void
+ExportDialog::on_export()
 {
-  hide(); // FIXME: is there a 'destroy'?
+  hide();
 
-  parent->export_files(entries, pathname->getText().text(),
-                       preserve_path->getCheck(), fix_extension->getCheck(),
-                       true);
-
-  return 1;
-}
-
-long
-ExportDialog::onCmdCancel(FXObject*,FXSelector,void*)
-{
-  hide(); // FIXME: is there a 'destroy'?
-  return 1;
-}
-
-long
-ExportDialog::onCmdBrowse(FXObject*,FXSelector,void*)
-{
-  FXDirDialog open(this,"Select the Dreamfall directory");
-  open.showFiles(FALSE);
-  open.setDirectory(pathname->getText());
-
-  if(open.execute()) {
-    pathname->setText(open.getDirectory());
+  try {
+    parent->export_files(entries, pathname->text().toStdString(),
+                         preserve_path->isChecked(), fix_extension->isChecked(),
+                         true);
+  } catch(std::exception& err) {
+    QMessageBox::critical(parent, "Export failed", QString::fromStdString(err.what()));
   }
-  return 1;
+
+  close();
+}
+
+void
+ExportDialog::on_cancel()
+{
+  close();
+}
+
+void
+ExportDialog::on_browse()
+{
+  const QString dir = QFileDialog::getExistingDirectory(this, "Select the export directory",
+                                                        pathname->text());
+  if (!dir.isEmpty())
+    pathname->setText(dir);
 }
 
 /* EOF */

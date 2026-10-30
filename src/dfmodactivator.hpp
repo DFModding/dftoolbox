@@ -25,84 +25,73 @@
 #ifndef HEADER_DFMODACTIVATOR_HPP
 #define HEADER_DFMODACTIVATOR_HPP
 
-#include "fx.h"
 #include <string>
 #include <vector>
+
+#include <QFrame>
+#include <QIcon>
+#include <QMainWindow>
 
 #include "pak_insert_thread.hpp"
 
 class ProgressDialog;
+class QLabel;
+class QPushButton;
+class QToolButton;
+class QVBoxLayout;
 
-class ModListEntry : public FXHorizontalFrame
+class ModListEntry : public QFrame
 {
-  FXDECLARE(ModListEntry);
 protected:
-  FXText* longtext;
-  FXArrowButton* arrowbutton;
-  FXToggleButton* selectbutton;
-  std::string        directory;
+  QLabel* longtext;
+  QToolButton* arrowbutton;
+  QToolButton* selectbutton;
+  std::string directory;
 
 public:
-  ModListEntry();
-  ModListEntry(FXComposite* parent,
-               FXIcon* icon,
-               std::string        directory_,
-               const FXString& title_string, const FXString& short_description, const FXString& long_description);
-  std::string get_directory() const;
-  long onCmdToggleLongDesc(FXObject*,FXSelector,void*);
-  void setState(FXbool s);
-  FXbool getState () const;
+  ModListEntry(QWidget* parent,
+               const QIcon& icon,
+               const std::string& directory_,
+               const QString& title_string,
+               const QString& short_description,
+               const QString& long_description);
 
-  enum {
-    ID_TOGGLE_LONG_DESC = FXWindow::ID_LAST
-  };
+  std::string get_directory() const;
+  void on_toggle_long_desc();
+  void setState(bool s);
+  bool getState() const;
 };
 
-class DFModActivatorWindow : public FXMainWindow
+class DFModActivatorWindow : public QMainWindow
 {
-  FXDECLARE(DFModActivatorWindow);
 protected:
-  FXMenuBar*         menubar;
-  FXMenuPane*        filemenu;
-  FXMenuPane*          helpmenu;
-  FXScrollWindow*      modlistscroll;
-  FXVerticalFrame*      modlist;
-  FXHorizontalFrame* buttonbar;
-  FXButton*            selectnone_button;
-  FXButton*            selectall_button;
-public: FXButton*            install_button; private:
-public: FXButton*            uninstall_button; private:
-  FXStatusBar*       status;
+  QVBoxLayout* modlist;
+  QPushButton* selectnone_button;
+  QPushButton* selectall_button;
+public:
+  QPushButton* install_button;
+  QPushButton* uninstall_button;
+protected:
   ProgressDialog* progress_dialog;
   std::vector<ModListEntry*> entries;
+
 public:
   DFModActivatorWindow();
-  DFModActivatorWindow(FXApp* a);
 
   virtual ~DFModActivatorWindow();
 
-  long onCmdAbout(FXObject*,FXSelector,void*);
+  void on_about();
   void scan_mod_directory();
   void collect_insert_requests(std::vector<InsertRequest>& inserts);
   void set_dreamfall_path(const std::string& path);
-  long onCmdInstall(FXObject* obj, FXSelector sel, void* data);
-  long onCmdUninstall(FXObject* obj, FXSelector sel, void* data);
-  long onCmdSelectAll(FXObject*, FXSelector,void*);
-  long onCmdSelectNone(FXObject*, FXSelector,void*);
+  void on_install();
+  void on_uninstall();
+  void on_select_all();
+  void on_select_none();
   bool get_dreamfall_path();
-  long onCmdDreamfallPath(FXObject*, FXSelector,void*);
-
-  enum{
-    ID_ABOUT=FXMainWindow::ID_LAST,
-    ID_DREAMFALL_PATH,
-    ID_INSTALL,
-    ID_UNINSTALL,
-    ID_SELECT_ALL,
-    ID_SELECT_NONE,
-  };
+  void on_dreamfall_path();
 };
 
 #endif
 
 /* EOF */
-

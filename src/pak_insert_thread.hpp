@@ -25,15 +25,12 @@
 #ifndef HEADER_PAK_INSERTER_THREAD_HPP
 #define HEADER_PAK_INSERTER_THREAD_HPP
 
-#include "fx.h"
-
 #include <string>
 #include <map>
 #include <vector>
 #include <sstream>
 
 class ProgressLogger;
-class ProgressDialog;
 
 struct InsertRequest
 {
@@ -53,12 +50,11 @@ struct InsertRequest
   {}
 };
 
-class PakInsertThread : public FXThread
+/** Worker that is meant to be run on a std::thread, it reports its
+    progress through the given logger. */
+class PakInsertThread
 {
 private:
-  FXApp* app;
-  ProgressDialog* progress_dialog;
-
   typedef std::map<std::string, std::vector<InsertRequest> > PakList;
 
   PakList paks;
@@ -66,13 +62,12 @@ private:
 
   ProgressLogger* mlogger;
 public:
-  PakInsertThread(FXApp* app_, ProgressDialog* progress_dialog_,
-                  const std::vector<InsertRequest>& inserts_,
+  PakInsertThread(const std::vector<InsertRequest>& inserts_,
                   ProgressLogger* logger_);
 
   virtual ~PakInsertThread();
 
-  FXint run();
+  void run();
   std::string getLog() const;
 
   void update();

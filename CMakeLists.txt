@@ -23,6 +23,12 @@ project(dftoolbox VERSION 0.1.0)
 
 include(GNUInstallDirs)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+
+# Installs TARGET into libexec and a wrapper script into bin that
+# passes the shared data directory (share/dftoolbox) via --datadir
 function(install_with_wrapper TARGET)
   install(TARGETS ${TARGET}
     RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
@@ -44,7 +50,7 @@ option(WERROR "Turn warnings into errors" OFF)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(SDL REQUIRED sdl IMPORTED_TARGET)
 pkg_search_module(SDL_MIXER REQUIRED SDL_mixer IMPORTED_TARGET)
-pkg_search_module(FOX REQUIRED fox IMPORTED_TARGET)
+find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets)
 
 add_library(libdftoolbox STATIC
   "src/util.cpp"
@@ -101,36 +107,17 @@ target_link_libraries(dftool-cir libdftoolbox)
 
 add_executable(dfmodtool
   "src/dfmodactivator.cpp"
+  "src/dfmodactivator.hpp"
   "src/pak_insert_thread.cpp"
   "src/icons.cpp"
   "src/progress_dialog.cpp"
+  "src/progress_dialog.hpp"
   "src/progress_logger.cpp"
   # + (cross and ['dfmodtool-res.o'] or []),
   )
 target_link_libraries(dfmodtool PRIVATE
   libdftoolbox
-  PkgConfig::FOX)
-
-add_executable(dftoolbox
-  "src/dftoolbox.cpp"
-  "src/shark_view.cpp"
-  "src/image_view.cpp"
-  "src/dialog_view.cpp"
-  "src/searchbar.cpp"
-  "src/export_dialog.cpp"
-  "src/dreamfall_file_entry.cpp"
-  "src/directory_view.cpp"
-  "src/sound_view.cpp"
-  "src/icons.cpp"
-  "src/progress_dialog.cpp"
-  "src/progress_logger.cpp"
-  # (cross and ['dftoolbox-res.o'] or []),
-  )
-target_link_libraries(dftoolbox PRIVATE
-  libdftoolbox
-  PkgConfig::FOX
-  PkgConfig::SDL
-  PkgConfig::SDL_MIXER)
+  Qt6::Widgets)
 
 install(TARGETS
   dftool-dialog
@@ -148,12 +135,44 @@ install(TARGETS
   dftool-cir
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+add_executable(dftoolbox
+  "src/dftoolbox.cpp"
+  "src/dftoolbox.hpp"
+  "src/shark_view.cpp"
+  "src/shark_view.hpp"
+  "src/image_view.cpp"
+  "src/image_view.hpp"
+  "src/dialog_view.cpp"
+  "src/dialog_view.hpp"
+  "src/searchbar.cpp"
+  "src/searchbar.hpp"
+  "src/export_dialog.cpp"
+  "src/export_dialog.hpp"
+  "src/dreamfall_file_entry.cpp"
+  "src/directory_view.cpp"
+  "src/directory_view.hpp"
+  "src/sound_view.cpp"
+  "src/sound_view.hpp"
+  "src/ui_util.cpp"
+  "src/ui_util.hpp"
+  "src/icons.cpp"
+  "src/progress_dialog.cpp"
+  "src/progress_dialog.hpp"
+  "src/progress_logger.cpp"
+  # (cross and ['dftoolbox-res.o'] or []),
+  )
+target_link_libraries(dftoolbox PRIVATE
+  libdftoolbox
+  Qt6::Widgets
+  PkgConfig::SDL
+  PkgConfig::SDL_MIXER)
 install_with_wrapper(dftoolbox)
 install_with_wrapper(dfmodtool)
 
+# Shared runtime data of dftoolbox and dfmodtool: icons (PNG and the
+# GIFs of the mods), the mods dfmodtool lists and the known filenames
 install(DIRECTORY icons DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
-  PATTERN "*.gif")
-
+  PATTERN "*.xcf" EXCLUDE)
 install(DIRECTORY mods DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
 install(FILES df-directory.txt  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})

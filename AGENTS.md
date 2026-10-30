@@ -2,12 +2,12 @@
 
 ## Project Structure & Module Organization
 
-DFToolBox provides C++ tools for inspecting and modifying Dreamfall game data. `src/` contains shared archive, configuration, localization, and Shark3D code, command-line entry points, and FOX GUI components. Shared code is built as `libdftoolbox`; `tinygettext` is a separate library. `icons/` holds GUI assets, `utils/` contains Ruby helper scripts, and `doc/` and `mods/` contain supporting documentation and mod content. Root-level `.ini` files provide configuration examples; `df-directory.txt` supplies known archive filenames.
+DFToolBox provides C++ tools for inspecting and modifying Dreamfall game data. `src/` contains shared archive, configuration, localization, and Shark3D code, command-line entry points, and Qt6 Widgets GUI components. Shared code is built as `libdftoolbox`; `tinygettext` is a separate library. `icons/` holds GUI assets, `utils/` contains Ruby helper scripts, and `doc/` and `mods/` contain supporting documentation and mod content. Root-level `.ini` files provide configuration examples; `df-directory.txt` supplies known archive filenames.
 
 ## Build, Test, and Development Commands
 
 - `nix build` builds the default package using the dependencies defined in `flake.nix`.
-- `cmake -S . -B build` configures an out-of-source build. Install CMake 3.15+, pkg-config, FOX 1.6, SDL 1.2, and SDL_mixer first; pkg-config must resolve `fox`, `sdl`, and `SDL_mixer`.
+- `cmake -S . -B build` configures an out-of-source build. Install CMake 3.15+, pkg-config, Qt 6.2+ (Widgets), SDL 1.2, and SDL_mixer first; pkg-config must resolve `sdl` and `SDL_mixer`, and CMake must find `Qt6`. `nix develop` provides all of them.
 - `cmake --build build -j` builds the libraries, GUI applications, and command-line tools.
 - `./build/dftoolbox --datadir .` launches the GUI with repository assets; run from the repository root.
 - `./build/dftool-shark3d path/to/file.sdr > /tmp/file.txt` exercises Shark3D decompilation.

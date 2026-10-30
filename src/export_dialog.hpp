@@ -25,28 +25,32 @@
 #ifndef HEADER_EXPORT_DIALOG_HPP
 #define HEADER_EXPORT_DIALOG_HPP
 
-#include "fx.h"
 #include <string>
+#include <vector>
+
+#include <QDialog>
+
 #include "dreamfall_file_entry.hpp"
 
 class DFToolBoxWindow;
+class QCheckBox;
+class QLineEdit;
+class QPlainTextEdit;
 
-/** */
-class ExportDialog : public FXDialogBox
+/** Deletes itself when closed */
+class ExportDialog : public QDialog
 {
-  FXDECLARE(ExportDialog);
 private:
   DFToolBoxWindow* parent;
-  FXText* filename;
-  FXTextField* pathname;
-  FXTextField* filter;
-  FXCheckButton* preserve_path;
-  FXCheckButton* fix_extension;
+  QPlainTextEdit* filename;
+  QLineEdit* pathname;
+  QLineEdit* filter;
+  QCheckBox* preserve_path;
+  QCheckBox* fix_extension;
 
   std::vector<DreamfallFileEntry*> entries;
 
 public:
-  ExportDialog() {}
   ExportDialog(DFToolBoxWindow* parent);
   virtual ~ExportDialog() {}
 
@@ -54,16 +58,10 @@ public:
   void set_file_entry(DreamfallFileEntry* entry);
   void set_file_entries(const std::vector<DreamfallFileEntry*>& selection);
 
-  long onCmdExport(FXObject*,FXSelector,void*);
-  long onCmdCancel(FXObject*,FXSelector,void*);
+  void on_export();
+  void on_cancel();
 
-  long onCmdBrowse(FXObject*,FXSelector,void*);
-
-  enum {
-    ID_EXPORT = FXDialogBox::ID_LAST,
-    ID_BROWSE,
-    ID_CANCEL
-  };
+  void on_browse();
 };
 
 #endif

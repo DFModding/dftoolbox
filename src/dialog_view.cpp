@@ -22,42 +22,63 @@
 **  02111-1307, USA.
 */
 
-#include <stdint.h>
-#include <sstream>
 #include "dialog_view.hpp"
+
+#include <iostream>
+#include <sstream>
+
+#include <QAction>
+#include <QComboBox>
+#include <QEvent>
+#include <QMainWindow>
+#include <QMessageBox>
+#include <QMouseEvent>
+#include <QPlainTextEdit>
+#include <QRegularExpression>
+#include <QTextBlock>
+#include <QTextCursor>
+#include <QToolBar>
+#include <QVBoxLayout>
+
 #include "dftoolbox.hpp"
+#include "icons.hpp"
 #include "searchbar.hpp"
+#include "ui_util.hpp"
 
-FXDEFMAP(DialogView) DialogViewMap[] = {
-  FXMAPFUNC(SEL_COMMAND,         DialogView::ID_LANGUAGE_SWITCH,   DialogView::onCmdLanguageSwitch),
-  FXMAPFUNC(SEL_LEFTBUTTONPRESS, DialogView::ID_HYPERLINK,         DialogView::onCmdHyperlink),
-  FXMAPFUNC(SEL_COMMAND,         DialogView::ID_SAVE_TEXT,         DialogView::onCmdSaveText),
-};
-
-// Object implementation
-FXIMPLEMENT(DialogView, FXVerticalFrame, DialogViewMap, ARRAYNUMBER(DialogViewMap));
-
-DialogView::DialogView(FXComposite* parent, FXComposite* dock,  DFToolBoxWindow* dftoolbox_)
-  : FXVerticalFrame(parent, FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y,
-                    0, 0, 0, 0,
-                    0, 0, 0, 0),
+DialogView::DialogView(QWidget* parent, QMainWindow* mainwindow, DFToolBoxWindow* dftoolbox_)
+  : QWidget(parent),
     dftoolbox(dftoolbox_)
 {
-  toolbar = new FXToolBar(dock, LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y);
+  toolbar = new QToolBar;
+  mainwindow->addToolBar(toolbar);
 
   // FIXME: add text wrap buttons
-  new FXButton(toolbar, "\tSave text\tSave text", Icon::save_file,
-               this, ID_SAVE_TEXT, BUTTON_TOOLBAR|FRAME_RAISED);
+  connect(add_tool_action(toolbar, Icon::save_file, "Save text", "Save text"),
+          &QAction::triggered, this, [this]{ on_save_text(); });
 
-  langbox = new FXListBox(toolbar, this, ID_LANGUAGE_SWITCH, LAYOUT_CENTER_Y);
+  langbox = new QComboBox;
+  connect(langbox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, [this](int index){ on_language_switch(index); });
+  toolbar->addWidget(langbox);
 
-  text = new FXText(this, this, ID_HYPERLINK, LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  //text = new FXText(this, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  text->setEditable(FALSE);
-  text->setTextStyle(text->getTextStyle() | TEXT_WORDWRAP);
-  //text->setStyled(TRUE);
+  QVBoxLayout* vbox = new QVBoxLayout(this);
+  vbox->setContentsMargins(0, 0, 0, 0);
+  vbox->setSpacing(0);
 
-  new Searchbar(this, text);
+  text = new QPlainTextEdit;
+  text->setReadOnly(true);
+  text->setLineWrapMode(QPlainTextEdit::WidgetWidth);
+  text->viewport()->installEventFilter(this);
+  vbox->addWidget(text, 1);
+
+  vbox->addWidget(new Searchbar(this, text));
+}
+
+void
+DialogView::set_text(const std::string& str)
+{
+  raw_text = str;
+  text->setPlainText(QString::fromStdString(str));
 }
 
 void
@@ -66,16 +87,16 @@ DialogView::set_dialog(const std::string& filename)
   dialogs.clear();
   read_dialogs(filename, dialogs);
 
-  langbox->clearItems();
-  int c = 0;
-  langbox->appendItem("All languages");
+  langbox->blockSignals(true);
+  langbox->clear();
+  langbox->addItem("All languages");
   for(Dialogs::iterator i = dialogs.begin(); i != dialogs.end(); ++i)
     {
-      langbox->appendItem((i->lang_code + " - " + i->language).c_str(), NULL,
-                          reinterpret_cast<void*>(c));
-      c += 1;
+      langbox->addItem(QString::fromStdString(i->lang_code + " - " + i->language));
     }
-  langbox->setNumVisible(std::min(langbox->getNumItems(), 20));
+  langbox->setMaxVisibleItems(std::min(langbox->count(), 20));
+  langbox->setCurrentIndex(0);
+  langbox->blockSignals(false);
   set_language(0);
 }
 
@@ -93,18 +114,8 @@ DialogView::set_language(int id)
         {
           str << i << ") [[dialog:" << dialogs[id].entries[i].id << "]]" << std::endl;
           str << &*dialogs[id].texts.begin() + dialogs[id].entries[i].offset << std::endl << std::endl;
-
-          // FIXME: Can't use this since appendText is *HORRIBLY* slow
-          //text->appendText("Hello World");
-          //text->appendText(FXString().format("%d) ", i));
-          //text->appendText(FXString().format("dialog:%d\n", dialogs[id].entries[i].id));//, FXText::STYLE_BOLD);
-
-          //text->appendText(&*dialogs[id].texts.begin() + dialogs[id].entries[i].offset);
-          //text->appendText("\n\n");
-          //if (i % 10 == 0)
-          //  std::cout << i << "/" << dialogs[id].entries.size() << "                     \r" << std::endl;
         }
-      text->setText(str.str().c_str());
+      set_text(str.str());
     }
   else if (dialogs.size() >= 1)
     {
@@ -118,34 +129,73 @@ DialogView::set_language(int id)
               str << std::endl;
               str << dialogs[j].language << ": ";
               str << "[[dialog:" << j << ":" << dialogs[j].entries[i].id << "]]";
-              //str << "                ";
-              //str << (dialogs[j].entries[i].id & 0xffff);
               str << std::endl;
               str << &*dialogs[j].texts.begin() + dialogs[j].entries[i].offset << std::endl;
             }
           str << "___________________________________________________________________" << std::endl;
         }
-      text->setText(str.str().c_str());
+      set_text(str.str());
     }
 }
 
-long
-DialogView::onCmdLanguageSwitch(FXObject*,FXSelector,void* data)
+void
+DialogView::on_language_switch(int lang_id)
 {
-  int lang_id = reinterpret_cast<intptr_t>(data);
   set_language(lang_id);
-  return 1;
 }
 
-bool is_hyperlink(const FXString& link)
+void
+DialogView::play(int dialog_id, const std::string& lang_code)
 {
-  if (link.length() <= 4)
+  // play_dialog() throws if the speech data of the dialog isn't known
+  // (it only gets collected by the unimplemented "Scan for Dialogs"),
+  // which must not escape from the event handler
+  try {
+    dftoolbox->play_dialog(dialog_id, lang_code);
+  } catch(std::exception& err) {
+    std::cout << "Error: " << err.what() << std::endl;
+    QMessageBox::warning(this, "Couldn't play dialog",
+                         QString("Couldn't play dialog %1: %2").arg(dialog_id).arg(err.what()));
+  }
+}
+
+bool
+DialogView::on_hyperlink(const QPoint& pos)
+{
+  // Find the whitespace delimited word below the mouse cursor
+  const QTextCursor cursor = text->cursorForPosition(pos);
+  const QString block = cursor.block().text();
+  int start = cursor.positionInBlock();
+  int end   = start;
+
+  auto is_delimiter = [](QChar c) { return c == ' ' || c == '\t' || c == '\n'; };
+  while (start > 0 && !is_delimiter(block[start - 1]))
+    start -= 1;
+  while (end < block.size() && !is_delimiter(block[end]))
+    end += 1;
+
+  const QString link = block.mid(start, end - start);
+
+  static const QRegularExpression link2("^\\[\\[dialog:(-?\\d+):(-?\\d+)\\]\\]$");
+  static const QRegularExpression link1("^\\[\\[dialog:(-?\\d+)\\]\\]$");
+
+  QRegularExpressionMatch match;
+  if ((match = link2.match(link)).hasMatch())
     {
-      return false;
+      const int lang_code = static_cast<int>(match.captured(1).toLongLong());
+      const int dialog_id = static_cast<int>(match.captured(2).toLongLong());
+      std::cout << "Dialog2: " << dialog_id << " " << lang_code << std::endl;
+      if (lang_code >= 0 && lang_code < int(dialogs.size()))
+        play(dialog_id, dialogs[lang_code].lang_code);
+      return true;
     }
-  else if (link[0] == '[' && link[1] == '[' &&
-           link[link.length()-1] == ']' && link[link.length()-2] == ']')
+  else if ((match = link1.match(link)).hasMatch())
     {
+      const int dialog_id = static_cast<int>(match.captured(1).toLongLong());
+      std::cout << "Dialog1: " << dialog_id << std::endl;
+      const int lang = langbox->currentIndex() - 1;
+      if (lang >= 0 && lang < int(dialogs.size()))
+        play(dialog_id, dialogs[lang].lang_code);
       return true;
     }
   else
@@ -154,74 +204,28 @@ bool is_hyperlink(const FXString& link)
     }
 }
 
-long
-DialogView::onCmdHyperlink(FXObject*,FXSelector,void* data)
+bool
+DialogView::eventFilter(QObject* obj, QEvent* event)
 {
-  FXEvent* event = static_cast<FXEvent*>(data);
-
-  FXint pos   = text->getPosAt(event->win_x,event->win_y);
-
-  const char* delim = text->getDelimiters();
-
-  text->setDelimiters(" \t\n");
-
-  FXint start = text->wordStart(pos);
-  FXint end   = text->wordEnd(pos);
-
-  text->setDelimiters(delim);
-
-  FXString link;
-  text->extractText(link, start, end - start);
-
-  if (is_hyperlink(link))
+  if (obj == text->viewport() && event->type() == QEvent::MouseButtonPress)
     {
-      FXint dialog_id;
-      FXint lang_code;
-
-      if (link.scan("[[dialog:%d:%d]]", &lang_code, &dialog_id) == 2)
-        {
-          std::cout << "Dialog2: " << dialog_id << " " << lang_code << std::endl;
-          dftoolbox->play_dialog(dialog_id, dialogs[lang_code].lang_code);
-        }
-      else if (link.scan("[[dialog:%d]]", &dialog_id) == 1)
-        {
-          std::cout << "Dialog1: " << dialog_id << std::endl;
-          dftoolbox->play_dialog(dialog_id, dialogs[langbox->getCurrentItem()-1].lang_code);
-        }
-      return 1;
+      QMouseEvent* mouse_event = static_cast<QMouseEvent*>(event);
+      if (mouse_event->button() == Qt::LeftButton)
+        return on_hyperlink(mouse_event->position().toPoint());
     }
-  else
-    {
-      return 0;
-    }
+  return QWidget::eventFilter(obj, event);
 }
 
-long
-DialogView::onCmdSaveText(FXObject*,FXSelector,void*)
+void
+DialogView::on_save_text()
 {
-  FXFileDialog savedialog(this,tr("Save Document"));
-  FXString file;
-  savedialog.setSelectMode(SELECTFILE_ANY);
-  // savedialog.setPatternList(getPatterns());
-  // savedialog.setCurrentPattern(getCurrentPattern());
-  // savedialog.setFilename(file);
-  if(savedialog.execute())
-    {
-      //setCurrentPattern(savedialog.getCurrentPattern());
-      file=savedialog.getFilename();
-      if(FXStat::exists(file))
-        {
-          if(MBOX_CLICKED_NO==FXMessageBox::question(this,MBOX_YES_NO, "Overwrite Document",
-                                                     "Overwrite existing document: %s?",file.text()))
-            return 1;
-        }
+  save_text_file(this, raw_text);
+}
 
-      std::ofstream out(file.text());
-      out << text->getText().text();
-      out.close();
-    }
-
-  return 1;
+void
+DialogView::show_toolbar(bool t)
+{
+  toolbar->setVisible(t);
 }
 
 /* EOF */

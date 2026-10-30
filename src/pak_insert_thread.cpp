@@ -29,21 +29,16 @@
 #include "system.hpp"
 #include "tljpak.hpp"
 
-#include "progress_dialog.hpp"
 #include "progress_logger.hpp"
 #include "pak_insert_thread.hpp"
 
 #define STR(x) static_cast<std::ostringstream const&>(std::ostringstream() << x).str()
 
 extern std::string dreamfall_path;
-extern FXGUISignal* sig;
 
-PakInsertThread::PakInsertThread(FXApp* app_, ProgressDialog* progress_dialog_,
-                                 const std::vector<InsertRequest>& inserts_,
+PakInsertThread::PakInsertThread(const std::vector<InsertRequest>& inserts_,
                                  ProgressLogger* logger_)
-  : app(app_),
-    progress_dialog(progress_dialog_),
-    inserts(inserts_),
+  : inserts(inserts_),
     mlogger(logger_)
 {
 }
@@ -52,7 +47,7 @@ PakInsertThread::~PakInsertThread()
 {
 }
 
-FXint
+void
 PakInsertThread::run()
 {
   try {
@@ -85,15 +80,12 @@ PakInsertThread::run()
 
   mlogger->set_done();
   update();
-
-  return 0;
 }
 
 void
 PakInsertThread::update()
 {
-  sig->setData(mlogger);
-  sig->signal();
+  mlogger->sync();
 }
 
 void

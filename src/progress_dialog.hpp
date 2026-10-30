@@ -25,43 +25,44 @@
 #ifndef HEADER_PROGRESS_DIALOG_HPP
 #define HEADER_PROGRESS_DIALOG_HPP
 
-#include "fx.h"
 #include <string>
+#include <thread>
+#include <vector>
+
+#include <QDialog>
 
 class GUIProgressLogger;
+class QLabel;
+class QPlainTextEdit;
+class QProgressBar;
+class QPushButton;
 
-class ProgressDialog : public FXDialogBox
+class ProgressDialog : public QDialog
 {
 private:
-  FXDECLARE(ProgressDialog);
+  QPlainTextEdit* log;
 
-  FXText*          log;
+  std::vector<QLabel*>       label;
+  std::vector<QProgressBar*> progress;
 
-  std::vector<FXLabel*>       label;
-  std::vector<FXProgressBar*> progress;
+  QPushButton* ok_button;
+  std::thread thread;
 
-  FXButton*        ok_button;
-  FXVerticalFrame* vbox;
-  FXThread* thread;
 public:
-  ProgressDialog();
-  ProgressDialog(FXApp* app, const FXString& title);
+  ProgressDialog(QWidget* parent, const QString& title);
   ~ProgressDialog();
 
-  long onCmdToggleLongDesc(FXObject*,FXSelector,void*);
-
-  long onThreadUpdate(FXObject*, FXSelector, void*);
+  /** Update the dialog from the state of \a logger, must be called
+      from the GUI thread (GUIProgressLogger::sync() takes care of
+      that). Once the logger is done the worker thread gets joined. */
+  void on_thread_update(GUIProgressLogger* logger);
 
   /** Relayout the widget to show \a bars number of progressbars */
   void relayout(int bars);
 
-  void set_thread(FXThread*);
-  FXThread* get_thread() const { return thread; }
-
-  enum {
-    ID_HIDE = FXDialogBox::ID_LAST,
-    ID_THREAD_UPDATE,
-  };
+  /** Hand over the worker thread, the dialog joins it once the
+      logger reports that it is done. */
+  void set_thread(std::thread t);
 };
 
 #endif

@@ -23,15 +23,20 @@
              nativeBuildInputs = with pkgs; [
                cmake
                pkg-config
+               qt6.wrapQtAppsHook
              ];
 
              buildInputs = with pkgs; [
-               fox_1_6
+               qt6.qtbase
                SDL
                SDL_mixer
              ];
            };
         };
+
+         devShells.default = pkgs.mkShell {
+           inputsFrom = [ self.packages.${system}.dftoolbox ];
+         };
        }
     );
 }

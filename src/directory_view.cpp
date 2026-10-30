@@ -22,68 +22,175 @@
 **  02111-1307, USA.
 */
 
-#include <stdint.h>
+#include "directory_view.hpp"
+
+#include <algorithm>
 #include <iostream>
+#include <stdint.h>
+
+#include <QAction>
+#include <QHeaderView>
+#include <QItemSelectionModel>
+#include <QListView>
+#include <QMainWindow>
+#include <QMetaObject>
+#include <QStackedWidget>
+#include <QStandardItemModel>
+#include <QToolBar>
+#include <QTreeView>
+#include <QTreeWidgetItem>
+#include <QVBoxLayout>
+
 #include "icons.hpp"
 #include "dreamfall_file_entry.hpp"
 #include "dftoolbox.hpp"
-#include "directory_view.hpp"
+#include "ui_util.hpp"
 
-FXDEFMAP(DirectoryView) DirectoryViewMap[] = {
-  FXMAPFUNC(SEL_COMMAND,       DirectoryView::ID_ICONLIST_BIG_ICONS,  DirectoryView::onCmdIconListBigIcons),
-  FXMAPFUNC(SEL_COMMAND,       DirectoryView::ID_ICONLIST_MINI_ICONS, DirectoryView::onCmdIconListMiniIcons),
-  FXMAPFUNC(SEL_COMMAND,       DirectoryView::ID_ICONLIST_DETAILED,   DirectoryView::onCmdIconListDetailed),
-  FXMAPFUNC(SEL_DOUBLECLICKED, DirectoryView::ID_ICON_DOUBLECLICKED,  DirectoryView::onIconDblClick),
+namespace {
+
+enum {
+  LargeIconRole = Qt::UserRole + 1,
+  SmallIconRole,
+  TreeItemRole,   // the QTreeWidgetItem* of the main tree
+  SizeRole
 };
 
-// Object implementation
-FXIMPLEMENT(DirectoryView, FXVerticalFrame, DirectoryViewMap, ARRAYNUMBER(DirectoryViewMap));
-
-DirectoryView::DirectoryView(FXComposite* parent, FXComposite* dock, DFToolBoxWindow* dftoolbox_)
-  : FXVerticalFrame(parent, FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_CENTER_Y,
-                    0, 0, 0, 0,
-                    0, 0, 0, 0),
-    dftoolbox(dftoolbox_)
+/** A row of the directory list, sorts directories before files, then
+    by name (the same order the tree uses). */
+class EntryItem : public QStandardItem
 {
-  toolbar = new FXToolBar(dock, LAYOUT_DOCK_SAME|LAYOUT_SIDE_TOP|PACK_UNIFORM_WIDTH|PACK_UNIFORM_HEIGHT|FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y);
+public:
+  using QStandardItem::QStandardItem;
 
-  iconlist = new FXIconList(this, this, ID_ICON_DOUBLECLICKED,
-                            LAYOUT_FILL_X|LAYOUT_FILL_Y|ICONLIST_DETAILED|ICONLIST_EXTENDEDSELECT|ICONLIST_COLUMNS|ICONLIST_AUTOSIZE);
-  iconlist->appendHeader("Name",NULL, 300);
-  iconlist->appendHeader("Type",NULL, 100);
-  iconlist->appendHeader("Size",NULL, 60);
-  iconlist->appendHeader("Pak", NULL, 150);
+  bool operator<(const QStandardItem& other) const override
+  {
+    if (column() == 0)
+    {
+      const DreamfallFileEntry* lhs = entry_of(
+        static_cast<QTreeWidgetItem*>(data(TreeItemRole).value<void*>()));
+      const DreamfallFileEntry* rhs = entry_of(
+        static_cast<QTreeWidgetItem*>(other.data(TreeItemRole).value<void*>()));
 
-  new FXButton(toolbar, "\tShow Icons", Icon::icons_list,
-               this, ID_ICONLIST_BIG_ICONS, BUTTON_TOOLBAR|FRAME_RAISED);
-  new FXButton(toolbar, "\tShow Thumbnail View", Icon::icons_large,
-               this, ID_ICONLIST_MINI_ICONS, BUTTON_TOOLBAR|FRAME_RAISED);
-  new FXButton(toolbar, "\tShow Detail List", Icon::icons_detail,
-               this, ID_ICONLIST_DETAILED, BUTTON_TOOLBAR|FRAME_RAISED);
+      if (lhs->get_type() == rhs->get_type())
+        return text() < other.text();
+      else
+        return lhs->get_type() < rhs->get_type();
+    }
+    else if (column() == 2)
+    {
+      return data(SizeRole).toInt() < other.data(SizeRole).toInt();
+    }
+    else
+    {
+      return text() < other.text();
+    }
+  }
+};
+
+QStandardItem* make_item(const QString& text)
+{
+  QStandardItem* item = new EntryItem(text);
+  item->setEditable(false);
+  return item;
 }
 
-FXint iconlist_sorter(const FXIconItem* a, const FXIconItem* b)
-{
-  const DreamfallFileEntry* lhs = static_cast<DreamfallFileEntry*>(a->getData());
-  const DreamfallFileEntry* rhs = static_cast<DreamfallFileEntry*>(b->getData());
+} // namespace
 
-  if (lhs->get_type() == rhs->get_type())
-    return (a->getText() > b->getText());
-  else
-    return (lhs->get_type() > rhs->get_type());
+DirectoryView::DirectoryView(QWidget* parent, QMainWindow* mainwindow, DFToolBoxWindow* dftoolbox_)
+  : QWidget(parent),
+    dftoolbox(dftoolbox_),
+    mode(DETAILED)
+{
+  toolbar = new QToolBar;
+  mainwindow->addToolBar(toolbar);
+
+  // Note that the icons and modes are paired like this in the old
+  // version as well
+  connect(add_tool_action(toolbar, Icon::icons_list, "Show Icons"),
+          &QAction::triggered, this, [this]{ set_mode(BIG_ICONS); });
+  connect(add_tool_action(toolbar, Icon::icons_large, "Show Thumbnail View"),
+          &QAction::triggered, this, [this]{ set_mode(MINI_ICONS); });
+  connect(add_tool_action(toolbar, Icon::icons_detail, "Show Detail List"),
+          &QAction::triggered, this, [this]{ set_mode(DETAILED); });
+
+  model = new QStandardItemModel(0, 4, this);
+  model->setHorizontalHeaderLabels(QStringList() << "Name" << "Type" << "Size" << "Pak");
+  selection = new QItemSelectionModel(model, this);
+
+  detailview = new QTreeView;
+  detailview->setModel(model);
+  detailview->setSelectionModel(selection);
+  detailview->setRootIsDecorated(false);
+  detailview->setItemsExpandable(false);
+  detailview->setUniformRowHeights(true);
+  detailview->setAllColumnsShowFocus(true);
+  detailview->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  detailview->setSelectionBehavior(QAbstractItemView::SelectRows);
+  detailview->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  // the default indicator is descending
+  detailview->header()->setSortIndicator(0, Qt::AscendingOrder);
+  detailview->setSortingEnabled(true);
+  detailview->header()->setStretchLastSection(true);
+  detailview->setColumnWidth(0, 300);
+  detailview->setColumnWidth(1, 100);
+  detailview->setColumnWidth(2, 60);
+  detailview->setColumnWidth(3, 150);
+
+  listview = new QListView;
+  listview->setModel(model);
+  listview->setSelectionModel(selection);
+  listview->setModelColumn(0);
+  listview->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  listview->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+  stack = new QStackedWidget;
+  stack->addWidget(detailview);
+  stack->addWidget(listview);
+
+  QVBoxLayout* vbox = new QVBoxLayout(this);
+  vbox->setContentsMargins(0, 0, 0, 0);
+  vbox->addWidget(stack);
+
+  // Activating an entry changes the directory and with that clears
+  // the model, so don't do it from within the view's own signal
+  auto activate = [this](const QModelIndex& index){
+    QMetaObject::invokeMethod(this, [this, index = QPersistentModelIndex(index)]{
+      if (index.isValid())
+        on_icon_double_click(index);
+    }, Qt::QueuedConnection);
+  };
+  // activated is emitted on double-click and on Enter
+  connect(detailview, &QAbstractItemView::activated, this, activate);
+  connect(listview, &QAbstractItemView::activated, this, activate);
+
+  set_mode(DETAILED);
+}
+
+QTreeWidgetItem*
+DirectoryView::tree_item_of(const QModelIndex& index) const
+{
+  return static_cast<QTreeWidgetItem*>(
+    model->item(index.row(), 0)->data(TreeItemRole).value<void*>());
 }
 
 void
-DirectoryView::change_directory(FXTreeItem* item)
+DirectoryView::show_toolbar(bool t)
 {
-  iconlist->clearItems();
+  toolbar->setVisible(t);
+}
 
-  for(FXTreeItem* it = item->getFirst(); it != NULL; it = it->getNext())
+void
+DirectoryView::change_directory(QTreeWidgetItem* item)
+{
+  model->removeRows(0, model->rowCount());
+
+  for(int n = 0; n < item->childCount(); ++n)
     {
-      DreamfallFileEntry* entry = static_cast<DreamfallFileEntry*>(it->getData());
+      QTreeWidgetItem* it = item->child(n);
+      DreamfallFileEntry* entry = entry_of(it);
 
-      FXIcon* big;
-      FXIcon* small;
+      QIcon big;
+      QIcon small;
       int     size;
       const char*   typestr = "DIRECTORY";
       const char* pak = "";
@@ -93,18 +200,16 @@ DirectoryView::change_directory(FXTreeItem* item)
         case DreamfallFileEntry::DIRECTORY_FILE_ENTRY:
           big   = Icon::large_folder;
           small = Icon::folder_closed;
-          size  = it->getNumChildren();
+          size  = it->childCount(); // FIXME: this is a number of files, not a size
           typestr = "Directory";
           break;
 
         case DreamfallFileEntry::PAK_FILE_ENTRY:
-          big   = (entry->get_pak().type == FILETYPE_SHARK3D)?Icon::large_file:Icon::large_shark;
+          big   = (entry->get_pak().type == FILETYPE_SHARK3D)?Icon::large_shark:Icon::large_file;
           small = Icon::unknown_document;
           size  = entry->get_pak().filesize;
           typestr = filetype2string(entry->get_pak().type);
           pak = entry->get_pak().pakfile.c_str();
-          break;
-
           break;
 
         default:
@@ -114,62 +219,94 @@ DirectoryView::change_directory(FXTreeItem* item)
           break;
         }
 
-      iconlist->appendItem(FXString().format("%s\t%s\t%dKB\t%s",
-                                             entry->get_label().c_str(),
-                                             typestr,
-                                             size/1024,
-                                             pak),
-                           big, small,
-                           it);
+      QStandardItem* name_item = make_item(QString::fromStdString(entry->get_label()));
+      name_item->setData(QVariant::fromValue(big), LargeIconRole);
+      name_item->setData(QVariant::fromValue(small), SmallIconRole);
+      name_item->setData(QVariant::fromValue(static_cast<void*>(it)), TreeItemRole);
+      name_item->setData(QVariant::fromValue(mode == BIG_ICONS ? big : small), Qt::DecorationRole);
+
+      QStandardItem* type_item = make_item(typestr);
+      type_item->setData(QVariant::fromValue(static_cast<void*>(it)), TreeItemRole);
+
+      QStandardItem* size_item = make_item(QString::asprintf("%dKB", size/1024));
+      size_item->setData(size, SizeRole);
+
+      QStandardItem* pak_item = make_item(QString::fromStdString(pak));
+
+      model->appendRow(QList<QStandardItem*>() << name_item << type_item << size_item << pak_item);
     }
 
-
-  iconlist->setSortFunc(iconlist_sorter);
-  iconlist->sortItems();
+  model->sort(detailview->header()->sortIndicatorSection(),
+              detailview->header()->sortIndicatorOrder());
 }
 
-long
-DirectoryView::onCmdIconListBigIcons (FXObject*, FXSelector,void*)
+void
+DirectoryView::set_mode(Mode mode_)
 {
-  iconlist->handle(this, FXSEL(SEL_COMMAND, FXIconList::ID_SHOW_BIG_ICONS), NULL);
-  return 1;
+  mode = mode_;
+
+  // The icon list and the details share the model, only the icon differs
+  for(int row = 0; row < model->rowCount(); ++row)
+    {
+      QStandardItem* item = model->item(row, 0);
+      item->setData(item->data(mode == BIG_ICONS ? LargeIconRole : SmallIconRole),
+                    Qt::DecorationRole);
+    }
+
+  switch(mode)
+    {
+    case BIG_ICONS:
+      listview->setViewMode(QListView::IconMode);
+      listview->setIconSize(QSize(48, 52));
+      listview->setGridSize(QSize(120, 90));
+      listview->setMovement(QListView::Static);
+      listview->setFlow(QListView::LeftToRight);
+      listview->setWrapping(true);
+      listview->setResizeMode(QListView::Adjust);
+      listview->setWordWrap(true);
+      stack->setCurrentWidget(listview);
+      break;
+
+    case MINI_ICONS:
+      listview->setViewMode(QListView::ListMode);
+      listview->setIconSize(QSize(16, 16));
+      listview->setGridSize(QSize());
+      listview->setFlow(QListView::TopToBottom);
+      listview->setWrapping(true);
+      listview->setResizeMode(QListView::Adjust);
+      listview->setWordWrap(false);
+      stack->setCurrentWidget(listview);
+      break;
+
+    case DETAILED:
+      stack->setCurrentWidget(detailview);
+      break;
+    }
 }
 
-long
-DirectoryView::onCmdIconListMiniIcons(FXObject*, FXSelector,void*)
+void
+DirectoryView::on_icon_double_click(const QModelIndex& index)
 {
-  iconlist->handle(this, FXSEL(SEL_COMMAND, FXIconList::ID_SHOW_MINI_ICONS), NULL);
-  return 1;
-}
-
-long
-DirectoryView::onCmdIconListDetailed (FXObject*, FXSelector,void*)
-{
-  iconlist->handle(this, FXSEL(SEL_COMMAND, FXIconList::ID_SHOW_DETAILS), NULL);
-  return 1;
-}
-
-long
-DirectoryView::onIconDblClick(FXObject* sender, FXSelector, void* data)
-{
-  FXint index      = reinterpret_cast<intptr_t>(data);
-  FXIconList* lst  = static_cast<FXIconList*>(sender);
-  FXIconItem* item = lst->getItem(index);
-
-  dftoolbox->display(static_cast<FXTreeItem*>(item->getData()));
-
-  return 1;
+  dftoolbox->display(tree_item_of(index));
 }
 
 void
 DirectoryView::get_selection(std::vector<DreamfallFileEntry*>& lst)
 {
-  for(int i = 0; i < iconlist->getNumItems(); ++i)
+  // both views share the selection, but only the list view selects
+  // just the first column
+  std::vector<int> rows;
+  const QModelIndexList indexes = selection->selectedIndexes();
+  for(const QModelIndex& index : indexes)
     {
-      if (iconlist->getItem(i)->isSelected())
-        lst.push_back(static_cast<DreamfallFileEntry*>
-                      (static_cast<FXTreeItem*>
-                       (iconlist->getItem(i)->getData())->getData()));
+      if (index.column() == 0)
+        rows.push_back(index.row());
+    }
+  std::sort(rows.begin(), rows.end());
+
+  for(int row : rows)
+    {
+      lst.push_back(entry_of(tree_item_of(model->index(row, 0))));
     }
 }
 

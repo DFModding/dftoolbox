@@ -22,10 +22,27 @@
 **  02111-1307, USA.
 */
 
+#include "dfmodactivator.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <map>
+
+#include <QApplication>
+#include <QFileDialog>
+#include <QFont>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QPalette>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QStatusBar>
+#include <QToolButton>
+#include <QVBoxLayout>
+
 #include "icons.hpp"
 #include "util.hpp"
 #include "tljpak.hpp"
@@ -35,12 +52,7 @@
 #include "progress_dialog.hpp"
 #include "progress_logger.hpp"
 #include "gui_progress_logger.hpp"
-#include "dfmodactivator.hpp"
 
-FXIcon* ok_icon;
-FXIcon* cancel_icon;
-FXIcon* kian_icon;
-FXFont* title_font;
 std::string dreamfall_path; // = "/media/windows/dreamfall/";
 
 std::string cutprefix(const std::string& prefix, const std::string& path)
@@ -48,55 +60,73 @@ std::string cutprefix(const std::string& prefix, const std::string& path)
   return path.substr(prefix.length());
 }
 
-ModListEntry::ModListEntry() {}
-
-ModListEntry::ModListEntry(FXComposite* parent,
-                           FXIcon* icon,
-                           std::string        directory_,
-                           const FXString& title_string,
-                           const FXString& short_description,
-                           const FXString& long_description)
-  : FXHorizontalFrame(parent, FRAME_NONE|LAYOUT_FILL_X|FRAME_LINE),
+ModListEntry::ModListEntry(QWidget* parent,
+                           const QIcon& icon,
+                           const std::string& directory_,
+                           const QString& title_string,
+                           const QString& short_description,
+                           const QString& long_description)
+  : QFrame(parent),
     directory(directory_ + "dreamfall/")
 {
-  this->setBackColor(FXRGB(255,255,255));
-  FXLabel* label = new FXLabel(this, "", icon?icon:kian_icon, FRAME_NONE|LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,
-                               0, 0, 48, 48);
-  label->setBackColor(FXRGB(255,255,255));
+  setFrameStyle(QFrame::Box | QFrame::Plain);
+  setLineWidth(1);
+  setAutoFillBackground(true);
+  QPalette pal = palette();
+  pal.setColor(QPalette::Window, Qt::white);
+  pal.setColor(QPalette::Base, Qt::white);
+  setPalette(pal);
 
-  FXVerticalFrame* description = new FXVerticalFrame(this, LAYOUT_FILL_X);
-  description->setBackColor(FXRGB(255,255,255));
+  QHBoxLayout* hbox = new QHBoxLayout(this);
 
-  FXLabel* title = new FXLabel(description, title_string, NULL, 0, LAYOUT_FILL_X|LAYOUT_MIN_HEIGHT|FRAME_LINE);
+  QLabel* label = new QLabel;
+  label->setFixedSize(48, 48);
+  label->setPixmap(icon.pixmap(48, 48));
+  hbox->addWidget(label, 0, Qt::AlignLeft | Qt::AlignTop);
+
+  QVBoxLayout* description = new QVBoxLayout;
+  hbox->addLayout(description, 1);
+
+  QLabel* title = new QLabel(title_string);
+  title->setTextFormat(Qt::PlainText);
+  QFont title_font = title->font();
+  title_font.setBold(true);
+  if (title_font.pointSizeF() > 0)
+    title_font.setPointSizeF(title_font.pointSizeF() * 1.2);
   title->setFont(title_font);
-  title->setBackColor(FXRGB(255,255,255));
+  description->addWidget(title);
 
-  //title->setStyled(TRUE);
-  //title->setTextStyle(title->getTextStyle() | TEXT_WORDWRAP);
-  //title->appendStyledText(title_string, FXText::STYLE_BOLD);//|FXText::STYLE_UNDERLINE);
+  QLabel* text = new QLabel(short_description);
+  text->setTextFormat(Qt::PlainText);
+  text->setWordWrap(true);
+  text->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  description->addWidget(text);
 
-  FXText* text = new FXText(description, NULL, 0, LAYOUT_FILL_X);
-  text->setStyled(TRUE);
-  text->setTextStyle(text->getTextStyle() | TEXT_WORDWRAP);
-  text->setVisibleRows(text->getNumRows());
+  arrowbutton = new QToolButton;
+  arrowbutton->setArrowType(Qt::DownArrow);
+  arrowbutton->setAutoRaise(true);
+  arrowbutton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+  connect(arrowbutton, &QToolButton::clicked, this, [this]{ on_toggle_long_desc(); });
+  description->addWidget(arrowbutton);
 
-  text->setEditable(FALSE);
-  text->appendStyledText(short_description); //, FXText::STYLE_UNDERLINE);
-
-  arrowbutton = new FXArrowButton(description, this, ID_TOGGLE_LONG_DESC, ARROW_DOWN|LAYOUT_FILL_X);
-  arrowbutton->setBackColor(FXRGB(250,250,250));
-
-  longtext = new FXText(description, NULL, 0, LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  longtext->setStyled(FALSE);
-  longtext->setTextStyle(longtext->getTextStyle() | TEXT_WORDWRAP);
-  longtext->appendStyledText(long_description);
-  longtext->setVisibleRows(longtext->getNumRows());
+  longtext = new QLabel(long_description);
+  longtext->setTextFormat(Qt::PlainText);
+  longtext->setWordWrap(true);
+  longtext->setTextInteractionFlags(Qt::TextSelectableByMouse);
   longtext->hide();
+  description->addWidget(longtext);
 
-  selectbutton =
-    new FXToggleButton(this, "", "", cancel_icon, ok_icon, NULL, 0, FRAME_NONE|LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,
-                       0, 0, 48, 48);
-  selectbutton->setBackColor(FXRGB(255,255,255));
+  QIcon select_icon;
+  select_icon.addPixmap(Icon::cancel.pixmap(48, 48), QIcon::Normal, QIcon::Off);
+  select_icon.addPixmap(Icon::ok.pixmap(48, 48), QIcon::Normal, QIcon::On);
+
+  selectbutton = new QToolButton;
+  selectbutton->setCheckable(true);
+  selectbutton->setIcon(select_icon);
+  selectbutton->setIconSize(QSize(48, 48));
+  selectbutton->setFixedSize(48, 48);
+  selectbutton->setStyleSheet("QToolButton { border: none; background: transparent; }");
+  hbox->addWidget(selectbutton, 0, Qt::AlignRight | Qt::AlignTop);
 }
 
 std::string
@@ -104,111 +134,107 @@ ModListEntry::get_directory() const {
   return directory;
 }
 
-long
-ModListEntry::onCmdToggleLongDesc(FXObject*,FXSelector,void*)
+void
+ModListEntry::on_toggle_long_desc()
 {
-  if (longtext->shown())
-    {
-      longtext->hide();
-      arrowbutton->setArrowStyle(ARROW_DOWN);
-      this->recalc();
-    }
+  if (longtext->isVisible())
+  {
+    longtext->hide();
+    arrowbutton->setArrowType(Qt::DownArrow);
+  }
   else
-    {
-      longtext->show();
-      longtext->setVisibleRows(longtext->getNumRows());
-      arrowbutton->setArrowStyle(ARROW_UP);
-      this->recalc();
-    }
-
-  return 1;
+  {
+    longtext->show();
+    arrowbutton->setArrowType(Qt::UpArrow);
+  }
 }
 
 void
-ModListEntry::setState(FXbool s)
+ModListEntry::setState(bool s)
 {
-  return selectbutton->setState(s);
+  selectbutton->setChecked(s);
 }
 
-FXbool
-ModListEntry::getState () const
+bool
+ModListEntry::getState() const
 {
-  return selectbutton->getState();
+  return selectbutton->isChecked();
 }
 
-FXDEFMAP(ModListEntry) ModListEntryMap[] = {
-  FXMAPFUNC(SEL_COMMAND,       ModListEntry::ID_TOGGLE_LONG_DESC, ModListEntry::onCmdToggleLongDesc),
-};
-FXIMPLEMENT(ModListEntry, FXHorizontalFrame, ModListEntryMap, ARRAYNUMBER(ModListEntryMap));
 
-
-DFModActivatorWindow::DFModActivatorWindow() {
-}
-
-DFModActivatorWindow::DFModActivatorWindow(FXApp* a)
-  : FXMainWindow(a,"DFModActivator", NULL, NULL, DECOR_ALL, 0, 0, 640, 480)
+DFModActivatorWindow::DFModActivatorWindow()
 {
-  Icon::init(getApp());
-
-  setMiniIcon(Icon::dftoolbox_mini);
-  setIcon(Icon::dftoolbox);
+  setWindowTitle("DFModActivator");
+  setWindowIcon(Icon::dftoolbox);
+  resize(640, 480);
 
   // write own progress dialog here
-  progress_dialog = new ProgressDialog(getApp(), "Installing data, this may take a while");
-  //progress_dialog->setBarStyle(PROGRESSBAR_HORIZONTAL);
+  progress_dialog = new ProgressDialog(this, "Installing data, this may take a while");
 
-  FXVerticalFrame* base = new FXVerticalFrame(this, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_Y,
-                                              0, 0, 0, 0,
-                                              0, 0, 0, 0, 0, 0);
+  QMenu* filemenu = menuBar()->addMenu("File");
+  filemenu->addAction("Dreamfall Path...", this, [this]{ on_dreamfall_path(); });
+  filemenu->addAction("Quit", qApp, &QApplication::quit);
 
-  menubar       = new FXMenuBar(base,LAYOUT_SIDE_TOP|LAYOUT_FILL_X);
-  modlistscroll = new FXScrollWindow(base, LAYOUT_FILL_X|LAYOUT_FILL_Y);
+  QMenu* helpmenu = menuBar()->addMenu("Help");
+  helpmenu->addAction("About", this, [this]{ on_about(); });
 
-  buttonbar = new FXHorizontalFrame(base, FRAME_NONE|LAYOUT_FILL_X|LAYOUT_SIDE_BOTTOM|PACK_UNIFORM_WIDTH);
-  status  = new FXStatusBar(base,LAYOUT_SIDE_BOTTOM|LAYOUT_FILL_X); //|STATUSBAR_WITH_DRAGCORNER);
+  QScrollArea* modlistscroll = new QScrollArea;
+  modlistscroll->setWidgetResizable(true);
+  modlistscroll->setFrameShape(QFrame::StyledPanel);
+  modlistscroll->setFrameShadow(QFrame::Sunken);
 
-  filemenu = new FXMenuPane(base);
-  new FXMenuCommand(filemenu,"Dreamfall Path...", NULL, this, ID_DREAMFALL_PATH);
-  new FXMenuCommand(filemenu,"Quit",NULL, getApp(), FXApp::ID_QUIT);
-  new FXMenuTitle(menubar,"File",NULL,filemenu);
+  QWidget* modlist_widget = new QWidget;
+  modlist_widget->setAutoFillBackground(true);
+  QPalette pal = modlist_widget->palette();
+  pal.setColor(QPalette::Window, Qt::white);
+  modlist_widget->setPalette(pal);
+  modlist = new QVBoxLayout(modlist_widget);
+  modlistscroll->setWidget(modlist_widget);
 
-  helpmenu = new FXMenuPane(base);
-  new FXMenuCommand(helpmenu,"About", NULL, this, ID_ABOUT);
-  new FXMenuTitle(menubar,"Help",NULL,helpmenu);
+  // Note that the labels of the first two buttons are swapped
+  // compared to the names of the members, that's how they always were
+  selectall_button  = new QPushButton("Select none");
+  selectnone_button = new QPushButton("Select all");
+  install_button    = new QPushButton("Install");
+  uninstall_button  = new QPushButton("Uninstall");
+  connect(selectall_button,  &QPushButton::clicked, this, [this]{ on_select_none(); });
+  connect(selectnone_button, &QPushButton::clicked, this, [this]{ on_select_all(); });
+  connect(install_button,    &QPushButton::clicked, this, [this]{ on_install(); });
+  connect(uninstall_button,  &QPushButton::clicked, this, [this]{ on_uninstall(); });
 
-  modlist = new FXVerticalFrame(modlistscroll, FRAME_SUNKEN| FRAME_THICK|LAYOUT_FILL_X|LAYOUT_FILL_Y,
-                                0, 0, 0, 0,
-                                DEFAULT_SPACING, DEFAULT_SPACING, DEFAULT_SPACING, DEFAULT_SPACING, DEFAULT_SPACING, 12);
-  modlist->setBackColor(FXRGB(255,255,255));
+  QHBoxLayout* buttonbar = new QHBoxLayout;
+  buttonbar->addWidget(selectall_button);
+  buttonbar->addWidget(selectnone_button);
+  buttonbar->addStretch(1);
+  buttonbar->addWidget(uninstall_button);
+  buttonbar->addWidget(install_button);
 
-  selectall_button  = new FXButton(buttonbar, "Select none",
-                                   NULL, this, ID_SELECT_NONE, ICON_ABOVE_TEXT|FRAME_RAISED);
-  selectnone_button = new FXButton(buttonbar, "Select all",
-                                   NULL, this, ID_SELECT_ALL, ICON_ABOVE_TEXT|FRAME_RAISED);
-  install_button    = new FXButton(buttonbar, "Install",
-                                   NULL, this, ID_INSTALL, ICON_ABOVE_TEXT|FRAME_RAISED|LAYOUT_RIGHT|BUTTON_DEFAULT);
-  uninstall_button    = new FXButton(buttonbar, "Uninstall",
-                                   NULL, this, ID_UNINSTALL, ICON_ABOVE_TEXT|FRAME_RAISED|LAYOUT_RIGHT|BUTTON_DEFAULT);
+  QWidget* central = new QWidget;
+  QVBoxLayout* base = new QVBoxLayout(central);
+  base->setContentsMargins(0, 0, 0, 0);
+  base->addWidget(modlistscroll, 1);
+  base->addLayout(buttonbar);
+  setCentralWidget(central);
+
+  statusBar()->showMessage("Ready.");
 
   // Search for mods
   scan_mod_directory();
+  modlist->addStretch(1);
 }
 
 DFModActivatorWindow::~DFModActivatorWindow()
 {
 }
 
-long
-DFModActivatorWindow::onCmdAbout(FXObject*,FXSelector,void*)
+void
+DFModActivatorWindow::on_about()
 {
-  FXMessageBox about(this,
+  QMessageBox::about(this,
                      "About DFModActivator V0.0",
                      "DFModActivator V0.0 is a little tool that allows you to install\nand remove "
                      "modifications for Dreamfall.\n\n"
-                     "Copyright (C) 2006 Ingo Ruhnke <grumbel@gmail.com>",
-                     NULL,MBOX_OK|DECOR_TITLE|DECOR_BORDER);
-  about.execute();
-  return 1;
+                     "Copyright (C) 2006 Ingo Ruhnke <grumbel@gmail.com>");
 }
 
 void
@@ -236,24 +262,21 @@ DFModActivatorWindow::scan_mod_directory()
                     long_desc += tmp + "\n";
                 }
 
-              // trim
-              for(std::string::size_type j = long_desc.size()-1; j >= 0; --j)
-                if (long_desc[j] != '\n')
-                  {
-                    long_desc = long_desc.substr(0, j+1);
-                    break;
-                  }
+              // trim trailing newlines (the old loop used an unsigned
+              // index that never terminated for an empty description)
+              long_desc.erase(long_desc.find_last_not_of('\n') + 1);
 
-              std::vector<char> icon_data;
-              FXIcon* icon = 0;
-              if (file_readbytes(i->fullname + "/icon.gif", icon_data))
-                {
-                  icon = new FXGIFIcon(getApp(), &*icon_data.begin());
-                }
+              QIcon icon(QString::fromStdString(i->fullname + "/icon.gif"));
+              if (icon.isNull())
+                icon = Icon::kian;
 
-              entries.push_back(new ModListEntry(modlist, icon,
-                                                 i->fullname,
-                                                 title.c_str(), short_desc.c_str(), long_desc.c_str()));
+              ModListEntry* entry = new ModListEntry(modlist->parentWidget(), icon,
+                                                     i->fullname,
+                                                     QString::fromStdString(title),
+                                                     QString::fromStdString(short_desc),
+                                                     QString::fromStdString(long_desc));
+              modlist->addWidget(entry);
+              entries.push_back(entry);
 
               in.close();
             }
@@ -292,18 +315,17 @@ DFModActivatorWindow::set_dreamfall_path(const std::string& path)
   out.close();
 }
 
-long
-DFModActivatorWindow::onCmdUninstall(FXObject* obj, FXSelector sel, void* data)
+void
+DFModActivatorWindow::on_uninstall()
 {
   // FIXME: Insert real uninstall code here
 
-  FXMessageBox::information(this, MBOX_OK, "Uninstall complete",
-                            "[UNIMPLEMENTED] All modifications have been uninstalled from Dreamfall.");
-  return 1;
+  QMessageBox::information(this, "Uninstall complete",
+                           "[UNIMPLEMENTED] All modifications have been uninstalled from Dreamfall.");
 }
 
-long
-DFModActivatorWindow::onCmdInstall(FXObject* obj, FXSelector sel, void* data)
+void
+DFModActivatorWindow::on_install()
 {
   if (dreamfall_path.empty())
     get_dreamfall_path();
@@ -314,127 +336,99 @@ DFModActivatorWindow::onCmdInstall(FXObject* obj, FXSelector sel, void* data)
 
       collect_insert_requests(inserts);
 
-      install_button->disable();
-      uninstall_button->disable();
+      install_button->setEnabled(false);
+      uninstall_button->setEnabled(false);
 
-      GUIProgressLogger* logger = new GUIProgressLogger(getApp(), progress_dialog,
-                                                        ProgressDialog::ID_THREAD_UPDATE); // FIXME: delete me
-      (new PakInsertThread(getApp(), progress_dialog, inserts, logger))->start(); // FIXME: Delete me
-      progress_dialog->show(PLACEMENT_OWNER);
-      //progress_dialog->execute();
+      GUIProgressLogger* logger = new GUIProgressLogger(progress_dialog); // FIXME: delete me
+      std::shared_ptr<PakInsertThread> worker = std::make_shared<PakInsertThread>(inserts, logger);
+      progress_dialog->set_thread(std::thread([worker]{ worker->run(); }));
+      progress_dialog->show();
     }
-  return 1;
 }
 
-long
-DFModActivatorWindow::onCmdSelectAll(FXObject*, FXSelector,void*) {
+void
+DFModActivatorWindow::on_select_all()
+{
   for(std::vector<ModListEntry*>::iterator i = entries.begin(); i != entries.end(); ++i)
     {
-      (*i)->setState(TRUE);
+      (*i)->setState(true);
     }
-  return 1;
 }
 
-long
-DFModActivatorWindow::onCmdSelectNone(FXObject*, FXSelector,void*) {
+void
+DFModActivatorWindow::on_select_none()
+{
   for(std::vector<ModListEntry*>::iterator i = entries.begin(); i != entries.end(); ++i)
     {
-      (*i)->setState(FALSE);
+      (*i)->setState(false);
     }
-  return 1;
 }
 
 bool
 DFModActivatorWindow::get_dreamfall_path()
 {
-  FXDirDialog open(this,"Select the Dreamfall directory");
-  open.showFiles(FALSE);
-  if(open.execute()) {
-    if (!file_exists((open.getDirectory() + "/bin/res/").text()))
-      {
-        FXMessageBox::error(this, MBOX_OK, "Dreamfall Path Error",
-                            "The given directory isn't the Dreamfall directory:\n%s",
-                            open.getDirectory().text());
-        return false;
-      }
-    else
-      {
-        set_dreamfall_path(open.getDirectory().text());
-        return true;
-      }
-  } else {
-    return false;
-  }
-}
-
-long
-DFModActivatorWindow::onCmdDreamfallPath(FXObject*, FXSelector,void*){
-  get_dreamfall_path();
-  return 1;
-}
-
-FXDEFMAP(DFModActivatorWindow) DFModActivatorWindowMap[] = {
-  FXMAPFUNC(SEL_COMMAND,       DFModActivatorWindow::ID_ABOUT,          DFModActivatorWindow::onCmdAbout),
-  FXMAPFUNC(SEL_COMMAND,       DFModActivatorWindow::ID_DREAMFALL_PATH, DFModActivatorWindow::onCmdDreamfallPath),
-  FXMAPFUNC(SEL_COMMAND,       DFModActivatorWindow::ID_INSTALL,        DFModActivatorWindow::onCmdInstall),
-  FXMAPFUNC(SEL_COMMAND,       DFModActivatorWindow::ID_UNINSTALL,      DFModActivatorWindow::onCmdUninstall),
-  FXMAPFUNC(SEL_COMMAND,       DFModActivatorWindow::ID_SELECT_NONE,    DFModActivatorWindow::onCmdSelectNone),
-  FXMAPFUNC(SEL_COMMAND,       DFModActivatorWindow::ID_SELECT_ALL,     DFModActivatorWindow::onCmdSelectAll),
-};
-FXIMPLEMENT(DFModActivatorWindow, FXMainWindow, DFModActivatorWindowMap, ARRAYNUMBER(DFModActivatorWindowMap));
-
-int main(int argc,char** argv)
-{
-  parse_args(argc, argv);
-
-  std::ifstream in((get_config_path() + "dreamfall_path.txt").c_str());
-  if (in)
+  const QString dir = QFileDialog::getExistingDirectory(this, "Select the Dreamfall directory");
+  if (!dir.isEmpty())
     {
-      std::getline(in, dreamfall_path);
-
-      // ignore invalid an path
-      if (!file_exists(dreamfall_path + "/bin/res/"))
+      if (!file_exists((dir + "/bin/res/").toStdString()))
         {
-          std::cout << "Ignoring Dreamfall path: " << dreamfall_path
-                    << "\ncouldn't find pak subdirectory" << std::endl;
-          dreamfall_path = "";
+          QMessageBox::critical(this, "Dreamfall Path Error",
+                                "The given directory isn't the Dreamfall directory:\n" + dir);
+          return false;
         }
-
-      in.close();
-    }
-
-  FXApp application("DFModActivator V0.0", "Grumbel");
-
-  application.init(argc,argv);
-
-  cancel_icon = new FXGIFIcon(&application, cancelicon_data);
-  kian_icon   = new FXGIFIcon(&application, kianicon_data);
-
-  std::vector<char> icon_data;
-  if (file_readbytes(get_data_path() + "icons/enabled.gif", icon_data))
-    {
-      ok_icon = new FXGIFIcon(&application, &*icon_data.begin());
+      else
+        {
+          set_dreamfall_path(dir.toStdString());
+          return true;
+        }
     }
   else
     {
-      std::cout << "Error: Couldn't open " << get_data_path() << "icons/enabled.gif" << std::endl;
-      ok_icon = new FXGIFIcon(&application, okicon_data);
+      return false;
     }
+}
 
-  ok_icon->create();
-  cancel_icon->create();
-  kian_icon->create();
+void
+DFModActivatorWindow::on_dreamfall_path()
+{
+  get_dreamfall_path();
+}
 
-  title_font = new FXFont(&application, "helvetica", 10, FXFont::Bold, FXFont::Straight,
-                          FONTENCODING_DEFAULT, FXFont::NonExpanded,FXFont::Scalable);
+int main(int argc,char** argv)
+{
+  try {
+    parse_args(argc, argv);
 
-  FXMainWindow* main = new DFModActivatorWindow(&application);
+    std::ifstream in((get_config_path() + "dreamfall_path.txt").c_str());
+    if (in)
+      {
+        std::getline(in, dreamfall_path);
 
-  application.create();
+        // ignore invalid an path
+        if (!file_exists(dreamfall_path + "/bin/res/"))
+          {
+            std::cout << "Ignoring Dreamfall path: " << dreamfall_path
+                      << "\ncouldn't find pak subdirectory" << std::endl;
+            dreamfall_path = "";
+          }
 
-  main->show(PLACEMENT_SCREEN);
+        in.close();
+      }
 
-  return application.run();
+    QApplication application(argc, argv);
+    application.setApplicationName("DFModActivator V0.0");
+    application.setOrganizationName("Grumbel");
+
+    Icon::init();
+
+    DFModActivatorWindow window;
+    window.show();
+
+    return application.exec();
+  } catch(std::exception& err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+  }
+  return 0;
 }
 
 

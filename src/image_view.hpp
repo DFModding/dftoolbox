@@ -25,25 +25,31 @@
 #ifndef HEADER_IMAGE_VIEW_HPP
 #define HEADER_IMAGE_VIEW_HPP
 
-#include "fx.h"
 #include <string>
 
-/** */
-class ImageView : FXVerticalFrame
-{
-  FXDECLARE(ImageView);
-private:
-  FXToolBar*   toolbar;
-  FXImageView* imageview;
-  FXImage*     image;
-  FXText*      text;
+#include <QImage>
+#include <QWidget>
 
+class QLabel;
+class QMainWindow;
+class QPlainTextEdit;
+class QScrollArea;
+class QToolBar;
+
+/** */
+class ImageView : public QWidget
+{
+private:
+  QToolBar*       toolbar;
+  QScrollArea*    scrollarea;
+  QLabel*         imagelabel;
+  QPlainTextEdit* text;
+
+  QImage image;
   int scale;
-  std::vector<FXImage*>  scaled_images;
 
 public:
-  ImageView();
-  ImageView(FXComposite* parent, FXDockSite* dock);
+  ImageView(QWidget* parent, QMainWindow* mainwindow);
 
   void set_image(const std::string& filename);
   void set_save_image(const std::string& filename);
@@ -52,16 +58,6 @@ public:
   void set_scale(int scale_);
 
   void show_toolbar(bool t);
-
-  long onCmdZoom1_1(FXObject*,FXSelector,void*);
-  long onCmdZoomIn(FXObject*,FXSelector,void*);
-  long onCmdZoomOut(FXObject*,FXSelector,void*);
-
-  enum {
-    ID_ZOOM_IN = FXVerticalFrame::ID_LAST,
-    ID_ZOOM_OUT,
-    ID_ZOOM_1_1
-  };
 };
 
 #endif

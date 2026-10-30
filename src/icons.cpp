@@ -1,4 +1,4 @@
-/*  $Id: icons.cpp,v 1.1 2006/06/16 02:17:53 ingo Exp ingo $
+/*  $Id: icons.hpp,v 1.1 2006/06/16 02:17:53 ingo Exp ingo $
 **  ___  ___ _____         _ ___
 ** |   \| __|_   _|__  ___| | _ ) _____ __
 ** | |) | _|  | |/ _ \/ _ \ | _ \/ _ \ \ /
@@ -22,195 +22,112 @@
 **  02111-1307, USA.
 */
 
-#include <stdexcept>
-#include <iostream>
-#include "system.hpp"
 #include "icons.hpp"
+
+#include <iostream>
+#include <QFile>
+#include <QString>
+
+#include "system.hpp"
 
 namespace Icon {
 
-FXIcon* folder_open;
-FXIcon* folder_closed;
-FXIcon* unknown_document;
+QIcon folder_open;
+QIcon folder_closed;
+QIcon unknown_document;
+QIcon search_forward;
+QIcon search_backward;
+QIcon new_file;
+QIcon load_file;
+QIcon save_file;
+QIcon delete_file;
+QIcon export_file;
+QIcon import_file;
+QIcon zoom_in;
+QIcon zoom_out;
+QIcon zoom_1_1;
+QIcon grayscale;
+QIcon normalmap;
+QIcon editable;
+QIcon indent;
+QIcon play;
+QIcon stop;
+QIcon pause;
+QIcon icons_list;
+QIcon icons_detail;
+QIcon icons_large;
+QIcon collapse_tree;
+QIcon expand_tree;
+QIcon go;
+QIcon up;
+QIcon cancel;
+QIcon ok;
+QIcon kian;
+QIcon large_folder;
+QIcon large_file;
+QIcon large_shark;
+QIcon dftoolbox;
+QIcon dftoolbox_mini;
+QIcon dfmodtool;
+QIcon dfmodtool_mini;
+QIcon dreamfall;
 
-FXIcon* search_forward;
-FXIcon* search_backward;
+namespace {
 
-FXIcon* new_file;
-FXIcon* load_file;
-FXIcon* save_file;
-FXIcon* delete_file;
-
-FXIcon* export_file;
-FXIcon* import_file;
-
-FXIcon* zoom_in;
-FXIcon* zoom_out;
-FXIcon* zoom_1_1;
-
-FXIcon* grayscale;
-FXIcon* normalmap;
-
-FXIcon* editable;
-FXIcon* indent;
-
-FXIcon* play;
-FXIcon* stop;
-FXIcon* pause;
-
-FXIcon* icons_list;
-FXIcon* icons_detail;
-FXIcon* icons_large;
-
-FXIcon* collapse_tree;
-FXIcon* expand_tree;
-
-FXIcon* go;
-FXIcon* up;
-
-FXIcon* cancel;
-FXIcon* unknown;
-
-FXIcon* large_folder;
-FXIcon* large_file;
-FXIcon* large_shark;
-
-FXIcon* dftoolbox;
-FXIcon* dftoolbox_mini;
-
-FXIcon* dfmodtool;
-FXIcon* dfmodtool_mini;
-
-FXIcon* dreamfall;
-
-FXIcon* load_icon(FXApp* app, const std::string& filename)
+QIcon load_icon(const std::string& filename)
 {
-  std::vector<char> data;
-  if (file_readbytes(get_data_path() + "/" + filename, data))
-    {
-      FXIcon* icon = new FXGIFIcon(app, &*data.begin());
-      icon->create();
-      return icon;
-    }
-  else
-    {
-      std::cout << "Error: Couldn't open " << filename << std::endl;
-      FXIcon* icon = new FXGIFIcon(app, unknown_icon_data);
-      icon->create();
-      return icon;
-    }
+  const QString path = QString::fromStdString(get_data_path() + filename);
+  if (!QFile::exists(path))
+  {
+    std::cout << "Error: Couldn't open " << filename << std::endl;
+    return QIcon();
+  }
+  return QIcon(path);
 }
 
-void init(FXApp* app)
+} // namespace
+
+void init()
 {
-  folder_open      = load_icon(app, "icons/folder_open.gif");
-  folder_closed    = load_icon(app, "icons/folder_closed.gif");
-  unknown_document = load_icon(app, "icons/unknown_document.gif");
-
-  search_forward  = load_icon(app, "icons/search_forward.gif");
-  search_backward = load_icon(app, "icons/search_backward.gif");
-
-  new_file    = load_icon(app, "icons/new_file.gif");
-  load_file   = load_icon(app, "icons/load_file.gif");
-  save_file   = load_icon(app, "icons/save_file.gif");
-  delete_file = load_icon(app, "icons/delete_file.gif");
-
-  export_file = load_icon(app, "icons/export_file.gif");
-  import_file = load_icon(app, "icons/import_file.gif");
-
-  zoom_in  = load_icon(app, "icons/zoom_in.gif");
-  zoom_out = load_icon(app, "icons/zoom_out.gif");
-  zoom_1_1 = load_icon(app, "icons/zoom_1_1.gif");
-
-  grayscale = load_icon(app, "icons/grayscale.gif");
-  normalmap = load_icon(app, "icons/normalmap.gif");
-
-  editable = load_icon(app, "icons/editable.gif");
-  indent   = load_icon(app, "icons/indent.gif");
-
-  play  = load_icon(app, "icons/play.gif");
-  stop  = load_icon(app, "icons/stop.gif");
-  pause = load_icon(app, "icons/pause.gif");
-
-  icons_list   = load_icon(app, "icons/icons_list.gif");
-  icons_detail = load_icon(app, "icons/icons_detail.gif");
-  icons_large  = load_icon(app, "icons/icons_large.gif");
-
-  collapse_tree = load_icon(app, "icons/collapse_tree.gif");
-  expand_tree   = load_icon(app, "icons/expand_tree.gif");
-
-  go = load_icon(app, "icons/go.gif");
-  up = load_icon(app, "icons/up.gif");
-  cancel = load_icon(app, "icons/cancel.gif");
-
-  large_folder = load_icon(app, "icons/large/folder.gif");
-  large_file  =  load_icon(app, "icons/large/file.gif");
-  large_shark  = load_icon(app, "icons/large/shark.gif");
-
-  dftoolbox      = load_icon(app, "icons/dftoolbox.gif");
-  dftoolbox_mini = load_icon(app, "icons/dftoolbox_mini.gif");
-
-  dfmodtool      = load_icon(app, "icons/dfmodtool.gif");
-  dfmodtool_mini = load_icon(app, "icons/dfmodtool_mini.gif");
-
-  dreamfall = load_icon(app, "icons/dreamfall.gif");
-}
-
-void deinit()
-{
-  delete dftoolbox;
-  delete dftoolbox_mini;
-
-  delete dfmodtool;
-  delete dfmodtool_mini;
-
-  delete unknown;
-
-  delete search_forward;
-  delete search_backward;
-
-  delete folder_open;
-  delete folder_closed;
-  delete unknown_document;
-
-  delete new_file;
-  delete load_file;
-  delete save_file;
-  delete delete_file;
-
-  delete export_file;
-  delete import_file;
-
-  delete zoom_in;
-  delete zoom_out;
-  delete zoom_1_1;
-
-  delete grayscale;
-  delete normalmap;
-
-  delete editable;
-  delete indent;
-
-  delete play;
-  delete stop;
-  delete pause;
-
-  delete icons_list;
-  delete icons_detail;
-  delete icons_large;
-
-  delete collapse_tree;
-  delete expand_tree;
-
-  delete go;
-  delete up;
-  delete cancel;
-
-  delete large_folder;
-  delete large_file;
-  delete large_shark;
-
-  delete dreamfall;
+  folder_open = load_icon("icons/folder_open.png");
+  folder_closed = load_icon("icons/folder_closed.png");
+  unknown_document = load_icon("icons/unknown_document.png");
+  search_forward = load_icon("icons/search_forward.png");
+  search_backward = load_icon("icons/search_backward.png");
+  new_file = load_icon("icons/new_file.png");
+  load_file = load_icon("icons/load_file.png");
+  save_file = load_icon("icons/save_file.png");
+  delete_file = load_icon("icons/delete_file.png");
+  export_file = load_icon("icons/export_file.png");
+  import_file = load_icon("icons/import_file.png");
+  zoom_in = load_icon("icons/zoom_in.png");
+  zoom_out = load_icon("icons/zoom_out.png");
+  zoom_1_1 = load_icon("icons/zoom_1_1.png");
+  grayscale = load_icon("icons/grayscale.png");
+  normalmap = load_icon("icons/normalmap.png");
+  editable = load_icon("icons/editable.png");
+  indent = load_icon("icons/indent.png");
+  play = load_icon("icons/play.png");
+  stop = load_icon("icons/stop.png");
+  pause = load_icon("icons/pause.png");
+  icons_list = load_icon("icons/icons_list.png");
+  icons_detail = load_icon("icons/icons_detail.png");
+  icons_large = load_icon("icons/icons_large.png");
+  collapse_tree = load_icon("icons/collapse_tree.png");
+  expand_tree = load_icon("icons/expand_tree.png");
+  go = load_icon("icons/go.png");
+  up = load_icon("icons/up.png");
+  cancel = load_icon("icons/cancel.png");
+  ok = load_icon("icons/enabled.png");
+  kian = load_icon("icons/kian.png");
+  large_folder = load_icon("icons/large/folder.png");
+  large_file = load_icon("icons/large/file.png");
+  large_shark = load_icon("icons/large/shark.png");
+  dftoolbox = load_icon("icons/dftoolbox.png");
+  dftoolbox_mini = load_icon("icons/dftoolbox_mini.png");
+  dfmodtool = load_icon("icons/dfmodtool.png");
+  dfmodtool_mini = load_icon("icons/dfmodtool_mini.png");
+  dreamfall = load_icon("icons/dreamfall.png");
 }
 
 } // namespace Icon

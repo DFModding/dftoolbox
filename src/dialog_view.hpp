@@ -25,41 +25,48 @@
 #ifndef HEADER_DIALOG_VIEW_HPP
 #define HEADER_DIALOG_VIEW_HPP
 
-#include "fx.h"
 #include <string>
+#include <vector>
+
+#include <QWidget>
+
 #include "dialog.hpp"
 
 class DFToolBoxWindow;
+class QComboBox;
+class QMainWindow;
+class QPlainTextEdit;
+class QToolBar;
 
 /** */
-class DialogView : public FXVerticalFrame
+class DialogView : public QWidget
 {
 private:
-  FXDECLARE(DialogView);
-
   DFToolBoxWindow* dftoolbox;
-  FXToolBar*   toolbar;
-  FXText*      text;
-  FXListBox*   langbox;
+  QToolBar*        toolbar;
+  QPlainTextEdit*  text;
+  QComboBox*       langbox;
   typedef std::vector<Dialog> Dialogs;
   Dialogs dialogs;
 
+  /** The text as last given to the text widget, so that saving it
+      writes exactly the same bytes */
+  std::string raw_text;
+
+  void set_text(const std::string& str);
+  void play(int dialog_id, const std::string& lang_code);
+
 public:
-  DialogView() {}
-  DialogView(FXComposite* parent, FXComposite* dock, DFToolBoxWindow* dftoolbox);
+  DialogView(QWidget* parent, QMainWindow* mainwindow, DFToolBoxWindow* dftoolbox);
 
   void set_dialog(const std::string& filename);
-  long onCmdLanguageSwitch(FXObject*,FXSelector,void*);
-  long onCmdHyperlink(FXObject*,FXSelector,void*);
-  long onCmdSaveText(FXObject*,FXSelector,void*);
+  void on_language_switch(int lang_id);
+  bool on_hyperlink(const QPoint& pos);
+  void on_save_text();
   void set_language(int id);
-  void show_toolbar(bool t) { if (t) toolbar->show(); else toolbar->hide(); }
+  void show_toolbar(bool t);
 
-  enum {
-    ID_LANGUAGE_SWITCH = FXHorizontalFrame::ID_LAST,
-    ID_HYPERLINK,
-    ID_SAVE_TEXT
-  };
+  bool eventFilter(QObject* obj, QEvent* event) override;
 };
 
 #endif

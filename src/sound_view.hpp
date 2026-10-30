@@ -25,41 +25,31 @@
 #ifndef HEADER_SOUND_VIEW_HPP
 #define HEADER_SOUND_VIEW_HPP
 
-#include "fx.h"
-#ifdef USE_SDL
 #include <SDL/SDL_mixer.h>
-#endif
 #include <string>
 
-class SoundView : public FXVerticalFrame
+#include <QWidget>
+
+class QPlainTextEdit;
+class QToolButton;
+
+class SoundView : public QWidget
 {
 private:
-  FXDECLARE(SoundView);
-#ifdef USE_SDL
   Mix_Music* music;
-#endif
-  FXTextField* input;
-  FXToggleButton* play_button;
-  FXText* text;
+  QToolButton* play_button;
+  QPlainTextEdit* text;
+
 public:
-  SoundView();
-  SoundView(FXComposite* parent);
+  SoundView(QWidget* parent);
   ~SoundView();
 
   void set_music(const std::string& filename, const std::string& desc);
 
-  long onCmdPlay(FXObject*,FXSelector,void*);
-  long onCmdStop(FXObject*,FXSelector,void*);
-  long onCmdMciCommand(FXObject*,FXSelector,void*);
+  void on_play();
+  void on_stop();
 
-  void show_toolbar(bool t) {  }
-  void issue_msi_command(const std::string& cmd);
-
-  enum {
-    ID_PLAY = FXHorizontalFrame::ID_LAST,
-    ID_STOP,
-    ID_MCI_COMMAND
-  };
+  void show_toolbar(bool t) { }
 };
 
 #endif

@@ -25,29 +25,26 @@
 #ifndef HEADER_SEARCHBAR_HPP
 #define HEADER_SEARCHBAR_HPP
 
-#include "fx.h"
+#include <QFrame>
+
+class QLineEdit;
+class QPlainTextEdit;
 
 /** */
-class Searchbar : public FXHorizontalFrame
+class Searchbar : public QFrame
 {
 private:
-  FXDECLARE(Searchbar);
+  QPlainTextEdit* text;
+  QLineEdit* search;
 
-  FXText*      text;
-  FXTextField* search;
+  void find(bool backward);
 
 public:
-  Searchbar() {}
+  Searchbar(QWidget* parent, QPlainTextEdit* text);
   virtual ~Searchbar() {}
-  Searchbar(FXComposite* parent, FXText* text);
 
-  long onCmdSearchForward(FXObject*,FXSelector,void*);
-  long onCmdSearchBackward(FXObject*,FXSelector,void*);
-
-  enum {
-    ID_SEARCH_FORWARD = FXHorizontalFrame::ID_LAST,
-    ID_SEARCH_BACKWARD
-  };
+  void on_search_forward();
+  void on_search_backward();
 };
 
 #endif
